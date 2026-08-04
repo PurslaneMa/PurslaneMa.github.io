@@ -1,0 +1,8 @@
+/* Interaction layer: layout affordances, focus, status and responsive behavior */
+.toolbar{position:sticky;top:60px;z-index:4;padding:6px 0;background:linear-gradient(var(--admin-bg) 72%,transparent);}
+.toolbar input{transition:width .2s,box-shadow .2s}.toolbar input:focus{box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.explorer{position:relative}.explorer-resizer{position:absolute;top:0;right:-6px;width:12px;height:100%;cursor:col-resize;z-index:5}.explorer-resizer:after{content:'';position:absolute;top:35%;bottom:35%;left:5px;width:2px;border-radius:2px;background:transparent;transition:background .15s}.explorer-resizer:hover:after,.explorer-resizer.dragging:after{background:#93c5fd}
+.ux-toast{position:fixed;right:24px;bottom:24px;z-index:20;padding:10px 14px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;color:#1d4ed8;box-shadow:0 10px 24px rgba(15,23,42,.12);font-size:13px;opacity:0;transform:translateY(8px);transition:.2s}.ux-toast.show{opacity:1;transform:none}
+.save-state{margin-left:8px;color:#64748b;font-size:12px}.save-state.dirty{color:#d97706}.save-state.saved{color:#047857}
+.command-hint{color:#94a3b8;font-size:11px;margin-left:4px;white-space:nowrap}
+@media(max-width:900px){.toolbar{top:0}.explorer-resizer{display:none}}
