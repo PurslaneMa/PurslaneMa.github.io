@@ -1,13 +1,13 @@
-# Hexo Configuration
+﻿# Hexo Configuration
 ## Docs: https://hexo.io/docs/configuration.html
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Type-Safe Notes
-subtitle: 'AI · TCS · Math · Quantum · Systems'
-description: '一个面向人工智能、理论计算机、纯数学、量子信息和系统工程的长期写作博客。'
+title: Purslane Notes
+subtitle: 'CS Blogs'
+description: '还是因为我不够努力'
 keywords: AI,TCS,Math,Algorithms,Quantum,Distributed Systems
-author: Type-Safe
+author: PurslaneMa
 language: zh-CN
 timezone: Asia/Shanghai
 

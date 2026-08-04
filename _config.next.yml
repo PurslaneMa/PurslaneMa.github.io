@@ -12,6 +12,8 @@ menu:
   archives: /archives/ || fa fa-archive
   categories: /categories/ || fa fa-th
   tags: /tags/ || fa fa-tags
+  search: /search/ || fa fa-search
+  admin: /admin/ || fa fa-edit
   about: /about/ || fa fa-user
 
 menu_settings:

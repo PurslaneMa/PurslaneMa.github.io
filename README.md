@@ -1,6 +1,6 @@
 # GitHub Blog
 
-这是一个基于 Hexo + NexT 的 GitHub Pages 博客模板，适合中文技术/数学/算法长文写作。
+这是 `Purslane Notes` 的源码仓库，基于 Hexo + NexT，适合中文技术/数学/算法长文写作。
 
 ## 本地预览
 
@@ -52,7 +52,7 @@ GitHub Pages 是静态托管，不能直接运行 cnblogs 那种在线动态后�
 
 ## 开机自动启动
 
-本项目提供了 `scripts/start-local-blog.ps1`。安装开机启动后，Windows 登录时会自动在后台启动 Hexo 本地服务。
+本项目提供了 `tools/start-local-blog.ps1`。安装开机启动后，Windows 登录时会自动在后台启动 Hexo 本地服务。
 
 常用地址：
 

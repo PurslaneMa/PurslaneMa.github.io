@@ -19,4 +19,3 @@ if (-not $alreadyRunning) {
     -WorkingDirectory $projectRoot `
     -WindowStyle Hidden
 }
-
