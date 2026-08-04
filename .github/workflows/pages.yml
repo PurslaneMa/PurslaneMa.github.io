@@ -34,6 +34,9 @@ jobs:
       - name: Build
         run: npx hexo generate
 
+      - name: Remove local-only admin
+        run: rm -rf public/admin-cn
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

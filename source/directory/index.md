@@ -5,7 +5,7 @@ type: directory
 comments: false
 ---
 
-## AI
+## 🇨🇳 AI
 
 - MachineLearning
   - 随笔

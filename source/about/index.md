@@ -7,6 +7,8 @@ comments: false
 
 还是因为我不够努力。
 
+🇨🇳 中文记录 · 🇬🇧 English references
+
 这里会持续整理计算机科学方向的笔记，覆盖：
 
 - 人工智能与机器学习
