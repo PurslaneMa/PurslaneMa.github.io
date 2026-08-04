@@ -12,6 +12,7 @@ menu:
   archives: /archives/ || fa fa-archive
   categories: /categories/ || fa fa-th
   tags: /tags/ || fa fa-tags
+  directory: /directory/ || fa fa-folder-open
   search: /search/ || fa fa-search
   about: /about/ || fa fa-user
 menu_settings:

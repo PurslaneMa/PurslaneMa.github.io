@@ -2,12 +2,13 @@
 title: 第一篇：这里以后放 CS 笔记
 date: 2026-08-04 20:10:00
 categories:
-  - TCS
+  - AI
+  - MachineLearning
+  - 随笔
 tags:
   - Hexo
   - GitHub Pages
   - CS Blogs
-mathjax: true
 ---
 
 这是 Purslane Notes 的第一篇文章。这里会持续记录人工智能、理论计算机、纯数学、量子信息和系统工程。
