@@ -1,4 +1,5 @@
 ---
+note_id: 5a4e2f1d-9f76-4b6d-a2c1-about000001
 title: 关于 Purslane Notes
 date: 2026-08-04 20:00:00
 type: about

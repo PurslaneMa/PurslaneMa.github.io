@@ -1,4 +1,5 @@
 ---
+note_id: 8d715g40-c2a9-4e90-d5f4-directory001
 title: 内容目录
 date: 2026-08-04 21:30:00
 type: directory

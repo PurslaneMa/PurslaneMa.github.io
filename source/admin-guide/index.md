@@ -1,4 +1,5 @@
 ---
+note_id: 6b5f3e2e-a087-4c7e-b3d2-guide000001
 title: 后台使用说明
 date: 2026-08-04 20:35:00
 comments: false

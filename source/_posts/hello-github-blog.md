@@ -1,4 +1,5 @@
 ---
+note_id: 8b6e8d6e-7f75-4d3d-8b54-hello000001
 title: 第一篇：这里以后放 CS 笔记
 date: 2026-08-04 20:10:00
 categories:
