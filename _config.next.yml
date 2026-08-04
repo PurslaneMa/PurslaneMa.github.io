@@ -13,7 +13,8 @@ menu:
   categories: /categories/ || fa fa-th
   tags: /tags/ || fa fa-tags
   search: /search/ || fa fa-search
-  admin: /admin/ || fa fa-edit
+  后台: /admin-cn/ || fa fa-edit
+  旧后台: /admin/ || fa fa-wrench
   about: /about/ || fa fa-user
 
 menu_settings:
