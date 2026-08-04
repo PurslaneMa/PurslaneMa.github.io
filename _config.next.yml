@@ -13,32 +13,24 @@ menu:
   categories: /categories/ || fa fa-th
   tags: /tags/ || fa fa-tags
   search: /search/ || fa fa-search
-  后台: /admin-cn/ || fa fa-edit
-  旧后台: /admin/ || fa fa-wrench
   about: /about/ || fa fa-user
-
 menu_settings:
   icons: true
   badges: true
-
 sidebar:
   position: left
   display: post
   padding: 18
   offset: 12
-
 site_state: true
-
 social:
   GitHub: https://github.com/PurslaneMa || fab fa-github
-
 toc:
   enable: true
   number: true
   wrap: false
   expand_all: false
   max_depth: 4
-
 footer:
   since: 2026
   icon:
@@ -46,7 +38,6 @@ footer:
     animated: false
     color: "#555"
   powered: true
-
 post_meta:
   item_text: true
   created_at: true
@@ -54,14 +45,11 @@ post_meta:
     enable: true
     another_day: true
   categories: true
-
 symbols_count_time:
   separated_meta: true
   item_text_post: true
   item_text_total: false
-
 tag_icon: true
-
 codeblock:
   theme:
     light: default
@@ -69,55 +57,28 @@ codeblock:
   copy_button:
     enable: true
     style: flat
-
 back2top:
   enable: true
   sidebar: false
   scrollpercent: true
-
 reading_progress:
   enable: true
   color: "#37c6c0"
   height: 3px
-
 local_search:
   enable: true
   trigger: auto
   top_n_per_article: 3
-  unescape: false
-  preload: false
-
 math:
   mathjax:
     enable: true
     tags: ams
-
 creative_commons:
   license: by-nc-sa
   size: small
   sidebar: false
   post: true
   language: deed.zh
-
 comments:
   style: tabs
-  active:
   storage: true
-  lazyload: true
-  nav:
-    gitalk:
-      order: -1
-
-giscus:
-  enable: false
-  repo:
-  repo_id:
-  category:
-  category_id:
-  mapping: pathname
-  reactions_enabled: 1
-  emit_metadata: 0
-  theme:
-    light: light
-    dark: dark
-  lang: zh-CN

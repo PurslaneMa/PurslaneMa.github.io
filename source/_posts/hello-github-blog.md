@@ -2,7 +2,7 @@
 title: 第一篇：这里以后放 CS 笔记
 date: 2026-08-04 20:10:00
 categories:
-  - 随笔
+  - TCS
 tags:
   - Hexo
   - GitHub Pages
@@ -10,35 +10,15 @@ tags:
 mathjax: true
 ---
 
-这是 Purslane Notes 的第一篇文章。  
-前台会以文章流为主，左侧保留站点概览，顶部提供首页、归档、分类、标签、搜索和后台入口。
+这是 Purslane Notes 的第一篇文章。这里会持续记录人工智能、理论计算机、纯数学、量子信息和系统工程。
 
 <!-- more -->
 
-## 公式测试
+## 一个开始
 
-行内公式示例：$E = mc^2$。
-
-块级公式示例：
-
-$$
-\sum_{i=1}^n i = \frac{n(n+1)}{2}
-$$
-
-## 代码块
-
-```cpp
-#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    cout << "Hello, Hexo!" << endl;
-}
-```
+把复杂问题拆开，把可复用的经验留下来。
 
 ## 后续栏目
-
-后续文章可以按这些方向组织：
 
 - `AI`：论文笔记、工程技巧、模型训练经验
 - `TCS`：复杂性、近似算法、随机算法、伪随机性
