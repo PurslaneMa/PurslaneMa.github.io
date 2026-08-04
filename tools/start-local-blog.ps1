@@ -19,3 +19,13 @@ if (-not $alreadyRunning) {
     -WorkingDirectory $projectRoot `
     -WindowStyle Hidden
 }
+
+$adminPort = 4173
+$adminRunning = $false
+try {
+  $adminResponse = Invoke-WebRequest -Uri "http://localhost:$adminPort" -UseBasicParsing -TimeoutSec 3
+  if ($adminResponse.StatusCode -ge 200 -and $adminResponse.StatusCode -lt 500) { $adminRunning = $true }
+} catch { $adminRunning = $false }
+if (-not $adminRunning) {
+  Start-Process -FilePath 'npm.cmd' -ArgumentList @('run','dev') -WorkingDirectory (Join-Path $projectRoot 'admin-app') -WindowStyle Hidden
+}
