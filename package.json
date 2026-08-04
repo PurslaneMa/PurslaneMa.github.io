@@ -10,7 +10,7 @@
     "draft": "hexo new draft",
     "post": "hexo new post",
     "admin": "hexo server",
-    "postinstall": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/localize-hexo-admin.ps1"
+    "postinstall": "node tools/localize-hexo-admin.cjs"
   },
   "hexo": {
     "version": "8.1.2"
