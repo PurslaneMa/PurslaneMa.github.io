@@ -33,3 +33,64 @@ body
 
 .menu-item a
   font-size: .94em
+
+.site-state-item-count
+  font-size: .82em
+  font-weight: 500
+  line-height: 1.2
+  opacity: .72
+
+.site-state-item-name
+  font-size: .76em
+  line-height: 1.25
+
+.site-state-item
+  min-width: 0
+
+// Reading and mobile polish
+:root
+  --purslane-accent: #2563eb
+  --purslane-soft: #eff6ff
+
+.post-block
+  border-radius: 14px
+
+.post-body a
+  color: var(--purslane-accent)
+  text-decoration-thickness: 1px
+  text-underline-offset: 3px
+
+.post-body blockquote
+  border-left: 4px solid var(--purslane-accent)
+  background: var(--purslane-soft)
+  border-radius: 0 8px 8px 0
+  padding: .7em 1em
+
+.post-body table
+  display: block
+  overflow-x: auto
+  white-space: nowrap
+
+.post-body img
+  border-radius: 10px
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .12)
+
+.post-body pre
+  border-radius: 10px
+
+.pagination
+  margin-top: 2em
+
+@media (max-width: 767px)
+  .post-body
+    font-size: 1em
+    line-height: 1.8
+  .post-body h1
+    font-size: 1.65em
+  .post-body h2
+    font-size: 1.4em
+  .post-button .btn
+    width: 100%
+  .post-body pre
+    margin-left: -4px
+    margin-right: -4px
