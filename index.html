@@ -1088,15 +1088,15 @@ const TRACK_CLASS = { core: 'badge-core', recommended: 'badge-rec', optional: 'b
    但 /api/chapters 暂不返回该字段，因此按下述编号区间从章节名推导；
    若服务端将来返回 phase，则以服务端值为准（见 phaseOf）。 */
 const PHASES = [
-  { key: '1',   no: '一', title: '第一阶段：离开 OJ',         desc: '终端与 Shell、文件系统、编辑器、数据格式、软件安装', range: [0, 7] },
-  { key: '2',   no: '二', title: '第二阶段：理解机器',       desc: '硬件、操作系统、内存与 I/O、系统管理、SSH 远程开发', range: [8, 12] },
-  { key: '3',   no: '三', title: '第三阶段：编程语言',       desc: '从竞赛 C++ 到工程 C++、Python 速通与科学计算栈',     range: [13, 16] },
-  { key: '4',   no: '四', title: '第四阶段：版本控制与网络', desc: 'Git/GitHub、依赖构建与 CI、HTTP 与 HTTPS',            range: [17, 22] },
-  { key: '5',   no: '五', title: '第五阶段：应用开发',       desc: 'SQL 与数据库、前后端、Docker、部署与安全',           range: [23, 29] },
-  { key: '6',   no: '六', title: '第六阶段：AI 工程',        desc: 'AI 工程与 Agent、多模态、GPU 与图形音频',            range: [30, 39] },
-  { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [40, 42] },
-  { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [43, 43] },
-  { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [44, 99] },
+  { key: '1',   no: '一', title: '第一阶段：离开 OJ',         desc: '终端与 Shell、文件系统、权限、编辑器、数据格式、软件安装', range: [0, 9] },
+  { key: '2',   no: '二', title: '第二阶段：理解机器',       desc: '硬件、操作系统、内存与 I/O、系统管理、SSH 远程开发', range: [10, 14] },
+  { key: '3',   no: '三', title: '第三阶段：编程语言',       desc: '从竞赛 C++ 到工程 C++、Python 速通与科学计算栈',     range: [15, 18] },
+  { key: '4',   no: '四', title: '第四阶段：版本控制与网络', desc: 'Git/GitHub、依赖构建与 CI、HTTP 与 HTTPS',            range: [19, 24] },
+  { key: '5',   no: '五', title: '第五阶段：应用开发',       desc: 'SQL 与数据库、前后端、Docker、部署与安全',           range: [25, 32] },
+  { key: '6',   no: '六', title: '第六阶段：AI 工程',        desc: 'AI 工程与 Agent、多模态、GPU 与图形音频',            range: [33, 42] },
+  { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
+  { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
+  { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [47, 99] },
 ];
 
 function phaseOf(c) {
@@ -1108,17 +1108,17 @@ function phaseOf(c) {
     if (p === 'appendix') return 'app';
     if (PHASES.some(ph => ph.key === p)) return p;
   }
-  // 否则按章节编号区间推导（名称形如 "Ch0 …" / "Ch12 …" / "附录A …"）
+  // 否则按章节编号区间推导（名称形如 "Ch0 …" / "Ch14 …" / "附录A …"）
   const m = /^Ch(\d+)/.exec(c.name || '');
   if (m) {
     const n = parseInt(m[1], 10);
-    if (n <= 7) return '1';
-    if (n <= 12) return '2';
-    if (n <= 16) return '3';
-    if (n <= 22) return '4';
-    if (n <= 29) return '5';
-    if (n <= 39) return '6';
-    if (n <= 42) return 'opt';
+    if (n <= 9) return '1';
+    if (n <= 14) return '2';
+    if (n <= 18) return '3';
+    if (n <= 24) return '4';
+    if (n <= 32) return '5';
+    if (n <= 42) return '6';
+    if (n <= 45) return 'opt';
     return 'cap';
   }
   return 'app';
@@ -1140,7 +1140,7 @@ const isComplete = c => c.exists && c.status === 'complete';
 
 function phaseRangeText(ph, list) {
   if (ph.key === 'app') return '附录 A–K';
-  if (ph.key === 'cap') return 'Ch43';
+  if (ph.key === 'cap') return 'Ch46';
   const first = list[0], last = list[list.length - 1];
   if (!first) return '';
   const a = /^Ch(\d+)/.exec(first.name), b = /^Ch(\d+)/.exec(last.name);

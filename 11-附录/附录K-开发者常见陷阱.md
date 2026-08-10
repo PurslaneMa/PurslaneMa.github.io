@@ -31,17 +31,20 @@ float('nan') == float('nan')  # False——NaN 不等于任何东西，包括它
 # 检查 NaN 用 math.isnan(x)，不是 x == float('nan')
 ```
 
-### 安全随机数 vs 伪随机数
+### 熵与随机数
+
+**熵**（entropy）衡量"不可预测的程度"，单位是比特（bit）。一个结果的熵越高，猜测它就越难：`random.randint(1, 100)` 有 100 种可能结果，约 $\log_2 100 \approx 6.6$ 比特——足够做游戏（猜中也不损失什么），不够做安全。数量级参考：约 40 比特可以挡住在线暴力破解（逐次尝试且有速率限制），80 比特以上即使攻击者拿到数据离线慢慢算也基本不可行。
 
 ```python
 import random
-random.randint(1, 100)    # 伪随机——可以预测，适合游戏、模拟
+random.randint(1, 100)    # ≈ 6.6 比特——伪随机，适合游戏、模拟
 
 import secrets
 secrets.randbelow(100)     # 密码学安全随机——不可预测，适合 Token、密码重置链接
+secrets.token_hex(16)      # 16 字节 = 128 比特——适合生成 API Key、密码重置 Token
 ```
 
-永远不要用 `random` 生成密码重置 Token 或 API Key。
+为什么 `random` 不够：它是**伪随机**（pseudorandom）——给定种子（seed）后输出序列完全确定，而常用种子来自当前时间戳，对手猜中种子就能复现你"随机"生成的一切。安全场景必须用 `secrets`（Python）或 `/dev/urandom`（Linux）——它们从操作系统收集的熵池取数，无法从种子预测。永远不要用 `random` 生成密码重置 Token 或 API Key。
 
 ### 退出码范围
 
