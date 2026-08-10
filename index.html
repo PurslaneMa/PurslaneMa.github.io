@@ -1219,8 +1219,8 @@ function renderSidebar() {
     const list = groups.get(ph.key) || [];
     if (!list.length) return '';
     const done = list.filter(isComplete).length;
-    return `<div class="chapter-group" data-phase="${ph.key}">
-      <button type="button" class="group-head" aria-expanded="true">
+    return `<div class="chapter-group collapsed" data-phase="${ph.key}">
+      <button type="button" class="group-head" aria-expanded="false">
         <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 6l6 6-6 6"/>
         </svg>
@@ -1659,7 +1659,14 @@ function setActiveChapter(path) {
     else el.removeAttribute('aria-current');
   });
   const active = document.querySelector('.chapter-item.active');
-  if (active) active.scrollIntoView({ block: 'nearest' });
+  if (active) {
+    const group = active.closest('.chapter-group');
+    if (group) {
+      group.classList.remove('collapsed');
+      group.querySelector('.group-head')?.setAttribute('aria-expanded', 'true');
+    }
+    active.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 /* ── Mermaid：每个图显式渲染 ──
