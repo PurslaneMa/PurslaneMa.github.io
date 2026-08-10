@@ -1076,7 +1076,7 @@ let searchGen = 0;            // 搜索请求竞态守卫
 let searchTimer = null;
 let mermaidCounter = 0;
 let tocHeadings = [];         // 当前章节的 {el, id, level, text}
-const STATIC_MODE = true;
+const STATIC_MODE = !['127.0.0.1', 'localhost'].includes(window.location.hostname);
 let staticSearchIndex = null;
 
 const $ = id => document.getElementById(id);
@@ -1178,7 +1178,7 @@ async function fetchText(url) {
 async function init() {
   showLoading('正在加载章节目录…');
   try {
-    const res = await fetch('./chapters.json');
+    const res = await fetch(STATIC_MODE ? './chapters.json' : '/api/chapters');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     chapters = await res.json();
     renderSidebar();
@@ -1368,7 +1368,7 @@ async function loadChapter(path, opts) {
   showLoading('正在加载章节…');
 
   try {
-    const md = await fetchText('./' + path.split('/').map(encodeURIComponent).join('/'));
+    const md = await fetchText(STATIC_MODE ? './' + path.split('/').map(encodeURIComponent).join('/') : '/api/chapter?path=' + encodeURIComponent(path));
     if (gen !== chapterGen) return; // 已被更新的请求取代
     renderContent(md, path);
     if (window.innerWidth <= 860) closeSidebar();
