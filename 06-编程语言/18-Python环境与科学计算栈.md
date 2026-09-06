@@ -2,6 +2,10 @@
 
 > 你按教程装了 Python + Jupyter（交互式笔记本环境）+ NumPy（科学计算数组库），却在 `import numpy` 时报 `ModuleNotFoundError`。你在 Jupyter 里跑了一遍代码是正常的，关掉重开后跑到一半就报变量未定义。你在 conda（Python 环境管理器）里装的包，在终端里找不到——这些混乱的背后有一个共同的根源：Python 环境不是"一个 Python"，而是一个解释器 + 一组包的组合，你的系统里可能同时存在多个这样的组合且互不可见。
 
+> **开始前自检**：本章假设你已经会：□ 会写并运行 Python 脚本（第 17 章）；
+> □ 理解包管理器与依赖的概念（第 9 章）；
+> □ 遇到过 import 报错或装包装错环境的情况。
+
 ## $\rm \S \, 18.1$ Python 环境的三层结构
 
 回顾[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)的分层模型。Python 世界中：
@@ -295,28 +299,38 @@ print(f"NumPy: {time.time() - start:.2f}s")
 ## $\rm \S \, 18.8$ 关键概念回顾
 
 1. venv 的核心原理是什么？它修改了什么让 Shell 找到正确的 Python？
-> 创建一个独立的目录树，其中包含解释器和包的安装路径；激活时修改 PATH，让当前 Shell 优先找到 venv 内的 python 和 pip。
 
 2. `conda` 和 `venv + pip` 的区别在哪里？什么时候 conda 是更好的选择？
-> venv + pip 只隔离 Python 包；conda 还管理 Python 版本和非 Python 系统库（NumPy/SciPy 的 C/Fortran 依赖有预编译包）；做数据科学/AI、需要 CUDA/MKL 等系统级依赖时 conda 更好。
 
 3. Jupyter 的 hidden state 陷阱是什么？如何避免？
-> kernel 是持久进程，cell 之间共享内存：删除或重排 cell 后变量仍残留，执行顺序和显示顺序可能不一致；用 Kernel → Restart & Run All 按序无残留地执行。
 
 4. NumPy ndarray 和 Python list 在内存布局上有什么区别？为什么 ndarray 操作快很多？
-> list 是异构的 PyObject 指针数组；ndarray 是同质元素、连续内存，可直接被 C 代码批量操作（向量化），避免 Python 逐元素解释的开销，快几十到上百倍。
 
 5. NumPy 中什么情况下切片修改会影响原数组？
-> 默认切片返回 view——不复制数据、指向原数组内存，修改 view 的元素就修改了原数组；需要独立副本时用 `.copy()`。
 
 ## $\rm \S \, 18.9$ 应用与辨析
 
 6. `pip install` 失败并报 C 编译错误，可能的原因和解决方案是什么？
-> 该包没有匹配当前平台的预编译 wheel，pip 转而从源码构建；解决：安装编译工具链（Windows 装 VS Build Tools、Linux 装 build-essential），或用 conda 装预编译包、或查找 wheel。
 
 7. 在 Jupyter 里 `pip install numpy` 成功了，但终端里 `import numpy` 仍然报 ModuleNotFoundError，为什么？
-> Jupyter 的 kernel 是独立的 Python 进程，可能绑定到另一个解释器或虚拟环境——包装进了 kernel 的解释器，终端的解释器看不到；先用 `python -c "import sys; print(sys.executable)"` 确认两端是否同一个解释器，再把包装进目标解释器。
+
+## $\rm \S \, 18.10$ 本章自测答案
+
+> 先闭卷作答本章"关键概念回顾"与"应用与辨析"，再核对以下答案。
+
+### 自测答案 · 关键概念回顾
+1. 创建一个独立的目录树，其中包含解释器和包的安装路径；激活时修改 PATH，让当前 Shell 优先找到 venv 内的 python 和 pip。
+2. venv + pip 只隔离 Python 包；conda 还管理 Python 版本和非 Python 系统库（NumPy/SciPy 的 C/Fortran 依赖有预编译包）；做数据科学/AI、需要 CUDA/MKL 等系统级依赖时 conda 更好。
+3. kernel 是持久进程，cell 之间共享内存：删除或重排 cell 后变量仍残留，执行顺序和显示顺序可能不一致；用 Kernel → Restart & Run All 按序无残留地执行。
+4. list 是异构的 PyObject 指针数组；ndarray 是同质元素、连续内存，可直接被 C 代码批量操作（向量化），避免 Python 逐元素解释的开销，快几十到上百倍。
+5. 默认切片返回 view——不复制数据、指向原数组内存，修改 view 的元素就修改了原数组；需要独立副本时用 `.copy()`。
+
+### 自测答案 · 应用与辨析
+6. 该包没有匹配当前平台的预编译 wheel，pip 转而从源码构建；解决：安装编译工具链（Windows 装 VS Build Tools、Linux 装 build-essential），或用 conda 装预编译包、或查找 wheel。
+7. Jupyter 的 kernel 是独立的 Python 进程，可能绑定到另一个解释器或虚拟环境——包装进了 kernel 的解释器，终端的解释器看不到；先用 `python -c "import sys; print(sys.executable)"` 确认两端是否同一个解释器，再把包装进目标解释器。
 
 ---
 
 下一章（第 19 章）进入 Git——把你从"手动备份代码为 `main_v2_final_fixed.cpp`"的竞赛习惯，升级到能参与多人协作的版本控制。
+
+> 你现在能：用 venv/conda 创建隔离环境、正确安装与查看第三方包、运行 Jupyter 并解释 kernel 与解释器的关系，看懂 wheel 与源码编译的差别

@@ -4,6 +4,10 @@
 
 本章假设你已经会 Python，知道 NumPy 的基本操作（`np.array`、`reshape`、广播），并且理解梯度下降的直觉（沿着使误差减小的方向更新参数）。不需要提前会用 PyTorch。
 
+> **开始前自检**：本章假设你已经会：□ 会 Python 与 NumPy 基本操作（第 17、18 章）；
+> □ 理解梯度下降的直觉；
+> □ 了解 GPU 与显存概念（第 38 章）。
+
 ## $\rm \S \, 43.1$ Tensor：比 NumPy 多一个 `device` 和一个 `grad`
 
 ### $\rm \S \, 43.1.1$ 从 NumPy 到 Tensor
@@ -552,33 +556,43 @@ with torch.no_grad():
 ## $\rm \S \, 43.11$ 关键概念回顾
 
 1. Tensor 和 NumPy array 在 API 上几乎相同，关键区别是哪些？
-> `device`（可以放在 GPU 上）和 `requires_grad`（自动构建计算图并求梯度）。
 
 2. 训练循环的五步是什么？顺序可以换吗？
-> `zero_grad()` → `forward()` → `loss()` → `backward()` → `step()`。不能换序——每一轮必须先清零，backward 在 loss 之后，step 在 backward 之后。
 
 3. `model.train()` 和 `model.eval()` 有什么区别？
-> train 模式激活 Dropout 和 BatchNorm 的 batch 统计量更新；eval 模式关闭 Dropout、使用全局统计量。验证时忘记切换会导致结果不可靠。
 
 4. 完整的 checkpoint 除了 `model.state_dict()` 之外还要保存什么？
-> optimizer、scheduler、scaler 的状态，当前 epoch，随机种子（PyTorch + NumPy），以及训练配置。否则中断后无法精确恢复训练状态。
 
 5. 混合精度为什么不能直接用 FP16，需要 loss scaling？
-> FP16 的数值范围有限，小梯度值会在 FP16 中变为 0（下溢）。Loss scaling 把 loss 放大后再 backward，梯度也相应放大，回到 FP32 再缩小——梯度太小但还不为零的值因此得以保留。
 
 ---
 
 ## $\rm \S \, 43.12$ 应用与辨析
 
 1. 训练 loss 稳定下降但验证 loss 在第 5 个 epoch 后开始上升——可能的原因和解决方案？
-> 过拟合（overfitting）。增加数据增强、加 Dropout/weight decay、减少模型容量、或早停（early stopping）。先确认不是数据泄漏——验证集和训练集之间不能有重叠。
 
 2. `DataLoader` 的 `num_workers` 设置为多少合适？为什么不是越大越好？
-> 一般 2-8。太少→GPU 等数据；太多→CPU 内存和进程切换开销超过收益。最佳实践是从 4 开始调，观察 GPU 利用率——如果 GPU 经常空闲等数据就增加 worker。
 
 3. 什么情况下需要从头训练而不是微调预训练模型？
-> 数据量极大（百万级以上）且任务与任何公开预训练任务差异很大（如特定领域的传感器数据），或者你正在做模型架构研究而非应用开发。大多数日常场景中微调就够了。
+
+## $\rm \S \, 43.13$ 本章自测答案
+
+> 先闭卷作答本章"关键概念回顾"与"应用与辨析"，再核对以下答案。
+
+### 自测答案 · 关键概念回顾
+1. `device`（可以放在 GPU 上）和 `requires_grad`（自动构建计算图并求梯度）。
+2. `zero_grad()` → `forward()` → `loss()` → `backward()` → `step()`。不能换序——每一轮必须先清零，backward 在 loss 之后，step 在 backward 之后。
+3. train 模式激活 Dropout 和 BatchNorm 的 batch 统计量更新；eval 模式关闭 Dropout、使用全局统计量。验证时忘记切换会导致结果不可靠。
+4. optimizer、scheduler、scaler 的状态，当前 epoch，随机种子（PyTorch + NumPy），以及训练配置。否则中断后无法精确恢复训练状态。
+5. FP16 的数值范围有限，小梯度值会在 FP16 中变为 0（下溢）。Loss scaling 把 loss 放大后再 backward，梯度也相应放大，回到 FP32 再缩小——梯度太小但还不为零的值因此得以保留。
+
+### 自测答案 · 应用与辨析
+1. 过拟合（overfitting）。增加数据增强、加 Dropout/weight decay、减少模型容量、或早停（early stopping）。先确认不是数据泄漏——验证集和训练集之间不能有重叠。
+2. 一般 2-8。太少→GPU 等数据；太多→CPU 内存和进程切换开销超过收益。最佳实践是从 4 开始调，观察 GPU 利用率——如果 GPU 经常空闲等数据就增加 worker。
+3. 数据量极大（百万级以上）且任务与任何公开预训练任务差异很大（如特定领域的传感器数据），或者你正在做模型架构研究而非应用开发。大多数日常场景中微调就够了。
 
 ---
 
 单卡训练是起点。但当你的数据量大到一张卡放不下，或者你希望训练从 3 天缩短到 3 小时——你需要多张 GPU 同时工作。下一章讲多 GPU 与分布式训练。
+
+> 你现在能：手写一个最小训练循环，说清数据加载→前向→损失→反向→更新的顺序，解释 device/grad/checkpoint，并会监控一次训练的 loss

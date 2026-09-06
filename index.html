@@ -1141,8 +1141,10 @@ const isComplete = c => c.exists && c.status === 'complete';
 function phaseRangeText(ph, list) {
   if (ph.key === 'app') return '附录 A–K';
   if (ph.key === 'cap') return 'Ch46';
-  const first = list[0], last = list[list.length - 1];
-  if (!first) return '';
+  // 只统计编号章节（"Ch\d+ 名称"），复习总结章（如"复习 R1 …"）不参与区间文案
+  const numbered = list.filter(c => /^Ch\d+/.test(c.name));
+  const first = numbered[0], last = numbered[numbered.length - 1];
+  if (!first || !last) return '';
   const a = /^Ch(\d+)/.exec(first.name), b = /^Ch(\d+)/.exec(last.name);
   if (!a || !b) return '';
   return `Ch${a[1].padStart(2, '0')}–Ch${b[1].padStart(2, '0')}`;

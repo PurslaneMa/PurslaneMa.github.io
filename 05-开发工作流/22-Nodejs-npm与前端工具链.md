@@ -2,6 +2,10 @@
 
 > npm（Node.js 的包管理器，第 9 章提过）装了几百个包到 `node_modules/`。`npm run dev` 启动了开发服务器。但你敲下这些命令时——`npm install` 到底做了什么？`node_modules` 为什么这么大？`npm run dev` 为什么能跑起来？这一章回答这些问题。
 
+> **开始前自检**：本章假设你已经会：□ 理解运行时与包管理器的分层模型（第 9 章）；
+> □ 会读 package.json 之类的清单文件；
+> □ 在终端运行过命令。
+
 ## $\rm \S \, 22.1$ Node.js：浏览器之外的 JavaScript
 
 ### $\rm \S \, 22.1.1$ 同一个语言，不同的运行时
@@ -214,28 +218,38 @@ npm run build            # 生产构建，观察 dist/ 目录的输出
 ## $\rm \S \, 22.7$ 关键概念回顾
 
 1. Node.js 和浏览器中的 JavaScript 运行时有什么不同？
-> 语言相同，但可用的 API 不同：浏览器提供 DOM、window、fetch；Node.js 提供 fs（文件系统）、path、process、http，没有 DOM。
 
 2. `dependencies` 和 `devDependencies` 的区别是什么？
-> dependencies 是运行时需要、用户浏览器会加载的（如 React）；devDependencies 只在开发/构建时需要（Vite、ESLint、Prettier），不会出现在最终产物中。
 
 3. `npm run dev` 做了什么？
-> npm 在 package.json 的 scripts 中查找 "dev" 的值（如 "vite"），用 Shell 执行；它优先使用项目内 node_modules/.bin 的版本，并把 .bin 临时加入 PATH。
 
 4. Vite 的开发模式和生产构建分别做了什么？
-> 开发模式启动本地服务器（默认 localhost:5173），带 HMR 热更新和 /api 代理；生产构建把 TSX/SCSS 编译、打包、优化后输出到 dist/。
 
 5. TypeScript 的类型在编译后会发生什么？
-> 完全消失——interface 和类型标注编译为 JavaScript 后不产生任何运行时开销，类型只存在于开发期（编辑器补全和 CI 的 tsc --noEmit）。
 
 ## $\rm \S \, 22.8$ 应用与辨析
 
 1. `npm install` 和 `npm ci` 有什么区别？CI 环境中应该用哪个？
-> install 会按 manifest 更新依赖树；ci 严格按 package-lock.json 安装精确版本，并在安装前删除现有 node_modules/，保证每次结果一致——CI 环境用 npm ci。
 
 2. npm、pnpm、yarn 和 bun 怎么选？
-> npm 自带、生态最大但较慢；pnpm 用硬链接在磁盘上共享依赖、占用小且依赖声明更严格；yarn 提供 PnP 模式可以不用 node_modules；bun 是极快的全能运行时。选型的共同原则是选一套坚持用，不在同一项目中叠加多个包管理器。
+
+## $\rm \S \, 22.9$ 本章自测答案
+
+> 先闭卷作答本章"关键概念回顾"与"应用与辨析"，再核对以下答案。
+
+### 自测答案 · 关键概念回顾
+1. 语言相同，但可用的 API 不同：浏览器提供 DOM、window、fetch；Node.js 提供 fs（文件系统）、path、process、http，没有 DOM。
+2. dependencies 是运行时需要、用户浏览器会加载的（如 React）；devDependencies 只在开发/构建时需要（Vite、ESLint、Prettier），不会出现在最终产物中。
+3. npm 在 package.json 的 scripts 中查找 "dev" 的值（如 "vite"），用 Shell 执行；它优先使用项目内 node_modules/.bin 的版本，并把 .bin 临时加入 PATH。
+4. 开发模式启动本地服务器（默认 localhost:5173），带 HMR 热更新和 /api 代理；生产构建把 TSX/SCSS 编译、打包、优化后输出到 dist/。
+5. 完全消失——interface 和类型标注编译为 JavaScript 后不产生任何运行时开销，类型只存在于开发期（编辑器补全和 CI 的 tsc --noEmit）。
+
+### 自测答案 · 应用与辨析
+1. install 会按 manifest 更新依赖树；ci 严格按 package-lock.json 安装精确版本，并在安装前删除现有 node_modules/，保证每次结果一致——CI 环境用 npm ci。
+2. npm 自带、生态最大但较慢；pnpm 用硬链接在磁盘上共享依赖、占用小且依赖声明更严格；yarn 提供 PnP 模式可以不用 node_modules；bun 是极快的全能运行时。选型的共同原则是选一套坚持用，不在同一项目中叠加多个包管理器。
 
 ---
 
 有了前端工具链，你的论文管理器已经有了"壳"——但它还活在本地。浏览器里的搜索框只能搜本地假数据，JavaScript 发不出真正的 HTTP 请求。下一站是网络：你需要理解数据怎样从服务器穿越互联网到达浏览器，以及这中间每一层在做什么——从 IP 地址、TCP 连接、HTTP 协议，一直到域名解析和 HTTPS 加密。下一章[网络基础到 HTTP](../04-网络/23-网络基础到HTTP.md)就从 "两台计算机怎样找到彼此" 开始。
+
+> 你现在能：解释 Node.js 为何让 JavaScript 能离开浏览器，用 npm 安装/管理依赖，读懂 manifest 与 lockfile，运行 npm run 脚本

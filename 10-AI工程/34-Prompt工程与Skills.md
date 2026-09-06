@@ -2,6 +2,10 @@
 
 > 你在[上一章](33-AI工程概览.md)中学会了使用 AI 工具。但"使用"和"工程化"之间有质的区别：你发一句 prompt 得到一次回答，这叫使用；你设计了一套规则、模板和工作流，让 AI 持续稳定地产出高质量结果，这叫工程。本章教你从 prompt 到 skills 再到完整的 agent harness——用这套教材自身的编写系统作为贯穿案例。
 
+> **开始前自检**：本章假设你已经会：□ 调用过至少一次 LLM API（第 33 章）；
+> □ 理解上下文窗口与 token；
+> □ 会用本教材自身的 Harness（start-deepseek.ps1）或类似工具。
+
 ## $\rm \S \, 34.1$ Prompt 工程：不是"怎么问"，而是"问什么信息"
 
 ### $\rm \S \, 34.1.1$ 坏 prompt 和好 prompt 的结构差异
@@ -126,7 +130,7 @@ description: 代码审查当前分支的改动
 graph TD
     subgraph "Harness 层"
         A["CLAUDE.md<br/>角色 + 规则 + 工作流"]
-        B["settings.json<br/>模型选择 + API 密钥 + Hooks"]
+        B["settings.json + settings.local.json<br/>模型选择 + API 密钥 + Hooks"]
         C["Hook 脚本<br/>自动验证"]
         D["启动脚本<br/>start.ps1 / start.sh"]
     end
@@ -153,13 +157,13 @@ graph TD
 
 ```powershell
 # start-deepseek.ps1 的核心逻辑
-# 1. 从 settings.json 读取环境变量（API Key、模型名、base URL）
+# 1. 从 settings.json / settings.local.json 读取环境变量（API Key、模型名、base URL）
 # 2. 设置为当前进程的环境变量
 # 3. 进入项目目录
-# 4. 启动 Claude Code（由 settings.json 中的 env 配置决定用哪个模型）
+# 4. 启动 Claude Code（由 settings.json / settings.local.json 中的 env 配置决定用哪个模型）
 ```
 
-执行 `./start-deepseek.ps1` 就是在启动整个 Harness。参数全在 `settings.json` 中，启动脚本只做环境注入。
+执行 `./start-deepseek.ps1` 就是在启动整个 Harness。参数全在 `settings.json` / `settings.local.json` 中，启动脚本只做环境注入。
 
 模型分工：
 
@@ -172,7 +176,7 @@ graph TD
 1. **规则外置**：模型的行为规范写在 CLAUDE.md 和 Hook 脚本中——不在每次对话时口头重复。规则文件是 Harness 的唯一真相来源。
 2. **自动验证**：每次输出后自动检查。人可能忘记，脚本不会。
 3. **模型可替换**：修改 `settings.json` 中的一行，就可以从 DeepSeek 切换到 Claude 或任何兼容 Anthropic API 的模型。Harness 不绑定特定模型。
-4. **最小权限**：启动脚本只设置当前进程的环境变量，不修改系统配置。`settings.json` 中的 API Key 通过 `.gitignore` 排除——绝不提交到仓库。
+4. **最小权限**：启动脚本只设置当前进程的环境变量，不修改系统配置。真实 API Key 只放在被 `.gitignore` 排除的 `settings.local.json` 中——绝不提交到仓库；`settings.json` 是共享模板，不含密钥。
 5. **可复现**：任何人拿到这个项目，配置自己的 API Key，运行 `./start-deepseek.ps1 "续写第 X 章"`，就能在同样的约束下产出同样质量的续写。
 
 ### $\rm \S \, 34.3.4$ 构建你自己的 Harness
@@ -185,7 +189,7 @@ graph TD
 - 安全规则（"不要在代码中写 API key""新功能先写测试"）
 - 常用命令（构建、测试、部署）
 
-**第二步**：配置 `settings.json`：
+**第二步**：配置 `settings.json`（含密钥的本地覆盖放 `settings.local.json`）：
 ```json
 {
   "permissions": {
@@ -211,7 +215,6 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-sonnet-5}"
 claude "$@"
 ```
 
-> 运行前先设置环境变量：`export ANTHROPIC_AUTH_TOKEN=sk-...`（不在脚本中写死）
 
 **第四步**：测试——问 AI 一个它不该做的事（如"把 API key 写进代码"），观察 Hook 是否阻止。
 
@@ -402,30 +405,40 @@ description: 打印当前项目的信息
 ## $\rm \S \, 34.7$ 关键概念回顾
 
 1. 一个好的 prompt 至少包含哪些要素？
-> 角色、上下文、任务、约束、示例（few-shot）、输出格式、验证——按任务选择深度，其中上下文和任务几乎总是需要。
 
 2. 什么是结构化输出？它和"在 prompt 里说请返回 JSON"有什么不同？
-> 结构化输出用 JSON Schema 等机制（如 tool_use）约束模型必须按格式返回，可被程序直接验证和消费；prompt 里说"请返回 JSON"只是请求，模型不保证遵守。
 
 3. Claude Code Skill 的最小结构是什么？frontmatter 里需要哪些字段？
-> 一个放在 .claude/skills/ 下的 Markdown 文件：frontmatter 的 name（命令名）和 description（用途描述），正文写执行步骤。
 
 4. Harness 的五个设计原则是什么？
-> 规则外置、自动验证、模型可替换、最小权限、可复现。
 
 5. 什么类型的任务适合单次 prompt？什么类型的任务需要 Agent 循环？
-> 理解、解释和简单生成适合单次 prompt；需要"搜索→观察→修改→验证"反复迭代的复杂多步骤任务（如重构整个项目的错误处理）需要 Agent 循环。
 
 ## $\rm \S \, 34.8$ 应用与辨析
 
 6. 为什么"魔法咒语"在 prompt 工程中是无用的？
-> prompt 不改变模型的能力本身，只改变问题描述的质量：堆砌"世界级、顶尖"等修饰词不能提升准确性，还可能增加自我参考偏差——信息完备性才是关键。
 
 7. Skill 和 Hook 有什么区别？各自在什么场景下使用？
-> Skill 是用户或模型主动调用的预定义指令（如 `/review`），适合"按需执行"的任务；Hook 由事件自动触发（如每次 Write/Edit 后运行检查脚本），适合"必须保证执行"的任务——人可能忘记，脚本不会。
+
+## $\rm \S \, 34.9$ 本章自测答案
+
+> 先闭卷作答本章"关键概念回顾"与"应用与辨析"，再核对以下答案。
+
+### 自测答案 · 关键概念回顾
+1. 角色、上下文、任务、约束、示例（few-shot）、输出格式、验证——按任务选择深度，其中上下文和任务几乎总是需要。
+2. 结构化输出用 JSON Schema 等机制（如 tool_use）约束模型必须按格式返回，可被程序直接验证和消费；prompt 里说"请返回 JSON"只是请求，模型不保证遵守。
+3. 一个放在 .claude/skills/ 下的 Markdown 文件：frontmatter 的 name（命令名）和 description（用途描述），正文写执行步骤。
+4. 规则外置、自动验证、模型可替换、最小权限、可复现。
+5. 理解、解释和简单生成适合单次 prompt；需要"搜索→观察→修改→验证"反复迭代的复杂多步骤任务（如重构整个项目的错误处理）需要 Agent 循环。
+
+### 自测答案 · 应用与辨析
+6. prompt 不改变模型的能力本身，只改变问题描述的质量：堆砌"世界级、顶尖"等修饰词不能提升准确性，还可能增加自我参考偏差——信息完备性才是关键。
+7. Skill 是用户或模型主动调用的预定义指令（如 `/review`），适合"按需执行"的任务；Hook 由事件自动触发（如每次 Write/Edit 后运行检查脚本），适合"必须保证执行"的任务——人可能忘记，脚本不会。
 
 ---
 
 AI Engineering 的本质不是学会了某个工具，而是建立了一种**与 AI 协作的系统思维**——你知道怎样描述需求、怎样设计约束、怎样验证输出、怎样把单次交互扩展为可复用的工程流程。这套教材本身，就是用这种思维构建的产物。
 
 到目前为止，输入和输出都还是文字。但 AI 能处理的远不止文本——你发给它一张截图问报错，它看得懂；你给它一句歌词，它谱成曲。下一章展开多模态 AI 与生成式模型：图像、音频、视频怎样进入模型，扩散模型怎样"画"出图片。
+
+> 你现在能：写一个结构化 prompt，说明 Skill 与 Hook 的机制差别，复述 Harness 的五条设计原则，并能给一个小项目配上最小 Harness
