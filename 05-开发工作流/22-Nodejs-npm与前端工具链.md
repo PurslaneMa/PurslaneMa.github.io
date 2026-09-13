@@ -2,9 +2,11 @@
 
 > npm（Node.js 的包管理器，第 9 章提过）装了几百个包到 `node_modules/`。`npm run dev` 启动了开发服务器。但你敲下这些命令时——`npm install` 到底做了什么？`node_modules` 为什么这么大？`npm run dev` 为什么能跑起来？这一章回答这些问题。
 
-> **开始前自检**：本章假设你已经会：□ 理解运行时与包管理器的分层模型（第 9 章）；
-> □ 会读 package.json 之类的清单文件；
-> □ 在终端运行过命令。
+> **开始前自检**：本章假设你已经会：
+>
+> - □ 理解运行时与包管理器的分层模型（第 9 章）
+> - □ 会读 package.json 之类的清单文件
+> - □ 在终端运行过命令
 
 ## $\rm \S \, 22.1$ Node.js：浏览器之外的 JavaScript
 
@@ -18,7 +20,7 @@ JavaScript 最初只能在浏览器中运行——按 `F12` 打开开发者工�
 - 浏览器有 `document`、`window`、`fetch`、DOM API。
 - Node.js 有 `fs`（文件系统）、`path`、`http`、`process`、没有 DOM。
 
-这和[编程语言范式概览](../06-编程语言/16-编程语言范式概览.md)中讲的"同一种语言在不同运行时中可用的能力可能不同"是同一个道理——JavaScript 本身相同，但"能做什么"取决于运行时提供了什么 API。
+这和[编程语言范式概览](../06-编程语言/16-编程语言范式概览.md)中讲的“同一种语言在不同运行时中可用的能力可能不同”是同一个道理——JavaScript 本身相同，但“能做什么”取决于运行时提供了什么 API。
 
 ### $\rm \S \, 22.1.2$ Node.js 的三大用途
 
@@ -36,7 +38,7 @@ JavaScript 最初只能在浏览器中运行——按 `F12` 打开开发者工�
 
 ---
 
-## $\rm \S \, 22.2$ npm：不止是"装包的"
+## $\rm \S \, 22.2$ npm：不止是“装包的”
 
 ### $\rm \S \, 22.2.1$ npm 的三个身份
 
@@ -46,7 +48,7 @@ JavaScript 最初只能在浏览器中运行——按 `F12` 打开开发者工�
 2. **命令行客户端**：终端中的 `npm` 命令，随 Node.js 一起安装。
 3. **包管理生态**：`package.json`、lockfile、`node_modules/` 的约定。
 
-这三者在[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)的六层模型中，分别对应"远程包源""包管理器客户端"和"依赖记录文件"——和 Python 的 PyPI/pip/requirements.txt 是同一个结构。
+这三者在[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)的六层模型中，分别对应“远程包源”“包管理器客户端”和“依赖记录文件”——和 Python 的 PyPI/pip/requirements.txt 是同一个结构。
 
 ### $\rm \S \, 22.2.2$ `package.json`：不只是依赖清单
 
@@ -99,7 +101,7 @@ Python 的 `requirements.txt` 没有这个区分（`pip install` 的 `--dev` 依
 
 ## $\rm \S \, 22.3$ 前端构建工具链：从源码到浏览器可执行的产物
 
-### $\rm \S \, 22.3.1$ 为什么前端需要"构建"
+### $\rm \S \, 22.3.1$ 为什么前端需要“构建”
 
 在 OJ 上，你的 C++ 代码编译成可执行文件后就完成了。前端比这复杂——浏览器需要的是 HTML、CSS 和 JavaScript 文件，但你写代码的方式和浏览器最终消费的方式之间隔了若干层：
 
@@ -111,7 +113,7 @@ flowchart LR
     G["开发服务器<br/>（HMR 热更新）"] --> H["浏览器预览"]
 ```
 
-**Vite**（vitejs.dev，法语"快"）是当前最主流的前端构建工具。它做了三件事：
+**Vite**（vitejs.dev，法语“快”）是当前最主流的前端构建工具。它做了三件事：
 
 1. **开发模式**：启动一个本地 HTTP 服务器（默认 `localhost:5173`），在你修改代码时自动刷新浏览器（HMR——Hot Module Replacement，连刷新都不用，只替换改动的模块）。
 2. **构建模式**：把 JSX/TSX/Vue 文件编译为浏览器能理解的 JS，把 SCSS/Tailwind 编译为 CSS，把所有模块打包优化，输出到 `dist/` 目录。
@@ -155,7 +157,7 @@ function getRecentPapers(papers: Paper[], cutoff: number): Paper[] {
 
 这段代码在编译为 JavaScript 后，`interface`、`string`、`number` 全部消失——运行时只是普通的 `filter`。类型只在**开发时**存在——编辑器靠它们做自动补全和错误提示，CI 靠 `tsc --noEmit` 检查整个项目没有类型错误。
 
-TypeScript 之于 JavaScript，类似于[编程语言范式概览](../06-编程语言/16-编程语言范式概览.md)中讨论的"类型标注之于 Python"——是可选的、不改变运行时行为、但大幅提升可维护性和重构安全性。
+TypeScript 之于 JavaScript，类似于[编程语言范式概览](../06-编程语言/16-编程语言范式概览.md)中讨论的“类型标注之于 Python”——是可选的、不改变运行时行为、但大幅提升可维护性和重构安全性。
 
 ---
 
@@ -235,12 +237,12 @@ npm run build            # 生产构建，观察 dist/ 目录的输出
 
 ## $\rm \S \, 22.9$ 本章自测答案
 
-> 先闭卷作答本章"关键概念回顾"与"应用与辨析"，再核对以下答案。
+> 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
 ### 自测答案 · 关键概念回顾
 1. 语言相同，但可用的 API 不同：浏览器提供 DOM、window、fetch；Node.js 提供 fs（文件系统）、path、process、http，没有 DOM。
 2. dependencies 是运行时需要、用户浏览器会加载的（如 React）；devDependencies 只在开发/构建时需要（Vite、ESLint、Prettier），不会出现在最终产物中。
-3. npm 在 package.json 的 scripts 中查找 "dev" 的值（如 "vite"），用 Shell 执行；它优先使用项目内 node_modules/.bin 的版本，并把 .bin 临时加入 PATH。
+3. npm 在 package.json 的 scripts 中查找 “dev” 的值（如 “vite”），用 Shell 执行；它优先使用项目内 node_modules/.bin 的版本，并把 .bin 临时加入 PATH。
 4. 开发模式启动本地服务器（默认 localhost:5173），带 HMR 热更新和 /api 代理；生产构建把 TSX/SCSS 编译、打包、优化后输出到 dist/。
 5. 完全消失——interface 和类型标注编译为 JavaScript 后不产生任何运行时开销，类型只存在于开发期（编辑器补全和 CI 的 tsc --noEmit）。
 
@@ -250,6 +252,6 @@ npm run build            # 生产构建，观察 dist/ 目录的输出
 
 ---
 
-有了前端工具链，你的论文管理器已经有了"壳"——但它还活在本地。浏览器里的搜索框只能搜本地假数据，JavaScript 发不出真正的 HTTP 请求。下一站是网络：你需要理解数据怎样从服务器穿越互联网到达浏览器，以及这中间每一层在做什么——从 IP 地址、TCP 连接、HTTP 协议，一直到域名解析和 HTTPS 加密。下一章[网络基础到 HTTP](../04-网络/23-网络基础到HTTP.md)就从 "两台计算机怎样找到彼此" 开始。
+有了前端工具链，你的论文管理器已经有了“壳”——但它还活在本地。浏览器里的搜索框只能搜本地假数据，JavaScript 发不出真正的 HTTP 请求。下一站是网络：你需要理解数据怎样从服务器穿越互联网到达浏览器，以及这中间每一层在做什么——从 IP 地址、TCP 连接、HTTP 协议，一直到域名解析和 HTTPS 加密。下一章[网络基础到 HTTP](../04-网络/23-网络基础到HTTP.md)就从 “两台计算机怎样找到彼此” 开始。
 
 > 你现在能：解释 Node.js 为何让 JavaScript 能离开浏览器，用 npm 安装/管理依赖，读懂 manifest 与 lockfile，运行 npm run 脚本

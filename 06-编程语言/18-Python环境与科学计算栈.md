@@ -1,10 +1,12 @@
 # $\rm Chapter \, 18$ Python 环境、Notebook 与科学计算栈
 
-> 你按教程装了 Python + Jupyter（交互式笔记本环境）+ NumPy（科学计算数组库），却在 `import numpy` 时报 `ModuleNotFoundError`。你在 Jupyter 里跑了一遍代码是正常的，关掉重开后跑到一半就报变量未定义。你在 conda（Python 环境管理器）里装的包，在终端里找不到——这些混乱的背后有一个共同的根源：Python 环境不是"一个 Python"，而是一个解释器 + 一组包的组合，你的系统里可能同时存在多个这样的组合且互不可见。
+> 你按教程装了 Python + Jupyter（交互式笔记本环境）+ NumPy（科学计算数组库），却在 `import numpy` 时报 `ModuleNotFoundError`。你在 Jupyter 里跑了一遍代码是正常的，关掉重开后跑到一半就报变量未定义。你在 conda（Python 环境管理器）里装的包，在终端里找不到——这些混乱的背后有一个共同的根源：Python 环境不是“一个 Python”，而是一个解释器 + 一组包的组合，你的系统里可能同时存在多个这样的组合且互不可见。
 
-> **开始前自检**：本章假设你已经会：□ 会写并运行 Python 脚本（第 17 章）；
-> □ 理解包管理器与依赖的概念（第 9 章）；
-> □ 遇到过 import 报错或装包装错环境的情况。
+> **开始前自检**：本章假设你已经会：
+>
+> - □ 会写并运行 Python 脚本（第 17 章）
+> - □ 理解包管理器与依赖的概念（第 9 章）
+> - □ 遇到过 import 报错或装包装错环境的情况
 
 ## $\rm \S \, 18.1$ Python 环境的三层结构
 
@@ -16,7 +18,7 @@
 | 包管理器 | `pip` / `uv` / `conda` | 安装、升级、卸载第三方库 |
 | 环境管理器 | `venv` / `virtualenv` / `conda` / `uv` | 隔离不同项目的解释器+包组合 |
 
-### $\rm \S \, 18.1.1$ 为什么"系统里装了一个 Python"不够
+### $\rm \S \, 18.1.1$ 为什么“系统里装了一个 Python”不够
 
 你在系统层面装了一个 Python（比如通过 `apt install python3` 或官网安装包）：
 
@@ -29,7 +31,7 @@ python3 -m pip list  # 只有标准库 + 你全局装过的少量包
 
 然后你装了一个 IDE（如 PyCharm 或 VS Code）。IDE 可能自动创建了一个虚拟环境，或者指向了它自带的 Python。你在 IDE 里 `pip install numpy`——它装到了 IDE 的虚拟环境中。终端里的系统 Python 仍然看不到 `numpy`。
 
-**这就是"安装了但 import 不到"的根源**：你安装到的环境和运行代码的环境不是同一个。
+**这就是“安装了但 import 不到”的根源**：你安装到的环境和运行代码的环境不是同一个。
 
 ### $\rm \S \, 18.1.2$ 环境管理工具的对比
 
@@ -67,7 +69,7 @@ conda install numpy pandas jupyter
 
 ## $\rm \S \, 18.2$ Jupyter Notebook：一个状态化的 Python 环境
 
-### $\rm \S \, 18.2.1$ Jupyter 不是"浏览器里的文本编辑器"
+### $\rm \S \, 18.2.1$ Jupyter 不是“浏览器里的文本编辑器”
 
 Jupyter 的每个 **cell** 是发送到同一个 kernel（Python 进程）的代码片段。Cell 之间共享内存空间：
 
@@ -193,7 +195,7 @@ df.to_csv("papers_clean.csv", index=False)         # 导出 CSV
 | **Matplotlib**（matplotlib.org） | 底层绘图库——一切绘图库的基础。API 冗长但绝对灵活 |
 | **seaborn**（seaborn.pydata.org） | 基于 Matplotlib，一行统计绘图 |
 | **Plotly**（plotly.com） | 交互式图表（可缩放、悬停提示），Dash 框架用于仪表板 |
-| **Altair**（altair-viz.github.io） | 声明式语法（描述"数据到图形的映射"），简洁优雅 |
+| **Altair**（altair-viz.github.io） | 声明式语法（描述“数据到图形的映射”），简洁优雅 |
 
 ### $\rm \S \, 18.4.3$ 机器学习和深度学习
 
@@ -291,7 +293,7 @@ print(f"NumPy: {time.time() - start:.2f}s")
 - Python 环境 = 解释器可执行文件 + 一组包的安装路径。系统中可能有多个这样的组合。`python -c "import sys; print(sys.executable)"` 告诉你当前到底在用哪个。
 - venv 是最简单的隔离方案。conda 额外管理非 Python 系统库（如 CUDA、MKL）。不要叠加使用多个环境管理器。
 - Jupyter 的 kernel 是持久进程——cell 之间共享状态。重启 kernel 再运行是消除陷阱的最简方法。
-- NumPy 的 ndarray 是连续内存中的同质数组——可以理解为"Python 能直接调用的 C 数组"。切片默认是 view。向量化操作比 Python 循环快几十倍。
+- NumPy 的 ndarray 是连续内存中的同质数组——可以理解为“Python 能直接调用的 C 数组”。切片默认是 view。向量化操作比 Python 循环快几十倍。
 - 科学计算栈分工明确：NumPy 做数值、pandas/Polars 做表格、Matplotlib/seaborn/plotly 做图形、scikit-learn/PyTorch/JAX 做模型。
 
 ---
@@ -316,7 +318,7 @@ print(f"NumPy: {time.time() - start:.2f}s")
 
 ## $\rm \S \, 18.10$ 本章自测答案
 
-> 先闭卷作答本章"关键概念回顾"与"应用与辨析"，再核对以下答案。
+> 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
 ### 自测答案 · 关键概念回顾
 1. 创建一个独立的目录树，其中包含解释器和包的安装路径；激活时修改 PATH，让当前 Shell 优先找到 venv 内的 python 和 pip。
@@ -331,6 +333,6 @@ print(f"NumPy: {time.time() - start:.2f}s")
 
 ---
 
-下一章（第 19 章）进入 Git——把你从"手动备份代码为 `main_v2_final_fixed.cpp`"的竞赛习惯，升级到能参与多人协作的版本控制。
+下一章（第 19 章）进入 Git——把你从“手动备份代码为 `main_v2_final_fixed.cpp`”的竞赛习惯，升级到能参与多人协作的版本控制。
 
 > 你现在能：用 venv/conda 创建隔离环境、正确安装与查看第三方包、运行 Jupyter 并解释 kernel 与解释器的关系，看懂 wheel 与源码编译的差别
