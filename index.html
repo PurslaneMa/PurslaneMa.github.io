@@ -44,6 +44,9 @@
   --mark-bg: rgba(250, 204, 21, 0.30);
   --hover-bg: #22304e;
   --hover-rgb: 34, 48, 78;
+  --h3-color: #93bbfd;
+  --quote-text: #bfdbfe;
+  --details-bg: rgba(30, 41, 59, 0.4);
   --danger: #fb7185;
   --ok: #34d399;
   --glow: rgba(99, 102, 241, 0.35);
@@ -679,7 +682,7 @@ kbd {
 }
 #content h3 {
   font-size: 1.1rem;
-  color: #93bbfd;
+  color: var(--h3-color);
   margin: 1.6rem 0 0.6rem;
   scroll-margin-top: 90px;
 }
@@ -703,7 +706,7 @@ kbd {
   border-radius: 0 8px 8px 0;
   margin: 1.1rem 0;
   padding: 0.7rem 1.1rem;
-  color: #bfdbfe;
+  color: var(--quote-text);
 }
 #content blockquote p { margin: 0.35rem 0; }
 #content blockquote p:first-child { margin-top: 0; }
@@ -781,7 +784,7 @@ kbd {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.6rem 1rem;
-  background: rgba(30, 41, 59, 0.4);
+  background: var(--details-bg);
 }
 #content summary { cursor: pointer; color: var(--heading); font-weight: 500; }
 
@@ -975,6 +978,9 @@ html[data-theme="light"] {
   --mark-bg: rgba(250, 204, 21, 0.5);
   --hover-bg: #eaeefa;
   --hover-rgb: 234, 238, 250;
+  --h3-color: #3d4fbf;
+  --quote-text: #2b3a5c;
+  --details-bg: rgba(15, 23, 42, 0.035);
   --danger: #dc2626;
   --ok: #047857;
   --glow: rgba(79, 70, 229, 0.18);
@@ -986,7 +992,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c3cadd; }
 html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #a8b1cb; }
 /* 代码块在浅色主题下保持深色：与 highlight.js github-dark 主题一致，避免半深半浅 */
 html[data-theme="light"] #content pre { background: #0d1524; border-color: #22304e; }
-html[data-theme="light"] #content code { background: #eef1f9; color: #3730a3; border-color: #dde2f0; }
+html[data-theme="light"] #content :not(pre) > code { background: #eef1f9; color: #3730a3; border-color: #dde2f0; }
 html[data-theme="light"] .badge-core { color: #3730a3; background: rgba(79, 70, 229, 0.10); border-color: rgba(79, 70, 229, 0.25); }
 html[data-theme="light"] .badge-rec { color: #92400e; background: rgba(217, 119, 6, 0.10); border-color: rgba(217, 119, 6, 0.25); }
 html[data-theme="light"] .badge-opt { color: #475569; background: rgba(100, 116, 139, 0.10); border-color: rgba(100, 116, 139, 0.22); }
