@@ -14,6 +14,9 @@
 <meta name="theme-color" content="#0a0f1f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
 <meta name="author" content="Purslane">
+<!-- 首屏依赖 CDN 上的 marked / KaTeX / highlight.js，提前建连省一轮往返 -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <meta name="keywords" content="算法竞赛,OI,计算机基础,终端,Linux,操作系统,Git,GitHub,数据库,Docker,部署,AI 工程,速通笔记">
 <meta name="apple-mobile-web-app-title" content="速通笔记">
 <link rel="canonical" href="https://purslanema.github.io/">
@@ -48,12 +51,11 @@
 </script>
 
 <!-- CDN libraries: marked (markdown), KaTeX (math), highlight.js (code), mermaid (diagrams) -->
-<script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/styles/github-dark.min.css">
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/highlight.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9/build/highlight.min.js"></script>
 
 <style>
 /* ══════════════ 基础与变量 ══════════════ */
@@ -1673,7 +1675,15 @@ let searchTimer = null;
 let mermaidCounter = 0;
 let tocHeadings = [];         // 当前章节的 {el, id, level, text}
 const STATIC_MODE = !['127.0.0.1', 'localhost'].includes(window.location.hostname);
-let staticSearchIndex = null;
+// 静态模式（GitHub Pages）没有后端：搜索数据是构建期产出的
+// search-manifest.json（轻量目录）+ search/<n>.json（按章正文分片）。
+let searchManifest = null;                                    // 首次搜索时拉一次，之后常驻内存
+const shardCache = Object.create(null);                       // 分片序号 → Promise，兼作去重锁
+const STATIC_SHARD_COUNT = 8;                                 // 与 build-pages.py 的 SHARD_COUNT 对齐
+const STATIC_RESULT_LIMIT = 40;                               // 结果上限，与 /api/search 一致
+const STATIC_ENOUGH = 30;    // 前两片扫完攒到这个数就认为够用；
+                              // 低于它则继续拉余下分片，避免长尾词召回不全
+const STATIC_MAX_SHARDS = 99;  // 渐进扫描的上限（实际受 STATIC_SHARD_COUNT 约束，即扫完为止）
 
 const $ = id => document.getElementById(id);
 const TRACK_LABEL = { core: '核心', recommended: '建议', optional: '选读' };
@@ -1760,6 +1770,29 @@ const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function cdnReady() {
   return typeof marked !== 'undefined' && typeof marked.parse === 'function'
       && typeof katex !== 'undefined' && typeof hljs !== 'undefined';
+}
+
+// Mermaid 体积近 1 MB，而全书只有部分章节含图：首次遇到 .mermaid 节点时
+// 才拉取并初始化，既不影响首屏，也不会让无图章白下这份依赖。
+let mermaidLoader = null;
+function ensureMermaid() {
+  if (mermaidReady()) return Promise.resolve(true);
+  if (!mermaidLoader) {
+    mermaidLoader = new Promise(resolve => {
+      const el = document.createElement('script');
+      el.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+      el.async = true;
+      el.onload = () => {
+        try {
+          if (mermaidReady()) mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+          resolve(mermaidReady());
+        } catch (e) { resolve(false); }
+      };
+      el.onerror = () => { mermaidLoader = null; resolve(false); };
+      document.head.appendChild(el);
+    });
+  }
+  return mermaidLoader;
 }
 
 function mermaidReady() {
@@ -2356,8 +2389,11 @@ async function renderMermaid(container) {
   if (!nodes.length) return;
 
   if (!mermaidReady()) {
-    nodes.forEach(n => failMermaid(n, 'Mermaid CDN 未加载'));
-    return;
+    const ok = await ensureMermaid();
+    if (!ok) {
+      nodes.forEach(n => failMermaid(n, 'Mermaid 组件加载失败（检查网络后刷新重试）'));
+      return;
+    }
   }
 
   for (const node of nodes) {
@@ -2514,32 +2550,150 @@ const resultsEl = $('search-results');
 const statusEl = $('search-status');
 let searchResultsData = [];
 
-async function searchStatic(q) {
-  if (!staticSearchIndex) {
-    const res = await fetch('./search-index.json');
-    if (!res.ok) throw new Error('搜索索引加载失败（HTTP ' + res.status + '）');
-    staticSearchIndex = await res.json();
+// 一次搜索的调度状态：进度文案与早停提示都要知道「扫到哪了」
+let searchProgress = null;
+
+async function loadSearchManifest() {
+  if (searchManifest) return searchManifest;
+  const res = await fetch('./search-manifest.json');
+  if (!res.ok) throw new Error('搜索目录加载失败（HTTP ' + res.status + '）');
+  searchManifest = await res.json();
+  return searchManifest;
+}
+
+// 分片按需加载并缓存。缓存里存的是 Promise 而不是结果：并发搜索/渐进加载
+// 同一片时只有第一次真的发请求，后续拿到同一个 Promise。
+function loadShard(i) {
+  if (!shardCache[i]) {
+    shardCache[i] = fetch('./search/' + i + '.json')
+      .then(res => {
+        if (!res.ok) throw new Error('搜索分片加载失败（HTTP ' + res.status + '）');
+        return res.json();
+      })
+      .catch(err => { delete shardCache[i]; throw err; });  // 失败不缓存，下次还能重试
   }
+  return shardCache[i];
+}
+
+// 把正文里的关键词命中转成结果条目。切片范围 [from, to) 只覆盖容器（章或节）自身的
+// 正文，这样留白处的上下文不会串到相邻标题上，和逐章扫描的旧行为一致。
+function collectStaticHits(doc, from, to, needle, q, results) {
+  const content = doc.content || '';
+  const lower = content.toLocaleLowerCase();
+  let at = lower.indexOf(needle, from);
+  while (at >= 0 && at < to && results.length < STATIC_RESULT_LIMIT) {
+    const before = content.slice(0, at);
+    // 只认「行内没有其他 #」的标题行：代码块里以 # 开头的 Shell/C 注释（如
+    // `# 安装依赖`）不是小节名，混进来会显示成假的小节标题。与 build-pages.py
+    // 跳过围栏的效果一致，但这里用一次正则扫描完成，不必维护围栏状态机。
+    const headings = before.match(/^#{1,4}\s+[^#\n].*$/gm);
+    const section = headings ? headings[headings.length - 1].replace(/^#+\s*/, '').trim() : '章首';
+    // 保留原始换行交给 cleanSearchText 处理（行首标记要在压平空白之前才认得出）
+    const snippet = content.slice(Math.max(0, at - 80), Math.min(content.length, at + q.length + 80));
+    results.push({
+      chapter: doc.chapter,
+      path: doc.path,
+      section: section.slice(0, 60),
+      line: before.split('\n').length,
+      snippet,
+      score: snippet.toLocaleLowerCase().split(needle).length - 1,
+    });
+    at = lower.indexOf(needle, at + Math.max(1, q.length));
+  }
+}
+
+// 标题命中（manifest 的 sections）：标题权重最高，因此直接作为结果返回，
+// 不必下载任何正文。行号用 manifest 里的 n，点击即跳到该小节。
+function staticTitleHits(q, results) {
   const needle = q.toLocaleLowerCase();
-  const results = [];
-  for (const doc of staticSearchIndex) {
-    const content = doc.content || '';
-    const lower = content.toLocaleLowerCase();
-    let from = 0;
-    while (results.length < 40) {
-      const at = lower.indexOf(needle, from);
-      if (at < 0) break;
-      const before = content.slice(0, at);
-      const headings = before.match(/^#{1,4}\s+.+$/gm);
-      const section = headings ? headings[headings.length - 1].replace(/^#+\s*/, '').trim() : '章首';
-      // 保留原始换行交给 cleanSearchText 处理（行首标记要在压平空白之前才认得出）
-      const snippet = content.slice(Math.max(0, at - 80), Math.min(content.length, at + q.length + 80));
-      results.push({ chapter: doc.chapter, path: doc.path, section: section.slice(0, 60), line: before.split('\n').length, snippet, score: snippet.toLocaleLowerCase().split(needle).length - 1 });
-      from = at + Math.max(1, q.length);
+  const titleResults = [];
+  for (const chap of searchManifest.chapters) {
+    // sections 是 [标题, 行号] 紧凑数组（见 build-pages.py 的体积取舍）
+    for (const s of chap.sections || []) {
+      if (s[0].toLocaleLowerCase().includes(needle)) {
+        titleResults.push({
+          chapter: chap.chapter,
+          path: chap.path,
+          section: s[0],
+          line: s[1],
+          snippet: '标题匹配：' + s[0],
+          score: 100,
+          _title: true,
+        });
+      }
     }
-    if (results.length >= 40) break;
   }
-  return results.sort((a, b) => b.score - a.score).slice(0, 40);
+  return titleResults.concat(results);
+}
+
+// 分片排序：manifest 的 terms 是每片的正文术语表（{词: 出现次数}），
+// 命中次数越多说明该片越可能含有这个关键词；标题命中额外加权。
+function rankShardsByManifest(q) {
+  const needle = q.toLocaleLowerCase();
+  const weight = new Array(STATIC_SHARD_COUNT).fill(0);
+  for (let i = 0; i < STATIC_SHARD_COUNT; i++) {
+    const table = searchManifest.terms && searchManifest.terms[i];
+    if (table && table[needle]) weight[i] += table[needle];
+  }
+  for (const chap of searchManifest.chapters) {
+    const k = chap.shard;
+    if (typeof k !== 'number' || k < 0 || k >= STATIC_SHARD_COUNT) continue;
+    if (chap.chapter.toLocaleLowerCase().includes(needle)) weight[k] += 5;
+    for (const s of chap.sections || []) {
+      if (s[0].toLocaleLowerCase().includes(needle)) weight[k] += 10;
+    }
+  }
+  // 得分高者优先；全 0（关键词只在正文低频出现）时保持 0,1,… 的自然顺序
+  return weight.map((w, i) => ({ i, w }))
+    .sort((a, b) => b.w - a.w || a.i - b.i)
+    .map(x => x.i);
+}
+
+async function searchStatic(q) {
+  await loadSearchManifest();
+  const needle = q.toLocaleLowerCase();
+  const manifest = searchManifest;
+  const pathToIndex = Object.create(null);
+  manifest.chapters.forEach((c, i) => { pathToIndex[c.path] = i; });
+
+  // ① 元数据（标题）匹配：零正文下载就能出结果
+  let results = staticTitleHits(q, []);
+
+  // ② 正文匹配：先只碰最可能的 2 片
+  const order = rankShardsByManifest(q);
+  const preferred = order.slice(0, 2);
+  for (const i of preferred) {
+    if (results.length >= STATIC_RESULT_LIMIT) break;
+    const shard = await loadShard(i);
+    for (const doc of shard) collectStaticHits(doc, 0, (doc.content || '').length, needle, q, results);
+  }
+  if (searchProgress) searchProgress.scanned = preferred.length;
+
+  // ③ 渐进加载：不足 8 条才继续，一次一片，边拉边把新结果并进列表
+  if (results.length < STATIC_ENOUGH) {
+    for (const i of order.slice(2, 2 + STATIC_MAX_SHARDS)) {
+      if (results.length >= STATIC_RESULT_LIMIT) break;
+      const shard = await loadShard(i);
+      for (const doc of shard) collectStaticHits(doc, 0, (doc.content || '').length, needle, q, results);
+      if (searchProgress) searchProgress.scanned++;
+      if (searchProgress && searchProgress.onPartial) {
+        searchProgress.onPartial(results.slice(0, STATIC_RESULT_LIMIT).sort(byScoreThenPosition(pathToIndex)));
+      }
+    }
+  }
+  results.sort(byScoreThenPosition(pathToIndex));
+  if (searchProgress) searchProgress.total = STATIC_SHARD_COUNT;
+  return results.slice(0, STATIC_RESULT_LIMIT);
+}
+
+// 结果排序：标题命中排前（score 100），其余沿用旧逻辑按 score 降序。
+// score 相同时按 manifest / 分片里的原始章节顺序排，保证结果可复现、
+// 也尽量贴近旧实现「按章节顺序线性扫描」的观感。
+function byScoreThenPosition(pathToIndex) {
+  return (a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return (pathToIndex[a.path] || 0) - (pathToIndex[b.path] || 0);
+  };
 }
 
 searchFull.addEventListener('input', () => {
@@ -2558,7 +2712,22 @@ async function doSearch() {
   const gen = ++searchGen;
   try {
     if (STATIC_MODE) {
-      const results = await searchStatic(q);
+      // 分片是逐个下载的：把进度写回状态栏，用户才知道是在加载而不是卡死。
+      // 渐进加载时每拉完一片就重渲染一次，结果看起来是「边搜边冒出来」的。
+      searchProgress = {
+        scanned: 0,
+        total: STATIC_SHARD_COUNT,
+        onPartial: partial => {
+          if (gen !== searchGen) return;
+          renderResults(partial, q, { streaming: true });
+        },
+      };
+      let results;
+      try {
+        results = await searchStatic(q);
+      } finally {
+        searchProgress = null;
+      }
       if (gen !== searchGen) return;
       renderResults(results, q);
       return;
@@ -2580,15 +2749,28 @@ async function doSearch() {
   }
 }
 
-function renderResults(results, q) {
+function renderResults(results, q, opts) {
   searchResultsData = results;
   resultsEl.hidden = false;
   if (!results.length) {
-    statusEl.textContent = '';
-    resultsEl.innerHTML = `<div class="search-empty">没有找到与「${escapeHtml(q)}」匹配的内容<br>试试更短的关键词或换个术语。</div>`;
+    statusEl.textContent = opts && opts.streaming
+      ? '正在搜索…（已扫描 ' + searchProgress.scanned + '/' + searchProgress.total + ' 段）'
+      : '';
+    if (!(opts && opts.streaming)) {
+      resultsEl.innerHTML = `<div class="search-empty">没有找到与「${escapeHtml(q)}」匹配的内容<br>试试更短的关键词或换个术语。</div>`;
+    }
     return;
   }
   statusEl.textContent = '找到 ' + results.length + ' 处匹配';
+  // 早停提示：分片没扫完就攒够结果时说明白，同时告诉用户缩小范围的办法
+  if (searchProgress && !opts) {
+    if (searchProgress.scanned < searchProgress.total) {
+      statusEl.textContent += '（已扫描 ' + searchProgress.scanned + '/' + searchProgress.total
+        + ' 段，继续输入更精确的关键词可缩小范围）';
+    }
+  } else if (searchProgress) {
+    statusEl.textContent = '正在搜索…（已扫描 ' + searchProgress.scanned + '/' + searchProgress.total + ' 段，已找到 ' + results.length + ' 处）';
+  }
   resultsEl.innerHTML = results.map((r, i) => `
     <button type="button" class="search-result" data-index="${i}">
       <div class="sr-head">
@@ -2624,6 +2806,7 @@ $('search-clear').addEventListener('click', () => {
 
 function clearSearchResults() {
   clearTimeout(searchTimer);
+  searchProgress = null;
   statusEl.textContent = '';
   resultsEl.hidden = true;
   resultsEl.innerHTML = '';
@@ -3723,16 +3906,35 @@ document.addEventListener('keydown', e => {
 });
 
 /* ══════════════ 启动 ══════════════ */
-marked.use({ gfm: true, breaks: false });
-
-// Mermaid：关闭自动加载，每个图由 renderMermaid 显式调用 render()
-if (mermaidReady()) {
-  mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-} else {
-  console.warn('[mermaid] CDN 未加载，图将以代码形式显示');
+// CDN 脚本带 defer，执行顺序上本内联脚本可能先跑（defer 脚本在文档解析结束后按序执行），
+// 因此必须等它们就绪再启动，否则 marked/katex/hljs 会是 undefined。
+function whenLibsReady(timeoutMs) {
+  return new Promise(resolve => {
+    const deadline = Date.now() + (timeoutMs || 8000);
+    (function tick() {
+      // katex 与 hljs 是渲染必需项，三件套齐了才算就绪
+      const ready = typeof marked !== 'undefined' && typeof marked.parse === 'function'
+                 && typeof katex !== 'undefined' && typeof hljs !== 'undefined';
+      if (ready || Date.now() > deadline) { resolve(ready); return; }
+      setTimeout(tick, 50);
+    })();
+  });
 }
 
-init();
+whenLibsReady().then(ready => {
+  if (!ready) {
+    console.warn('[libs] CDN 组件未在超时内就绪，将以纯文本形式显示章节');
+  }
+  try {
+    if (typeof marked !== 'undefined' && typeof marked.use === 'function') {
+      marked.use({ gfm: true, breaks: false });
+    }
+  } catch (e) {
+    console.warn('[libs] marked 初始化失败：' + (e && e.message));
+  }
+  // Mermaid 按需加载（见 ensureMermaid），此处无需初始化
+  init();
+});
 </script>
 </body>
 </html>
