@@ -103,6 +103,8 @@ body {
   line-height: 1.75;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 右上角固定工具条浮在正文之上，给内容让出高度 */
+  padding-top: 3.1rem;
   background-image:
     radial-gradient(closest-side at 78% -10%, rgba(var(--accent-strong-rgb), 0.20), transparent 42rem),
     radial-gradient(closest-side at 6% 6%, rgba(var(--accent-2-rgb), 0.10), transparent 34rem),
@@ -422,7 +424,8 @@ kbd {
 
 .search-shell {
   position: sticky;
-  top: 0;
+  /* 停靠在右上角工具条下方，避免滚动时被工具条压住 */
+  top: 3.1rem;
   z-index: 40;
   padding: 0.85rem 1.25rem 0.4rem;
   background: linear-gradient(var(--bg) 88%, rgba(var(--bg-rgb), 0));
@@ -946,6 +949,19 @@ kbd {
   #content { font-size: 0.96rem; }
   #content .mermaid { margin-inline: -0.25rem; padding-inline: 0.7rem; }
   .kbd-hint { display: none; }
+  /* 移动端：工具栏缩小，避免遮挡正文；聊天窗口占满宽度并保证输入框可见 */
+  body { padding-top: 3.4rem; }
+  .top-tools { top: .5rem; right: .55rem; gap: .35rem; }
+  #theme-toggle { width: 32px; height: 32px; }
+  .account-chip { height: 32px; font-size: .72rem; }
+  .account-name { max-width: 5.5rem; }
+  .account-menu { top: 3rem; right: .55rem; }
+  .ask-panel {
+    left: .5rem; right: .5rem; bottom: .5rem; width: auto;
+    height: 72vh;
+  }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-wrap { padding-top: 0.5rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1047,10 +1063,17 @@ html[data-theme="light"] .state-panel .spinner { border-color: rgba(var(--accent
 }
 .brand:hover .brand-icon { transform: rotate(-6deg) scale(1.05); box-shadow: 0 10px 22px rgba(var(--accent-strong-rgb), 0.45); }
 
-/* 主题切换按钮 */
+/* 右上角固定工具条：账号入口 + 主题切换。原先两者挤在侧栏头部用 absolute
+   定位，侧栏宽 300px 时空间不够；移到页面右上角后与正文滚动解耦，
+   侧栏打开/关闭也不影响它们的位置。 */
+.top-tools {
+  position: fixed; top: .7rem; right: .9rem; z-index: 260;
+  display: flex; gap: .45rem;
+}
 .sidebar-header { position: relative; }
+/* 主题切换按钮：随 .top-tools 横向排列，不再自己定位 */
 #theme-toggle {
-  position: absolute; top: .95rem; right: .85rem;
+  position: static;
   width: 34px; height: 34px; border-radius: 10px;
   display: grid; place-items: center;
   background: rgba(var(--accent-rgb), 0.10);
@@ -1144,9 +1167,8 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 .copy-btn { min-height: 30px; padding: 0.3rem 0.7rem; }
 @media (max-width: 860px) { .copy-btn { min-height: 34px; } }
 
-/* ══════════════ 账号（登录 / 注册 / 我的进度） ══════════════ */
+/* ══════════════ 账号（登录 / 注册 / 我的主页 / 设置） ══════════════ */
 .account-chip {
-  position: absolute; top: .95rem; right: 3.6rem;
   display: flex; align-items: center; gap: .4rem;
   height: 34px; padding: 0 .65rem 0 .35rem;
   border-radius: 999px;
@@ -1162,8 +1184,14 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
   background: linear-gradient(135deg, rgba(var(--accent-rgb), .95), rgba(var(--accent-2-rgb), .8));
   color: #fff; font-weight: 700; font-size: .72rem;
 }
+.account-name { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-badge {
+  flex: none; font-size: .6rem; font-weight: 700; line-height: 1;
+  padding: 3px 5px; border-radius: 4px;
+  color: #fcd34d; background: rgba(251, 191, 36, .14); border: 1px solid rgba(251, 191, 36, .32);
+}
 .account-menu {
-  position: absolute; top: 3.6rem; right: .85rem; z-index: 60;
+  position: fixed; top: 3.3rem; right: .9rem; z-index: 270;
   min-width: 172px; padding: .35rem;
   background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
   box-shadow: var(--shadow-lg);
@@ -1177,7 +1205,18 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 .account-menu button:hover { background: var(--hover-bg); }
 
 /* 阅读进度标记 */
+.chapter-item { position: relative; }
 .chapter-item.read .ci-name::after { content: '✓'; margin-left: .35rem; color: var(--ok); font-weight: 700; }
+/* 章节细进度条：绝对定位贴底，不改动 flex 行高；宽度由渲染时读取
+   SERVER_PROGRESS 内联写入，避免滚动时重排整个列表。 */
+.ci-progress {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 2px; border-radius: 0 2px 2px 0;
+  width: 0;
+  background: var(--accent-2);
+  pointer-events: none;
+  transition: width .3s ease;
+}
 #my-progress { display: block; margin-top: .35rem; font-size: .72rem; color: var(--text-dim); }
 #my-progress b { color: var(--accent-2); }
 
@@ -1200,7 +1239,69 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 .auth-msg { min-height: 1.1rem; margin: .2rem 0 .6rem; font-size: .76rem; color: var(--danger); }
 .auth-note { margin: .7rem 0 0; font-size: .72rem; color: var(--text-dim); line-height: 1.6; }
 
-/* ══════════════ 问 AI ══════════════ */
+/* ══════════════ 我的主页 / 设置弹窗 ══════════════ */
+.modal-card.wide { width: min(560px, 100%); max-height: min(86vh, 720px); overflow-y: auto; }
+
+.profile-head { display: flex; align-items: center; gap: .85rem; margin-bottom: 1rem; }
+.profile-avatar {
+  width: 56px; height: 56px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), .95), rgba(var(--accent-2-rgb), .8));
+  color: #fff; font-weight: 700; font-size: 1.45rem;
+}
+.profile-id { min-width: 0; }
+.profile-name { display: flex; align-items: center; gap: .4rem; font-size: 1.05rem; font-weight: 700; color: var(--heading); }
+.profile-sub { font-size: .74rem; color: var(--text-dim); line-height: 1.6; }
+.profile-sub b { color: var(--accent-2); font-weight: 600; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin: .2rem 0 1rem; }
+.stat-cell {
+  padding: .6rem .35rem; border-radius: 10px; text-align: center;
+  background: rgba(var(--bg-rgb), .55); border: 1px solid var(--border);
+}
+.stat-num { font-size: 1.05rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat-cap { font-size: .64rem; color: var(--text-dim); margin-top: .15rem; }
+
+.sec-title { font-size: .74rem; font-weight: 700; color: var(--text-dim); margin: .9rem 0 .45rem; }
+.browse-list { display: grid; gap: .3rem; }
+.browse-item {
+  display: flex; align-items: baseline; gap: .5rem; width: 100%; text-align: left;
+  padding: .45rem .6rem; border-radius: 8px; border: 1px solid var(--border);
+  background: none; color: var(--text); font: inherit; font-size: .8rem; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.browse-item:hover { background: var(--hover-bg); border-color: var(--accent); }
+.browse-item .bi-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browse-item .bi-meta { flex: none; font-size: .68rem; color: var(--text-dim); }
+.browse-item .bi-q { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); }
+.empty-note { padding: .7rem .2rem; font-size: .78rem; color: var(--text-dim); line-height: 1.7; }
+.empty-note .btn { margin-top: .55rem; }
+
+.form-row { margin-bottom: .7rem; }
+.form-row label { display: block; font-size: .76rem; color: var(--text-dim); margin-bottom: .25rem; }
+.form-row input {
+  display: block; width: 100%; padding: .5rem .6rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+  color: var(--text); font: inherit; font-size: .85rem;
+}
+.form-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
+.form-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.form-actions .btn { margin-top: 0; }
+.btn.ghost { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 500; }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn.danger { background: none; border: 1px solid rgba(251, 113, 133, .5); color: var(--danger); font-weight: 500; }
+.btn.danger:hover { background: rgba(251, 113, 133, .12); }
+.set-msg { min-height: 1.1rem; margin: .5rem 0 .2rem; font-size: .76rem; color: var(--danger); line-height: 1.6; }
+.set-msg.ok { color: var(--ok); }
+.set-note { margin: .5rem 0 0; font-size: .72rem; color: var(--text-dim); line-height: 1.7; }
+.key-state {
+  padding: .55rem .7rem; border-radius: 9px; font-size: .78rem; line-height: 1.6;
+  background: rgba(var(--accent-2-rgb), .08); border: 1px solid rgba(var(--accent-2-rgb), .25);
+  color: var(--text);
+}
+.key-state b { color: var(--accent-2); }
+
+/* ══════════════ 问 AI：右下角聊天窗口 ══════════════ */
 .h-ask {
   margin-left: .55rem; padding: .12rem .5rem; vertical-align: middle;
   border-radius: 999px; border: 1px solid rgba(var(--accent-rgb), .3);
@@ -1219,29 +1320,61 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
   box-shadow: 0 10px 26px rgba(var(--accent-strong-rgb), .35); transition: transform .2s, box-shadow .2s;
 }
 .ask-fab:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(var(--accent-strong-rgb), .45); }
+/* 聊天窗口：右下角浮层，height 用 min() 自适应小屏 */
 .ask-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; z-index: 350;
-  width: min(430px, 100%); display: flex; flex-direction: column;
-  background: var(--sidebar-bg); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 350;
+  width: min(420px, calc(100vw - 2rem));
+  height: min(70vh, 620px);
+  display: flex; flex-direction: column;
+  background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
   animation: ask-in .22s cubic-bezier(.2,.7,.3,1) both;
 }
-@keyframes ask-in { from { transform: translateX(16px); opacity: 0 } to { transform: none; opacity: 1 } }
-.ask-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; padding: 1rem 1rem .7rem; border-bottom: 1px solid var(--border); }
-.ask-kicker { font-size: .68rem; letter-spacing: .08em; color: var(--accent-2); }
-.ask-section { margin-top: .2rem; font-size: .92rem; font-weight: 600; color: var(--heading); line-height: 1.45; }
-.ask-quota { padding: .5rem 1rem; font-size: .74rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+@keyframes ask-in { from { transform: translateY(14px) scale(.98); opacity: 0 } to { transform: none; opacity: 1 } }
+.ask-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; padding: .8rem .9rem .6rem; border-bottom: 1px solid var(--border); }
+.ask-kicker { font-size: .64rem; letter-spacing: .08em; color: var(--accent-2); }
+.ask-title { margin-top: .15rem; font-size: .88rem; font-weight: 600; color: var(--heading); line-height: 1.4; }
+#ask-section-hint { padding: .3rem .9rem; font-size: .68rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+#ask-section-hint b { color: var(--accent); font-weight: 600; }
+.ask-quota { padding: .4rem .9rem; font-size: .72rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
 .ask-quota b { color: var(--accent-2); }
-.ask-log { flex: 1; overflow-y: auto; padding: .8rem 1rem; display: grid; gap: .8rem; align-content: start; }
-.qa { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(var(--bg-rgb), .45); }
-.qa-q { padding: .5rem .7rem; font-size: .8rem; color: var(--heading); background: rgba(var(--accent-rgb), .08); }
-.qa-a { padding: .6rem .7rem; font-size: .82rem; line-height: 1.75; white-space: pre-wrap; color: var(--text); }
-.qa-meta { padding: 0 .7rem .5rem; font-size: .68rem; color: var(--text-dim); }
+/* 额度用尽等错误提示栏 */
+.ask-alert {
+  margin: .5rem .9rem 0; padding: .45rem .6rem; border-radius: 8px;
+  font-size: .74rem; line-height: 1.6;
+  background: rgba(251, 113, 133, .12); border: 1px solid rgba(251, 113, 133, .35); color: var(--text);
+}
+.ask-log { flex: 1; min-height: 0; overflow-y: auto; padding: .8rem .9rem; display: grid; gap: .6rem; align-content: start; }
+/* 气泡：用户右对齐、AI 左对齐；pre-wrap 保留答案换行 */
+.bubble {
+  max-width: 86%; padding: .5rem .7rem; border-radius: 12px;
+  font-size: .82rem; line-height: 1.7; white-space: pre-wrap;
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.bubble.me {
+  justify-self: end; background: rgba(var(--accent-rgb), .18);
+  border: 1px solid rgba(var(--accent-rgb), .3); color: var(--text);
+  border-bottom-right-radius: 4px;
+}
+.bubble.ai {
+  justify-self: start; background: rgba(var(--bg-rgb), .6);
+  border: 1px solid var(--border); color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.bubble.err { justify-self: start; background: rgba(251, 113, 133, .10); border-color: rgba(251, 113, 133, .38); color: var(--danger); }
+.bubble-time { justify-self: start; font-size: .64rem; color: var(--text-dim); margin-top: -.35rem; }
+.bubble-time.me { justify-self: end; }
+.bubble-pending { color: var(--text-dim); font-style: italic; }
+.bubble .btn { margin-top: .5rem; }
 .qa-empty { padding: .3rem 0; font-size: .78rem; color: var(--text-dim); line-height: 1.7; }
-#ask-form { padding: .7rem 1rem 1rem; border-top: 1px solid var(--border); }
-#ask-input { width: 100%; resize: vertical; padding: .55rem .65rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font: inherit; font-size: .84rem; line-height: 1.6; }
+.qa-empty .btn { margin-top: .6rem; }
+#ask-form { padding: .6rem .9rem .8rem; border-top: 1px solid var(--border); }
+#ask-input { width: 100%; resize: vertical; min-height: 4.4em; padding: .5rem .6rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font: inherit; font-size: .84rem; line-height: 1.6; }
 #ask-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
-.ask-actions { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .5rem; }
-.ask-hint { font-size: .7rem; color: var(--text-dim); }
+#ask-input:disabled { opacity: .6; cursor: not-allowed; }
+.ask-actions { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .45rem; }
+.ask-hint { font-size: .68rem; color: var(--text-dim); }
 .btn.primary { background: linear-gradient(135deg, var(--accent-strong), var(--accent)); border: none; color: #fff; font-weight: 600; }
 .btn.primary:hover { filter: brightness(1.08); }
 .btn[disabled] { opacity: .55; cursor: not-allowed; filter: none; }
@@ -1259,6 +1392,8 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 
 /* 未连接后端（GitHub Pages 静态版）时隐藏账号与问 AI 入口 */
 body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { display: none !important; }
+/* 静态版只剩主题按钮，工具条更窄，顶部留白相应减小 */
+body.no-server { padding-top: 2.6rem; }
 
 /* 尊重系统“减少动态效果”设置 */
 @media (prefers-reduced-motion: reduce) {
@@ -1282,6 +1417,30 @@ body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { d
 </button>
 <div id="overlay"></div>
 
+<!-- 右上角固定工具条：账号入口 + 主题切换 -->
+<div class="top-tools">
+  <button type="button" id="account-chip" class="account-chip" hidden title="账号 / 登录">
+    <span id="account-initial" class="account-initial">登</span>
+    <span id="account-name" class="account-name">登录</span>
+    <span id="account-role-badge" class="account-badge" hidden>管理员</span>
+  </button>
+  <button type="button" id="theme-toggle" title="切换深色 / 浅色主题" aria-label="切换主题">
+    <svg class="ic ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"/>
+    </svg>
+    <svg class="ic ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>
+    </svg>
+  </button>
+  <div id="account-menu" class="account-menu" hidden>
+    <div class="account-menu-head" id="account-menu-head">—</div>
+    <button type="button" id="menu-profile">我的主页</button>
+    <button type="button" id="menu-settings">设置</button>
+    <button type="button" id="menu-password">修改密码</button>
+    <button type="button" id="menu-logout">退出登录</button>
+  </div>
+</div>
+
 <!-- 侧边栏：章节目录 / 本章目录 双面板 -->
 <nav id="sidebar" aria-label="章节目录">
   <div class="sidebar-header">
@@ -1296,24 +1455,6 @@ body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { d
         <div class="brand-sub">从 OJ 到开发部署 · 学习路线图</div>
       </div>
     </button>
-    <button type="button" id="theme-toggle" title="切换深色 / 浅色主题" aria-label="切换主题">
-      <svg class="ic ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"/>
-      </svg>
-      <svg class="ic ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>
-      </svg>
-    </button>
-    <button type="button" id="account-chip" class="account-chip" hidden title="账号 / 登录">
-      <span id="account-initial" class="account-initial">登</span>
-      <span id="account-name" class="account-name">登录</span>
-    </button>
-    <div id="account-menu" class="account-menu" hidden>
-      <div class="account-menu-head" id="account-menu-head">—</div>
-      <button type="button" id="menu-progress">我的进度</button>
-      <button type="button" id="menu-password">修改密码</button>
-      <button type="button" id="menu-logout">退出登录</button>
-    </div>
     <div class="sidebar-tabs" role="tablist" aria-label="侧边栏面板">
       <button type="button" class="tab-btn active" data-panel="list" role="tab" aria-selected="true">章节目录</button>
       <button type="button" class="tab-btn" data-panel="toc" role="tab" aria-selected="false">本章目录</button>
@@ -1418,6 +1559,46 @@ body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { d
   </div>
 </main>
 
+<!-- 我的主页（服务器版） -->
+<div id="profile-modal" class="modal" hidden>
+  <div class="modal-card wide" role="dialog" aria-modal="true" aria-labelledby="profile-name">
+    <button class="modal-x" id="profile-close" aria-label="关闭">&times;</button>
+    <h2 id="profile-title">我的主页</h2>
+    <div id="profile-body"></div>
+  </div>
+</div>
+
+<!-- 设置：AI Key + 邮箱（服务器版） -->
+<div id="settings-modal" class="modal" hidden>
+  <div class="modal-card wide" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <button class="modal-x" id="settings-close" aria-label="关闭">&times;</button>
+    <h2 id="settings-title">设置</h2>
+
+    <div class="sec-title">AI 提问额度</div>
+    <div id="settings-key-state" class="key-state">正在读取…</div>
+    <div id="settings-key-form" class="form-row" hidden style="margin-top:.7rem">
+      <label for="settings-key-input">DeepSeek API Key</label>
+      <input id="settings-key-input" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…">
+    </div>
+    <div class="form-actions" style="margin-top:.55rem">
+      <button type="button" class="btn primary" id="settings-key-save">保存并验证</button>
+      <button type="button" class="btn ghost" id="settings-key-clear" hidden>清除 Key</button>
+    </div>
+    <p class="set-note" id="settings-key-note">填写你自己的 DeepSeek API Key 后，提问不再计入每日免费额度。Key 只保存在服务器上（加密存储），页面不会再次显示完整内容。</p>
+    <p class="set-msg" id="settings-key-msg" role="alert"></p>
+
+    <div class="sec-title">账号</div>
+    <div class="form-row">
+      <label for="settings-email">邮箱（用于找回账号，可留空）</label>
+      <input id="settings-email" type="email" autocomplete="email" spellcheck="false" placeholder="you@example.com">
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn" id="settings-email-save">保存邮箱</button>
+    </div>
+    <p class="set-msg" id="settings-email-msg" role="alert"></p>
+  </div>
+</div>
+
 <!-- 账号：登录 / 注册 / 修改密码（服务器版） -->
 <div id="auth-modal" class="modal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
@@ -1447,26 +1628,28 @@ body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { d
   </div>
 </div>
 
-<!-- 问 AI：面板 + 悬浮入口 -->
+<!-- 问 AI：右下角聊天窗口 + 悬浮入口 -->
 <aside id="ask-panel" class="ask-panel" hidden aria-label="问 AI">
   <header class="ask-head">
     <div>
-      <div class="ask-kicker">问 AI · 本节</div>
-      <div id="ask-section" class="ask-section">—</div>
+      <div class="ask-kicker">问 AI · 本章</div>
+      <div id="ask-title" class="ask-title">—</div>
     </div>
     <button class="modal-x" id="ask-close" aria-label="关闭">&times;</button>
   </header>
+  <div id="ask-section-hint" hidden></div>
   <div id="ask-quota" class="ask-quota"></div>
+  <div id="ask-alert" class="ask-alert" hidden></div>
   <div id="ask-log" class="ask-log"></div>
   <form id="ask-form">
-    <textarea id="ask-input" rows="3" maxlength="500" placeholder="就这一节提问，例如：为什么这里说 300 个周期而不是 300 条指令？"></textarea>
+    <textarea id="ask-input" rows="2" maxlength="500" placeholder="就当前小节提问，例如：为什么这里说 300 个周期而不是 300 条指令？"></textarea>
     <div class="ask-actions">
       <span id="ask-hint" class="ask-hint"></span>
       <button type="submit" class="btn primary" id="ask-send">发送</button>
     </div>
   </form>
 </aside>
-<button id="ask-fab" class="ask-fab" hidden aria-label="就本节问 AI">问 AI</button>
+<button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
 <script>
 'use strict';
@@ -1771,8 +1954,14 @@ async function loadChapter(path, opts) {
     scrollToSection(opts.section);
     return;
   }
+  // 切章前结算上一章的停留时长，并按需求关闭 AI 窗口、清空对话
+  if (currentPath && currentPath !== path) accumulateSeconds(currentPath);
+  if (currentPath !== path) resetAskForChapter();
+
   currentPath = path;
   pendingSection = opts.section || null;
+  REPORTED_PCT[path] = REPORTED_PCT[path] || pctOf(path);
+  chapterEnterAt = Date.now();
 
   // 更新 URL hash（触发 hashchange，handler 会发现 path 未变而忽略）
   const want = '#' + encodeURIComponent(path);
@@ -1785,7 +1974,7 @@ async function loadChapter(path, opts) {
     const md = await fetchText(STATIC_MODE ? './' + path.split('/').map(encodeURIComponent).join('/') : '/api/chapter?path=' + encodeURIComponent(path));
     if (gen !== chapterGen) return; // 已被更新的请求取代
     renderContent(md, path);
-    markChapterRead(path);
+    // 不再打开即标记已读：由滚动进度判定（见 reportScrollProgress）
     if (window.innerWidth <= 860) closeSidebar();
   } catch (e) {
     if (gen !== chapterGen) return;
@@ -1843,6 +2032,9 @@ $('phase-cards').addEventListener('click', e => {
 });
 
 function showRoadmap() {
+  // 离开章节：结算停留时长并关闭 AI 窗口（回到路线图也属于「切走」）
+  if (currentPath) accumulateSeconds(currentPath);
+  resetAskForChapter();
   currentPath = null;
   pendingSection = null;
   $('loading').hidden = true;
@@ -2510,13 +2702,22 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ══════════════ 滚动：阅读进度 + 目录高亮 ══════════════ */
+/* ══════════════ 滚动：阅读进度 + 目录高亮 + 小节同步 ══════════════ */
+// 滚动回调本身要轻：页面进度条与目录高亮每帧更新，进度上报/小节同步
+// 走 300ms 节流（进度上报内部还会再判「是否比已上报值大 ≥5 点」）。
+let scrollThrottle = 0;
 window.addEventListener('scroll', () => {
   const doc = document.documentElement;
   const max = doc.scrollHeight - doc.clientHeight;
   const pct = max > 0 ? (doc.scrollTop / max) * 100 : 0;
   $('progress-bar').style.width = pct + '%';
   updateTocSpy();
+
+  const now = Date.now();
+  if (now - scrollThrottle < 300) return;
+  scrollThrottle = now;
+  reportScrollProgress();
+  syncAskSection();
 }, { passive: true });
 
 
@@ -2606,13 +2807,49 @@ initTheme();
 // 入口由 body.no-server 隐藏，阅读/搜索/主题等原有功能不受影响。
 const API_BASE = 'api';
 let SERVER_MODE = false;
-let ACCOUNT = null;          // {username, role, quota:{used, limit}}
-let SERVER_PROGRESS = {};    // {path: {state, checks}}
+let ACCOUNT = null;          // {username, role, has_key, key_hint, stats, quota}
+let SERVER_PROGRESS = {};    // {path: {state, checks, progress_pct, seconds}}
 let AUTH_MODE = 'login';     // login | register | password
-let ASK_SECTION = null;      // {id, title}
+let ASK_SECTION = null;      // {id, title} —— 仅用于「下一条提问」的上下文
 let ASK_BUSY = false;
+let ASK_OPEN = false;        // 聊天窗口是否可见（关闭时不切章也要保留对话视图）
+const ASK_HISTORY_CACHE = {}; // {path: [{question, answer, created_at}]}，本次会话内的对话缓存
 const CHECK_SAVE_DELAY = 700;
 const checkTimers = new Map();
+
+/* —— 阅读进度：内存态与本地态 ——
+   服务端 progress_pct / seconds 取历史最大值，因此客户端只需上报增量；
+   未登录时写 localStorage（键 progress:<path>），登录后再补传。 */
+const LOCAL_PROGRESS_KEY = p => 'progress:' + p;
+let REPORTED_PCT = {};       // {path: 已上报过的最大百分比}，避免重复请求
+let chapterEnterAt = 0;      // 本章进入时刻（毫秒），用于累计停留秒数
+let sessionSeconds = {};     // {path: 本次会话累计秒数}
+let LOCAL_UPLOADED = {};     // {path: true}，保证本地进度只补传一次
+
+// 服务端未登录时用本地记录兜底，保证 ✓ 与进度条在本地也生效
+function localProgress(path) {
+  try {
+    const raw = localStorage.getItem(LOCAL_PROGRESS_KEY(path));
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveLocalProgress(path, patch) {
+  const next = Object.assign({}, SERVER_PROGRESS[path], localProgress(path), patch);
+  SERVER_PROGRESS[path] = next;
+  try { localStorage.setItem(LOCAL_PROGRESS_KEY(path), JSON.stringify(next)); } catch (e) { /* 忽略 */ }
+}
+// 合并服务端与本地的进度记录：取 pct/seconds 最大、state 就高不就低
+function mergeProgress(server, local) {
+  if (!server) return local;
+  if (!local) return server;
+  return {
+    state: (server.state === 'read' || local.state === 'read') ? 'read' : (server.state || local.state),
+    checks: Array.isArray(server.checks) ? server.checks : local.checks,
+    progress_pct: Math.max(server.progress_pct || 0, local.progress_pct || 0),
+    seconds: Math.max(server.seconds || 0, local.seconds || 0),
+    updated_at: server.updated_at || local.updated_at || '',
+  };
+}
 
 async function api(path, opts = {}) {
   const init = { method: opts.method || 'GET', credentials: 'same-origin', headers: {} };
@@ -2660,16 +2897,22 @@ async function detectServer() {
   const chip = $('account-chip');
   if (chip) chip.hidden = !SERVER_MODE;
   updateAskFab();
-  if (!SERVER_MODE) return;
+  if (!SERVER_MODE) {
+    // 静态版也把本地阅读进度读回来，否则 ✓ 与进度条不显示
+    await loadServerProgress();
+    refreshProgressMarks();
+    return;
+  }
   await refreshAccount();
 }
 
 /* —— 账号状态 —— */
 function isAdmin() { return !!(ACCOUNT && ACCOUNT.role === 'admin'); }
+// limit === -1 覆盖管理员与「已保存自带 key」两种情况：都表示不限次数
 function quotaHTML() {
   if (!ACCOUNT) return '未登录';
   const q = ACCOUNT.quota || { used: 0, limit: 0 };
-  if (q.limit === -1) return '管理员账号 · 提问不限次数';
+  if (q.limit === -1) return '提问不限次数';
   return '今日剩余 <b>' + Math.max(0, q.limit - q.used) + '</b> / ' + q.limit + ' 次';
 }
 
@@ -2677,27 +2920,39 @@ async function refreshAccount() {
   try { ACCOUNT = await api('/auth/me'); }
   catch (e) { ACCOUNT = null; }
   renderAccount();
-  if (ACCOUNT) await loadServerProgress();
-  else SERVER_PROGRESS = {};
+  if (ACCOUNT) {
+    await loadServerProgress();
+    await uploadLocalProgress();   // 登录后把本地攒下的进度补传一次
+  } else {
+    await loadServerProgress();    // 未登录也要读本地进度来渲染 ✓ / 进度条
+  }
   refreshProgressMarks();
   updateAskQuota();
+  // 若聊天窗口正开着（例如刚在窗口内点「登录 / 注册」成功），刷新它的可用状态
+  if (ASK_OPEN && ACCOUNT) {
+    $('ask-input').disabled = false;
+    $('ask-send').disabled = false;
+    if (!$('ask-log').querySelector('.bubble')) loadAskHistory();
+  }
 }
 
 function renderAccount() {
   const chip = $('account-chip');
   if (!chip) return;
-  const name = $('account-name'), initial = $('account-initial');
+  const name = $('account-name'), initial = $('account-initial'), badge = $('account-role-badge');
   if (ACCOUNT) {
     chip.hidden = false;
     name.textContent = ACCOUNT.username;
     initial.textContent = String(ACCOUNT.username || '?').charAt(0).toUpperCase();
+    if (badge) badge.hidden = !isAdmin();
     const q = ACCOUNT.quota || {};
-    $('account-menu-head').textContent = ACCOUNT.username + (isAdmin() ? '（管理员）' : '') +
-      ' · ' + (q.limit === -1 ? '不限次数' : '每日 ' + q.limit + ' 次');
+    $('account-menu-head').textContent = ACCOUNT.username + '（' + (isAdmin() ? '管理员' : '普通用户') + '）· ' +
+      (q.limit === -1 ? '不限次数' : '每日 ' + q.limit + ' 次');
   } else {
     chip.hidden = !SERVER_MODE;
     name.textContent = '登录';
     initial.textContent = '登';
+    if (badge) badge.hidden = true;
     $('account-menu').hidden = true;
   }
   updateMyProgress();
@@ -2767,12 +3022,21 @@ async function submitAuth(event) {
   }
 }
 
-/* —— 阅读进度（服务端保存，跨设备） —— */
+/* —— 阅读进度（服务端保存，跨设备；未登录走 localStorage） —— */
 async function loadServerProgress() {
-  try {
-    const d = await api('/progress');
-    SERVER_PROGRESS = (d && d.progress) || {};
-  } catch (e) { SERVER_PROGRESS = {}; }
+  if (SERVER_MODE && ACCOUNT) {
+    try {
+      const d = await api('/progress');
+      SERVER_PROGRESS = (d && d.progress) || {};
+    } catch (e) { SERVER_PROGRESS = {}; }
+  } else {
+    SERVER_PROGRESS = {};
+  }
+  // 本地记录兜底合并：服务端取历史最大值，本地未上传的部分不能丢
+  chapters.forEach(c => {
+    const local = localProgress(c.path);
+    if (local) SERVER_PROGRESS[c.path] = mergeProgress(SERVER_PROGRESS[c.path], local);
+  });
   // 服务端勾选状态合并进本地缓存，供 setupSelfCheck 使用
   Object.keys(SERVER_PROGRESS).forEach(path => {
     const rec = SERVER_PROGRESS[path];
@@ -2781,10 +3045,57 @@ async function loadServerProgress() {
     }
   });
 }
+
+// 登录后把本地进度补传一次。去重：同一个 path 只传一次；
+// 服务端已有记录且各字段都不小于本地时跳过。
+async function uploadLocalProgress() {
+  if (!SERVER_MODE || !ACCOUNT) return;
+  for (const c of chapters) {
+    const path = c.path;
+    if (LOCAL_UPLOADED[path]) continue;
+    const local = localProgress(path);
+    LOCAL_UPLOADED[path] = true;
+    if (!local) continue;
+    const srv = SERVER_PROGRESS[path] || {};
+    const pct = local.progress_pct || 0;
+    const secs = local.seconds || 0;
+    const needRead = local.state === 'read' && srv.state !== 'read';
+    if (pct <= (srv.progress_pct || 0) && secs <= (srv.seconds || 0) && !needRead) continue;
+    const body = { path };
+    if (pct > (srv.progress_pct || 0)) body.progress_pct = Math.min(100, pct);
+    if (secs > (srv.seconds || 0)) body.seconds = Math.min(86400, Math.round(secs));
+    if (needRead) { body.state = 'read'; body.progress_pct = 100; }
+    try {
+      await api('/progress', { method: 'POST', body });
+      SERVER_PROGRESS[path] = mergeProgress(SERVER_PROGRESS[path], body);
+    } catch (e) { LOCAL_UPLOADED[path] = false; }  // 失败则下次登录重试
+  }
+  refreshProgressMarks();
+}
+
 function isRead(path) { return !!(SERVER_PROGRESS[path] && SERVER_PROGRESS[path].state === 'read'); }
+function pctOf(path) {
+  const rec = SERVER_PROGRESS[path];
+  return rec && rec.progress_pct ? Math.min(100, Math.round(rec.progress_pct)) : 0;
+}
 function refreshProgressMarks() {
   document.querySelectorAll('.chapter-item[data-path]').forEach(btn => {
-    btn.classList.toggle('read', isRead(btn.dataset.path));
+    const path = btn.dataset.path;
+    btn.classList.toggle('read', isRead(path));
+    // 进度条：按渲染时读到的 SERVER_PROGRESS 写内联宽度，不逐帧重绘
+    let bar = btn.querySelector('.ci-progress');
+    const pct = pctOf(path);
+    if (pct > 0 && pct < 100) {
+      if (!bar) {
+        bar = document.createElement('span');
+        bar.className = 'ci-progress';
+        bar.setAttribute('aria-hidden', 'true');
+        btn.appendChild(bar);
+      }
+      bar.style.width = pct + '%';
+    } else if (bar) {
+      bar.remove();
+    }
   });
   updateMyProgress();
 }
@@ -2796,15 +3107,97 @@ function updateMyProgress() {
   el.hidden = false;
   el.innerHTML = '我的进度 <b>' + read + '</b> / ' + chapters.length + ' 章' + (isAdmin() ? ' · 管理员' : '');
 }
+
+/* —— 滚动进度 → 「已读」判定 ——
+   打开即标记已读是错的：用户可能只看了开头。改为按 #content 的滚动覆盖
+   比例判定，只有 pct ≥ 95（或已翻到底）才算读完。 */
+const READ_PCT = 95;
+
+function chapterContentMetrics() {
+  const el = $('content');
+  if (!el || el.hidden) return null;
+  const rect = el.getBoundingClientRect();
+  const top = rect.top + window.scrollY;
+  const height = rect.height;
+  if (!height) return null;                    // 内容尚未布局（如仅图片时 height 为 0）
+  return { top, height, bottom: top + height };
+}
+
+function computeReadPct(m) {
+  const seen = window.scrollY + window.innerHeight - m.top;
+  return Math.max(0, Math.min(100, Math.round(seen / m.height * 100)));
+}
+
+function accumulateSeconds(path) {
+  if (!path || !chapterEnterAt) return sessionSeconds[path] || 0;
+  const now = Date.now();
+  const delta = Math.max(0, (now - chapterEnterAt) / 1000);
+  chapterEnterAt = now;
+  sessionSeconds[path] = (sessionSeconds[path] || 0) + delta;
+  return sessionSeconds[path];
+}
+
+// 上报增长的进度；仅在新增值比已上报值大 ≥5 个百分点时发请求，避免刷接口
+async function reportScrollProgress() {
+  const path = currentPath;
+  const m = chapterContentMetrics();
+  if (!path || !m) return;
+  const pct = computeReadPct(m);
+  const seen = Math.max(REPORTED_PCT[path] || 0, pctOf(path));
+  const atBottom = window.scrollY + window.innerHeight >= m.bottom - 40;
+
+  if (pct >= READ_PCT || atBottom) {
+    if (!isRead(path)) await markChapterRead(path);
+    else if (pct > seen) markLocalPct(path, pct);
+    return;
+  }
+  if (pct >= seen + 5) {
+    const secs = Math.round(accumulateSeconds(path));
+    REPORTED_PCT[path] = pct;
+    markLocalPct(path, pct);
+    if (SERVER_MODE && ACCOUNT) {
+      try {
+        await api('/progress', { method: 'POST', body: { path, progress_pct: pct, seconds: secs } });
+      } catch (e) { REPORTED_PCT[path] = seen; }   // 失败则下次滚动重试
+    }
+  }
+}
+
+// 本地写入进度百分比并刷新侧栏（不重绘整个列表，只改受影响的那一条）
+function markLocalPct(path, pct) {
+  saveLocalProgress(path, { progress_pct: pct });
+  const btn = document.querySelector('.chapter-item[data-path="' + path.replace(/"/g, '\\"') + '"]');
+  if (!btn) { refreshProgressMarks(); return; }
+  let bar = btn.querySelector('.ci-progress');
+  if (pct > 0 && pct < 100) {
+    if (!bar) {
+      bar = document.createElement('span');
+      bar.className = 'ci-progress';
+      bar.setAttribute('aria-hidden', 'true');
+      btn.appendChild(bar);
+    }
+    bar.style.width = pct + '%';
+  } else if (bar) {
+    bar.remove();
+  }
+}
+
 async function markChapterRead(path) {
   updateAskFab();
-  if (!SERVER_MODE || !ACCOUNT || !path || isRead(path)) return;
-  SERVER_PROGRESS[path] = Object.assign({}, SERVER_PROGRESS[path], { state: 'read' });
+  if (!path || isRead(path)) return;
+  REPORTED_PCT[path] = 100;
+  saveLocalProgress(path, { state: 'read', progress_pct: 100 });
   refreshProgressMarks();
-  try { await api('/progress', { method: 'POST', body: { path, state: 'read' } }); }
-  catch (e) { /* 静默失败：不影响阅读 */ }
+  if (!SERVER_MODE || !ACCOUNT) return;          // 未登录：本地已记录，登录后补传
+  try {
+    const secs = Math.round(accumulateSeconds(path));
+    const body = { path, state: 'read', progress_pct: 100 };
+    if (secs > 0) body.seconds = Math.min(86400, secs);
+    await api('/progress', { method: 'POST', body });
+  } catch (e) { /* 静默失败：不影响阅读 */ }
 }
 function saveChecksToServer(path, checks) {
+  saveLocalProgress(path, { checks });
   if (!SERVER_MODE || !ACCOUNT || !path) return;
   clearTimeout(checkTimers.get(path));
   checkTimers.set(path, setTimeout(async () => {
@@ -2815,11 +3208,14 @@ function saveChecksToServer(path, checks) {
   }, CHECK_SAVE_DELAY));
 }
 
-/* —— 问 AI —— */
+/* —— 问 AI：右下角聊天窗口 ——
+   一次对话属于「当前文章」而不是某个小节：同一章关闭再打开对话仍在，
+   切章才清空。小节信息只在发送那一刻取，滚动不影响已发出的对话。 */
 function updateAskFab() {
   const fab = $('ask-fab');
   if (!fab) return;
-  fab.hidden = !(SERVER_MODE && !!currentPath);
+  // 窗口打开时隐藏悬浮按钮，避免叠在一起
+  fab.hidden = !(SERVER_MODE && !!currentPath) || ASK_OPEN;
 }
 function setupAskButtons() {
   $('content').querySelectorAll('h2, h3').forEach(h => {
@@ -2829,7 +3225,14 @@ function setupAskButtons() {
     btn.className = 'h-ask';
     btn.textContent = '问 AI';
     btn.title = '就这一节问 AI';
-    btn.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); openAsk(h.id); });
+    btn.addEventListener('click', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      // 点标题旁按钮：把该小节设为「当前小节」并聚焦输入框，但不重置对话
+      const t = tocHeadings.find(x => x.id === h.id);
+      if (t) ASK_SECTION = { id: t.id, title: t.text };
+      openAsk({ focus: true });
+    });
     h.appendChild(btn);
   });
   updateAskFab();
@@ -2840,97 +3243,412 @@ function currentSectionAnchor() {
   for (const t of tocHeadings) {
     if (t.el.getBoundingClientRect().top <= 140) cur = t; else break;
   }
-  return cur.id;
+  return cur;
 }
-function renderAskNotice(html) { $('ask-log').innerHTML = '<div class="qa-empty">' + html + '</div>'; }
-function openAsk(anchorId) {
-  const id = anchorId || currentSectionAnchor();
-  const t = tocHeadings.find(x => x.id === id);
-  if (!t) { toast('请先打开一章，再就具体小节提问'); return; }
+// 随滚动更新「当前小节」提示与 ASK_SECTION（节流 300ms），
+// 让用户知道下一条提问会带上哪一节的上下文
+function syncAskSection() {
+  if (!tocHeadings.length) return;
+  const id = currentSectionAnchor();
+  const t = id ? tocHeadings.find(x => x.id === id) : null;
+  if (!t) return;
   ASK_SECTION = { id: t.id, title: t.text };
+  renderAskSectionHint();
+}
+function renderAskSectionHint() {
+  const el = $('ask-section-hint');
+  if (!el) return;
+  if (!ASK_SECTION || !ASK_OPEN) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '当前小节：' + escapeHtml(ASK_SECTION.title);
+}
+
+function currentChapterName() {
+  const meta = chapters.find(c => c.path === currentPath);
+  return meta ? meta.name : (currentPath || '—');
+}
+
+function openAsk(opts) {
+  opts = opts || {};
+  if (!SERVER_MODE) { toast('问答功能需要在服务器版使用'); return; }
+  if (!currentPath) { toast('请先打开一章再提问'); return; }
+  const firstOpen = !ASK_OPEN;
+  ASK_OPEN = true;
   $('ask-panel').hidden = false;
-  $('ask-section').textContent = ASK_SECTION.title;
+  $('ask-title').textContent = currentChapterName();
+  hideAskAlert();
   updateAskQuota();
-  $('ask-send').disabled = false;
-  if (!SERVER_MODE) {
-    renderAskNotice('问答功能需要在服务器版使用。');
-    $('ask-send').disabled = true;
-    return;
+  updateAskFab();
+  // 每次打开都按当前滚动位置重新取小节：用户可能换了位置，
+  // 这样提示行显示的"下一条会问哪节"才和实际一致
+  if (opts.sectionId) {
+    const t = tocHeadings.find(x => x.id === opts.sectionId);
+    ASK_SECTION = t ? { id: t.id, title: t.text } : ASK_SECTION;
+    renderAskSectionHint();
+  } else {
+    syncAskSection();
   }
+  if (!ASK_SECTION) { ASK_SECTION = { id: '', title: currentChapterName() }; renderAskSectionHint(); }
+
+  $('ask-send').disabled = false;
   if (!ACCOUNT) {
-    renderAskNotice('登录后即可就这一节提问（每天 5 次，管理员不限）。<br><button type="button" class="btn primary" id="ask-login-btn" style="margin-top:.6rem">登录 / 注册</button>');
+    renderAskNotice('登录后即可提问。<br><button type="button" class="btn primary" id="ask-login-btn">登录 / 注册</button>');
     $('ask-send').disabled = true;
+    $('ask-input').disabled = true;
     const b = $('ask-login-btn');
     if (b) b.addEventListener('click', () => openAuth('login'));
     return;
   }
-  loadAskHistory();
-  setTimeout(() => $('ask-input').focus(), 60);
+  $('ask-input').disabled = false;
+  // 同一章重复打开不再拉取历史，保留屏幕上的对话
+  if (firstOpen) loadAskHistory();
+  if (opts.focus) setTimeout(() => $('ask-input').focus(), 60);
 }
-function closeAsk() { $('ask-panel').hidden = true; }
+
+function closeAsk() {
+  ASK_OPEN = false;
+  $('ask-panel').hidden = true;
+  hideAskAlert();
+  updateAskFab();
+}
+// 切章时清空对话视图；下次打开会拉取新章的记录
+function resetAskForChapter() {
+  if (ASK_OPEN) closeAsk();
+  ASK_SECTION = null;
+  $('ask-log').innerHTML = '';
+  updateAskFab();
+}
+
+function hideAskAlert() { const el = $('ask-alert'); if (el) { el.hidden = true; el.textContent = ''; } }
+function showAskAlert(html) {
+  const el = $('ask-alert');
+  if (!el) return;
+  el.innerHTML = html;
+  el.hidden = false;
+}
+function renderAskNotice(html) { $('ask-log').innerHTML = '<div class="qa-empty">' + html + '</div>'; }
+
+// 气泡对话：用户右对齐、AI 左对齐；内容一律 escapeHtml，长文本可换行
+function bubbleHTML(role, text, extra) {
+  return '<div class="bubble ' + role + '">' + escapeHtml(text) + (extra || '') + '</div>';
+}
 function renderAskLog(items, pendingQ) {
   const log = $('ask-log');
   let html = '';
   if (!items.length && !pendingQ) {
-    html += '<div class="qa-empty">就这一节提问，AI 会结合本节正文回答；本节没讲到的，它会明确说“本节没有讲到”。</div>';
+    html += '<div class="qa-empty">就当前文章提问，AI 会结合你所在小节的正文回答；本节没讲到的，它会明确说“本节没有讲到”。</div>';
   }
   items.forEach(it => {
-    html += '<div class="qa"><div class="qa-q">' + escapeHtml(it.question) + '</div>' +
-            '<div class="qa-a">' + escapeHtml(it.answer) + '</div>' +
-            (it.created_at ? '<div class="qa-meta">' + escapeHtml(it.created_at) + '</div>' : '') +
-            '</div>';
+    html += bubbleHTML('me', it.question);
+    html += bubbleHTML('ai', it.answer);
+    if (it.created_at) html += '<div class="bubble-time">' + escapeHtml(it.created_at) + '</div>';
   });
   if (pendingQ) {
-    html += '<div class="qa"><div class="qa-q">' + escapeHtml(pendingQ) +
-            '</div><div class="qa-a">思考中…</div></div>';
+    html += bubbleHTML('me', pendingQ);
+    html += '<div class="bubble ai bubble-pending">正在思考…</div>';
   }
   log.innerHTML = html;
   log.scrollTop = log.scrollHeight;
 }
-async function loadAskHistory() {
-  if (!ASK_SECTION || !currentPath) return;
-  try {
-    const d = await api('/ask/history?path=' + encodeURIComponent(currentPath) + '&limit=30');
-    const items = ((d && d.items) || [])
-      .filter(it => it.section_title === ASK_SECTION.title)
-      .reverse();
-    renderAskLog(items);
-  } catch (e) { renderAskLog([]); }
+function appendBubble(role, text, extra) {
+  const log = $('ask-log');
+  log.insertAdjacentHTML('beforeend', bubbleHTML(role, text, extra));
+  log.scrollTop = log.scrollHeight;
 }
-function updateAskQuota() { $('ask-quota').innerHTML = quotaHTML(); }
+async function loadAskHistory() {
+  if (!currentPath || !ACCOUNT) return;
+  try {
+    // 按文章拉全部记录，不再按 section_title 过滤（否则切小节就看不到别的节）
+    const d = await api('/ask/history?path=' + encodeURIComponent(currentPath) + '&limit=50');
+    const items = ((d && d.items) || []).slice().reverse();   // 接口按时间倒序，反转成正序
+    renderAskLog(items);
+  } catch (e) {
+    renderAskLog([]);
+    showAskAlert('加载历史对话失败：' + escapeHtml(e.message || '未知错误'));
+  }
+}
+function updateAskQuota() { const el = $('ask-quota'); if (el) el.innerHTML = ACCOUNT ? quotaHTML() : ''; }
+
 async function submitAsk(event) {
   event.preventDefault();
-  if (ASK_BUSY || !SERVER_MODE || !ASK_SECTION) return;
+  if (ASK_BUSY || !SERVER_MODE || !currentPath) return;
   const q = $('ask-input').value.trim();
   if (!q) return;
   if (!ACCOUNT) { openAuth('login'); return; }
+  // 上下文在发送这一刻取：用户中途滚动到别的小节，下一条就用新的
+  // 上下文始终以"发送这一刻的滚动位置"为准，不依赖打开面板时的小节；
+  // 取不到小节（例如章节没有 h2/h3）时退回本章第一个小节，仍可提问。
+  const anchorId = currentSectionAnchor() || (tocHeadings[0] && tocHeadings[0].id);
+  const t = anchorId ? tocHeadings.find(x => x.id === anchorId) : null;
+  ASK_SECTION = t ? { id: t.id, title: t.text } : { id: '', title: currentChapterName() };
+
+
   ASK_BUSY = true;
   $('ask-send').disabled = true;
-  renderAskLog([], q);
+  hideAskAlert();
+  appendBubble('me', q);
+  appendBubble('ai', '正在思考…', '');
+  const pendingEl = $('ask-log').lastElementChild;
+  if (pendingEl) pendingEl.classList.add('bubble-pending');
+  $('ask-input').value = '';
+
   try {
     const d = await api('/ask', { method: 'POST', body: {
       path: currentPath, section_id: ASK_SECTION.id, section_title: ASK_SECTION.title, question: q } });
-    if (ACCOUNT.quota) { ACCOUNT.quota.used = d.used; ACCOUNT.quota.limit = d.limit; }
-    updateAskQuota();
-    $('ask-input').value = '';
-    await loadAskHistory();
-  } catch (err) {
-    const log = $('ask-log');
-    const box = document.createElement('div');
-    box.className = 'qa';
-    box.innerHTML = '<div class="qa-q">' + escapeHtml(q) +
-      '</div><div class="qa-a" style="color:var(--danger)">' + escapeHtml((err && err.message) || '提问失败') + '</div>';
-    log.appendChild(box);
-    log.scrollTop = log.scrollHeight;
-    if (err && err.status === 429 && err.data && ACCOUNT.quota) {
-      ACCOUNT.quota.used = err.data.used;
-      ACCOUNT.quota.limit = err.data.limit;
-      updateAskQuota();
+    if (ACCOUNT.quota && d) {
+      if (typeof d.used === 'number') ACCOUNT.quota.used = d.used;
+      if (typeof d.limit === 'number') ACCOUNT.quota.limit = d.limit;
     }
-    if (err && err.status === 401) { ACCOUNT = null; renderAccount(); }
+    if (pendingEl) pendingEl.remove();
+    appendBubble('ai', (d && d.answer) || '（没有返回内容）');
+    updateAskQuota();
+    // 同步进内存历史，切回本章时无需重新请求也能看到
+    (ASK_HISTORY_CACHE[currentPath] = ASK_HISTORY_CACHE[currentPath] || [])
+      .push({ question: q, answer: (d && d.answer) || '', created_at: '' });
+  } catch (err) {
+    if (pendingEl) pendingEl.remove();
+    const status = err && err.status;
+    if (status === 401) {
+      ACCOUNT = null;
+      renderAccount();
+      appendBubble('err', '登录状态已失效，请重新登录。', '<br><button type="button" class="btn primary" id="ask-login-btn">登录</button>');
+      const b = $('ask-login-btn');
+      if (b) b.addEventListener('click', () => openAuth('login'));
+      $('ask-input').disabled = true;
+      $('ask-send').disabled = true;
+    } else {
+      appendBubble('err', (err && err.message) || '提问失败，请稍后重试');
+      if (status === 429) {
+        if (err.data) {
+          if (typeof err.data.used === 'number' && ACCOUNT && ACCOUNT.quota) ACCOUNT.quota.used = err.data.used;
+          if (typeof err.data.limit === 'number' && ACCOUNT && ACCOUNT.quota) ACCOUNT.quota.limit = err.data.limit;
+        }
+        showAskAlert(escapeHtml((err && err.message) || '今日免费额度已用尽') +
+          '　在「设置」里填写自己的 API Key 即可不限次数。');
+        updateAskQuota();
+      }
+    }
   } finally {
     ASK_BUSY = false;
-    $('ask-send').disabled = false;
+    if (ACCOUNT) $('ask-send').disabled = false;
+  }
+}
+
+/* —— 我的主页 —— */
+function fmtDuration(seconds) {
+  const s = Math.max(0, Math.round(seconds || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h) return h + ' 小时 ' + m + ' 分';
+  if (m) return m + ' 分';
+  return s + ' 秒';
+}
+function chapterNameOf(path) {
+  const meta = chapters.find(c => c.path === path);
+  return meta ? meta.name : path;
+}
+function profileLoadingHTML() {
+  return '<div class="empty-note">正在加载你的主页…</div>';
+}
+function profileErrorHTML(message) {
+  return '<div class="empty-note">加载失败：' + escapeHtml(message) +
+         '<br><button type="button" class="btn" id="profile-retry">重试</button></div>';
+}
+
+function openProfile() {
+  $('account-menu').hidden = true;
+  $('profile-modal').hidden = false;
+  $('profile-body').innerHTML = profileLoadingHTML();
+  loadProfile();
+}
+function closeProfile() { $('profile-modal').hidden = true; }
+
+async function loadProfile() {
+  const body = $('profile-body');
+  if (!SERVER_MODE || !ACCOUNT) {
+    body.innerHTML = profileErrorHTML('未登录，无法读取主页数据');
+    return;
+  }
+  try {
+    const d = await api('/profile');
+    body.innerHTML = renderProfile(d);
+    bindProfileEvents(d);
+  } catch (e) {
+    body.innerHTML = profileErrorHTML((e && e.message) || '网络错误');
+    const btn = $('profile-retry');
+    if (btn) btn.addEventListener('click', () => { body.innerHTML = profileLoadingHTML(); loadProfile(); });
+  }
+}
+
+function renderProfile(d) {
+  const stats = d.stats || {};
+  const admin = d.role === 'admin';
+  const email = d.email_masked
+    ? escapeHtml(d.email_masked)
+    : '未设置　<span style="color:var(--accent)">可在「设置」里填写</span>';
+
+  const readPaths = (d.read_paths || []).slice(0, 5);
+  const readHTML = readPaths.length
+    ? readPaths.map(p => `<button type="button" class="browse-item" data-goto="${escapeHtml(p)}">
+        <span class="bi-name">${escapeHtml(chapterNameOf(p))}</span>
+        <span class="bi-meta">继续阅读 →</span>
+      </button>`).join('')
+    : '<div class="empty-note">还没有读完的章节。读满一章进度后，这里会列出最近读过的章。</div>';
+
+  const asks = (d.recent_asks || []).slice(0, 5);
+  const askHTML = asks.length
+    ? asks.map(a => `<button type="button" class="browse-item" data-goto="${escapeHtml(a.path)}">
+        <span class="bi-q">${escapeHtml(a.question || '')}</span>
+        <span class="bi-meta">${escapeHtml(a.created_at || '')}</span>
+      </button>`).join('')
+    : '<div class="empty-note">还没有提问记录。</div>';
+
+  return `
+    <div class="profile-head">
+      <div class="profile-avatar">${escapeHtml(String(d.username || '?').charAt(0).toUpperCase())}</div>
+      <div class="profile-id">
+        <div class="profile-name">${escapeHtml(d.username || '')}
+          <span class="account-badge"${admin ? '' : ' hidden'}>管理员</span>
+          ${admin ? '' : '<span class="account-badge" style="color:#94a3b8;background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.3)">普通</span>'}
+        </div>
+        <div class="profile-sub">注册于 <b>${escapeHtml(d.member_since || '未知')}</b><br>邮箱：${email}</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.read_chapters || 0))}</div><div class="stat-cap">已读章数</div></div>
+      <div class="stat-cell"><div class="stat-num" style="font-size:.86rem">${escapeHtml(fmtDuration(stats.read_seconds))}</div><div class="stat-cap">累计阅读</div></div>
+      <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.asked || 0))}</div><div class="stat-cap">提问次数</div></div>
+      <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.streak_days || 0))}</div><div class="stat-cap">连续学习天数</div></div>
+    </div>
+    <div class="sec-title">继续阅读</div>
+    <div class="browse-list">${readHTML}</div>
+    <div class="sec-title">最近提问</div>
+    <div class="browse-list">${askHTML}</div>
+  `;
+}
+
+function bindProfileEvents() {
+  $('profile-body').querySelectorAll('[data-goto]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const path = btn.dataset.goto;
+      closeProfile();
+      loadChapter(path);
+    });
+  });
+}
+
+/* —— 设置：AI Key + 邮箱 —— */
+function openSettings() {
+  $('account-menu').hidden = true;
+  $('settings-modal').hidden = false;
+  $('settings-key-msg').textContent = '';
+  $('settings-key-msg').classList.remove('ok');
+  $('settings-email-msg').textContent = '';
+  $('settings-email-msg').classList.remove('ok');
+  $('settings-key-input').value = '';
+  loadSettings();
+}
+function closeSettings() { $('settings-modal').hidden = true; }
+
+async function loadSettings() {
+  if (!SERVER_MODE || !ACCOUNT) {
+    $('settings-key-state').textContent = '未登录，无法读取设置。';
+    return;
+  }
+  try {
+    const d = await api('/settings');
+    renderSettingsState(d);
+  } catch (e) {
+    $('settings-key-state').textContent = '设置读取失败：' + (e.message || '网络错误');
+  }
+}
+
+function renderSettingsState(d) {
+  const hasKey = !!(d && d.has_key);
+  const state = $('settings-key-state');
+  const input = $('settings-key-input');
+  const clearBtn = $('settings-key-clear');
+  if (hasKey) {
+    state.innerHTML = '已使用你自己的 API Key（<b>' + escapeHtml(d.key_hint || '') + '</b>）· 提问不限次数';
+    clearBtn.hidden = false;
+    input.hidden = true;
+    $('settings-key-form').hidden = true;
+    $('settings-key-save').textContent = '更换 Key';
+  } else {
+    const q = (ACCOUNT && ACCOUNT.quota) || { used: 0, limit: 5 };
+    const left = q.limit === -1 ? '不限' : Math.max(0, q.limit - q.used);
+    state.innerHTML = '使用免费额度：今日剩余 <b>' + left + '</b> / ' + (q.limit === -1 ? '不限' : q.limit) + ' 次';
+    clearBtn.hidden = true;
+    input.hidden = false;
+    $('settings-key-form').hidden = false;
+    $('settings-key-save').textContent = '保存并验证';
+  }
+}
+
+function setSettingsMsg(id, text, ok) {
+  const el = $(id);
+  el.textContent = text || '';
+  el.classList.toggle('ok', !!ok);
+}
+
+async function saveKey() {
+  const input = $('settings-key-input');
+  const key = input.value.trim();
+  setSettingsMsg('settings-key-msg', '');
+  if (!key) { setSettingsMsg('settings-key-msg', '请填写 API Key'); input.focus(); return; }
+  const btn = $('settings-key-save');
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = '验证中…';
+  try {
+    const d = await api('/settings', { method: 'POST', body: { llm_api_key: key } });
+    input.value = '';
+    setSettingsMsg('settings-key-msg', '已保存，验证通过', true);
+    toast('已保存，验证通过');
+    await refreshAccount();
+    renderSettingsState(d);
+  } catch (e) {
+    // 后端的中文原因要留在表单里可见，不能只弹 toast
+    setSettingsMsg('settings-key-msg', (e && e.message) || '保存失败，请稍后重试');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+async function clearKey() {
+  if (!window.confirm('清除后将删除服务器上保存的 API Key，提问会回到每日免费额度（每日 5 次）。确定清除吗？')) return;
+  setSettingsMsg('settings-key-msg', '');
+  const btn = $('settings-key-clear');
+  btn.disabled = true;
+  try {
+    await api('/settings', { method: 'POST', body: { clear: true } });
+    setSettingsMsg('settings-key-msg', '已清除，提问回到每日免费额度', true);
+    toast('已清除');
+    await refreshAccount();
+    await loadSettings();
+  } catch (e) {
+    setSettingsMsg('settings-key-msg', (e && e.message) || '清除失败，请稍后重试');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function saveEmail() {
+  const email = $('settings-email').value.trim();
+  setSettingsMsg('settings-email-msg', '');
+  const btn = $('settings-email-save');
+  btn.disabled = true;
+  try {
+    const d = await api('/settings', { method: 'POST', body: { email } });
+    setSettingsMsg('settings-email-msg',
+      '已保存：' + ((d && d.email_masked) || (email ? '已更新' : '已清空')), true);
+    toast('邮箱已保存');
+    await refreshAccount();
+  } catch (e) {
+    setSettingsMsg('settings-email-msg', (e && e.message) || '保存失败，请稍后重试');
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -2950,24 +3668,45 @@ $('menu-logout').addEventListener('click', async () => {
   try { await api('/auth/logout', { method: 'POST' }); } catch (e) { /* 忽略 */ }
   $('account-menu').hidden = true;
   ACCOUNT = null;
-  SERVER_PROGRESS = {};
+  await loadServerProgress();   // 回落到本地进度，未登录也能看到 ✓
   renderAccount();
   refreshProgressMarks();
   updateAskQuota();
+  resetAskForChapter();
   toast('已退出登录');
 });
 $('menu-password').addEventListener('click', () => { $('account-menu').hidden = true; openAuth('password'); });
-$('menu-progress').addEventListener('click', () => { $('account-menu').hidden = true; window.location.hash = 'roadmap'; });
+$('menu-profile').addEventListener('click', openProfile);
+$('menu-settings').addEventListener('click', openSettings);
+$('profile-close').addEventListener('click', closeProfile);
+$('profile-modal').addEventListener('click', e => { if (e.target.id === 'profile-modal') closeProfile(); });
+$('settings-close').addEventListener('click', closeSettings);
+$('settings-modal').addEventListener('click', e => { if (e.target.id === 'settings-modal') closeSettings(); });
+$('settings-key-save').addEventListener('click', () => {
+  // 已保存 key 时按钮语义是「更换 Key」：先展开输入框再让用户填
+  if ($('settings-key-form').hidden) {
+    $('settings-key-form').hidden = false;
+    $('settings-key-input').hidden = false;
+    $('settings-key-save').textContent = '保存并验证';
+    $('settings-key-input').focus();
+    return;
+  }
+  saveKey();
+});
+$('settings-key-clear').addEventListener('click', clearKey);
+$('settings-email-save').addEventListener('click', saveEmail);
 $('auth-close').addEventListener('click', closeAuth);
 $('auth-modal').addEventListener('click', e => { if (e.target.id === 'auth-modal') closeAuth(); });
 document.querySelectorAll('.auth-tab').forEach(t => t.addEventListener('click', () => openAuth(t.dataset.tab)));
 $('auth-form').addEventListener('submit', submitAuth);
 $('ask-close').addEventListener('click', closeAsk);
-$('ask-fab').addEventListener('click', () => openAsk(null));
+$('ask-fab').addEventListener('click', () => openAsk({ focus: true }));
 $('ask-form').addEventListener('submit', submitAsk);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (!$('ask-panel').hidden) closeAsk();
+  if (!$('settings-modal').hidden) closeSettings();
+  else if (!$('profile-modal').hidden) closeProfile();
+  else if (!$('ask-panel').hidden) closeAsk();
   else if (!$('auth-modal').hidden) closeAuth();
 });
 
