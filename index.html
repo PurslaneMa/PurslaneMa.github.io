@@ -4,12 +4,48 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark light">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f172a'/%3E%3Cpath d='M8 8h9.5A4.5 4.5 0 0 1 22 12.5V25a3.5 3.5 0 0 0-3.5-3.5H8z' fill='%236366f1'/%3E%3Cpath d='M8 8v13.5h10.5' stroke='%23c7d2fe' stroke-width='1.4' fill='none' opacity='.85'/%3E%3C/svg%3E">
-<title>教材阅读器</title>
-<meta name="description" content="面向算法竞赛生的计算机速通教材：从 OJ 到开发部署，覆盖终端、操作系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章，支持全文搜索与复习路线。">
+<!-- 图标与分享图由 assets/make_assets.py 生成；manifest 提供「添加到主屏幕」 -->
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="assets/manifest.json">
+<title>速通笔记 · 从 OJ 到开发部署</title>
+<meta name="description" content="面向算法竞赛生的计算机速通教材：从 OJ 到开发部署，覆盖终端、操作系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章。支持全文搜索、阅读进度同步与逐节问 AI。">
 <meta name="theme-color" content="#0a0f1f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)">
 <meta name="author" content="Purslane">
+<meta name="keywords" content="算法竞赛,OI,计算机基础,终端,Linux,操作系统,Git,GitHub,数据库,Docker,部署,AI 工程,速通笔记">
+<meta name="apple-mobile-web-app-title" content="速通笔记">
+<link rel="canonical" href="https://purslanema.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="速通笔记">
+<meta property="og:title" content="速通笔记 · 从 OJ 到开发部署">
+<meta property="og:description" content="算法竞赛生的计算机补全课：终端、系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章。">
+<meta property="og:url" content="https://purslanema.github.io/">
+<meta property="og:image" content="https://purslanema.github.io/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="速通笔记 · 从 OJ 到开发部署">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="速通笔记 · 从 OJ 到开发部署">
+<meta name="twitter:description" content="算法竞赛生的计算机补全课：终端、系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章。">
+<meta name="twitter:image" content="https://purslanema.github.io/assets/og-cover.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Book",
+  "name": "速通笔记",
+  "alternateName": "面向算法竞赛生的计算机速通笔记",
+  "description": "面向算法竞赛生的计算机速通教材：从 OJ 到开发部署，覆盖终端、操作系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章。",
+  "inLanguage": "zh-CN",
+  "bookFormat": "https://schema.org/EBook",
+  "url": "https://purslanema.github.io/",
+  "author": { "@type": "Person", "name": "Purslane" },
+  "publisher": { "@type": "Organization", "name": "速通笔记" },
+  "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+}
+</script>
 
 <!-- CDN libraries: marked (markdown), KaTeX (math), highlight.js (code), mermaid (diagrams) -->
 <script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
@@ -1108,7 +1144,123 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 .copy-btn { min-height: 30px; padding: 0.3rem 0.7rem; }
 @media (max-width: 860px) { .copy-btn { min-height: 34px; } }
 
-/* 尊重系统"减少动态效果"设置 */
+/* ══════════════ 账号（登录 / 注册 / 我的进度） ══════════════ */
+.account-chip {
+  position: absolute; top: .95rem; right: 3.6rem;
+  display: flex; align-items: center; gap: .4rem;
+  height: 34px; padding: 0 .65rem 0 .35rem;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.10);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  color: var(--text); font: inherit; font-size: .74rem; cursor: pointer;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+.account-chip:hover { background: rgba(var(--accent-rgb), .18); border-color: var(--accent); transform: translateY(-1px); }
+.account-initial {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; flex: none;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), .95), rgba(var(--accent-2-rgb), .8));
+  color: #fff; font-weight: 700; font-size: .72rem;
+}
+.account-menu {
+  position: absolute; top: 3.6rem; right: .85rem; z-index: 60;
+  min-width: 172px; padding: .35rem;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+}
+.account-menu-head { padding: .45rem .6rem; font-size: .72rem; color: var(--text-dim); border-bottom: 1px solid var(--border); margin-bottom: .3rem; }
+.account-menu button {
+  display: block; width: 100%; text-align: left;
+  padding: .45rem .6rem; border: none; border-radius: 8px;
+  background: none; color: var(--text); font: inherit; font-size: .8rem; cursor: pointer;
+}
+.account-menu button:hover { background: var(--hover-bg); }
+
+/* 阅读进度标记 */
+.chapter-item.read .ci-name::after { content: '✓'; margin-left: .35rem; color: var(--ok); font-weight: 700; }
+#my-progress { display: block; margin-top: .35rem; font-size: .72rem; color: var(--text-dim); }
+#my-progress b { color: var(--accent-2); }
+
+/* 通用弹窗 */
+.modal { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 1rem;
+  background: rgba(var(--bg-rgb), .72); backdrop-filter: blur(6px); }
+.modal-card { position: relative; width: min(404px, 100%); padding: 1.3rem 1.4rem 1.1rem;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); }
+.modal-card h2 { margin: 0 0 .8rem; font-size: 1.05rem; color: var(--heading); }
+.modal-x { position: absolute; top: .7rem; right: .8rem; width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid transparent; background: none; color: var(--text-dim); font-size: 1.2rem; line-height: 1; cursor: pointer; }
+.modal-x:hover { background: var(--hover-bg); color: var(--text); }
+.auth-tabs { display: flex; gap: .3rem; padding: .25rem; margin-bottom: .9rem; border-radius: 10px; background: rgba(var(--bg-rgb), .5); }
+.auth-tab { flex: 1; padding: .4rem; border: none; border-radius: 8px; background: none; color: var(--text-dim); font: inherit; font-size: .8rem; cursor: pointer; }
+.auth-tab.active { background: rgba(var(--accent-rgb), .16); color: var(--accent); font-weight: 600; }
+#auth-form label { display: block; margin-bottom: .7rem; font-size: .78rem; color: var(--text-dim); }
+#auth-form input { display: block; width: 100%; margin-top: .25rem; padding: .5rem .6rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 9px; color: var(--text); font: inherit; font-size: .85rem; }
+#auth-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
+.auth-msg { min-height: 1.1rem; margin: .2rem 0 .6rem; font-size: .76rem; color: var(--danger); }
+.auth-note { margin: .7rem 0 0; font-size: .72rem; color: var(--text-dim); line-height: 1.6; }
+
+/* ══════════════ 问 AI ══════════════ */
+.h-ask {
+  margin-left: .55rem; padding: .12rem .5rem; vertical-align: middle;
+  border-radius: 999px; border: 1px solid rgba(var(--accent-rgb), .3);
+  background: rgba(var(--accent-rgb), .10); color: var(--accent);
+  font: inherit; font-size: .68rem; font-weight: 600; cursor: pointer;
+  opacity: 0; transition: opacity .18s, background .18s, transform .18s;
+}
+#content h2:hover .h-ask, #content h3:hover .h-ask, .h-ask:focus-visible { opacity: 1; }
+.h-ask:hover { background: rgba(var(--accent-rgb), .2); transform: translateY(-1px); }
+@media (hover: none) { .h-ask { opacity: .75; } }
+.ask-fab {
+  position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 300;
+  padding: .6rem 1rem; border-radius: 999px; border: 1px solid rgba(var(--accent-2-rgb), .45);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), .95), rgba(var(--accent-2-rgb), .85));
+  color: #fff; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer;
+  box-shadow: 0 10px 26px rgba(var(--accent-strong-rgb), .35); transition: transform .2s, box-shadow .2s;
+}
+.ask-fab:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(var(--accent-strong-rgb), .45); }
+.ask-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 350;
+  width: min(430px, 100%); display: flex; flex-direction: column;
+  background: var(--sidebar-bg); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  animation: ask-in .22s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes ask-in { from { transform: translateX(16px); opacity: 0 } to { transform: none; opacity: 1 } }
+.ask-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; padding: 1rem 1rem .7rem; border-bottom: 1px solid var(--border); }
+.ask-kicker { font-size: .68rem; letter-spacing: .08em; color: var(--accent-2); }
+.ask-section { margin-top: .2rem; font-size: .92rem; font-weight: 600; color: var(--heading); line-height: 1.45; }
+.ask-quota { padding: .5rem 1rem; font-size: .74rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+.ask-quota b { color: var(--accent-2); }
+.ask-log { flex: 1; overflow-y: auto; padding: .8rem 1rem; display: grid; gap: .8rem; align-content: start; }
+.qa { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: rgba(var(--bg-rgb), .45); }
+.qa-q { padding: .5rem .7rem; font-size: .8rem; color: var(--heading); background: rgba(var(--accent-rgb), .08); }
+.qa-a { padding: .6rem .7rem; font-size: .82rem; line-height: 1.75; white-space: pre-wrap; color: var(--text); }
+.qa-meta { padding: 0 .7rem .5rem; font-size: .68rem; color: var(--text-dim); }
+.qa-empty { padding: .3rem 0; font-size: .78rem; color: var(--text-dim); line-height: 1.7; }
+#ask-form { padding: .7rem 1rem 1rem; border-top: 1px solid var(--border); }
+#ask-input { width: 100%; resize: vertical; padding: .55rem .65rem; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font: inherit; font-size: .84rem; line-height: 1.6; }
+#ask-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .15); }
+.ask-actions { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .5rem; }
+.ask-hint { font-size: .7rem; color: var(--text-dim); }
+.btn.primary { background: linear-gradient(135deg, var(--accent-strong), var(--accent)); border: none; color: #fff; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: .55; cursor: not-allowed; filter: none; }
+
+/* 轻提示 */
+.toast {
+  position: fixed; left: 50%; bottom: 1.6rem; transform: translate(-50%, 12px);
+  z-index: 500; max-width: min(90vw, 420px);
+  padding: .55rem .9rem; border-radius: 10px;
+  background: var(--card-bg); border: 1px solid var(--border); color: var(--text);
+  font-size: .8rem; box-shadow: var(--shadow-lg);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* 未连接后端（GitHub Pages 静态版）时隐藏账号与问 AI 入口 */
+body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { display: none !important; }
+
+/* 尊重系统“减少动态效果”设置 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -1140,7 +1292,7 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
         </svg>
       </div>
       <div>
-        <div class="brand-title">教材阅读器</div>
+        <div class="brand-title">速通笔记</div>
         <div class="brand-sub">从 OJ 到开发部署 · 学习路线图</div>
       </div>
     </button>
@@ -1152,6 +1304,16 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
         <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>
       </svg>
     </button>
+    <button type="button" id="account-chip" class="account-chip" hidden title="账号 / 登录">
+      <span id="account-initial" class="account-initial">登</span>
+      <span id="account-name" class="account-name">登录</span>
+    </button>
+    <div id="account-menu" class="account-menu" hidden>
+      <div class="account-menu-head" id="account-menu-head">—</div>
+      <button type="button" id="menu-progress">我的进度</button>
+      <button type="button" id="menu-password">修改密码</button>
+      <button type="button" id="menu-logout">退出登录</button>
+    </div>
     <div class="sidebar-tabs" role="tablist" aria-label="侧边栏面板">
       <button type="button" class="tab-btn active" data-panel="list" role="tab" aria-selected="true">章节目录</button>
       <button type="button" class="tab-btn" data-panel="toc" role="tab" aria-selected="false">本章目录</button>
@@ -1180,6 +1342,7 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
       <span><i class="dot dot-opt"></i>选读</span>
     </div>
     <div id="chapter-count"></div>
+    <div id="my-progress" hidden></div>
   </div>
 </nav>
 
@@ -1254,6 +1417,56 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
     </nav>
   </div>
 </main>
+
+<!-- 账号：登录 / 注册 / 修改密码（服务器版） -->
+<div id="auth-modal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <button class="modal-x" id="auth-close" aria-label="关闭">&times;</button>
+    <h2 id="auth-title">登录速通笔记</h2>
+    <div class="auth-tabs" role="tablist" id="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login" role="tab" aria-selected="true">登录</button>
+      <button type="button" class="auth-tab" data-tab="register" role="tab" aria-selected="false">注册</button>
+    </div>
+    <form id="auth-form" autocomplete="on" novalidate>
+      <label id="auth-user-wrap">用户名
+        <input id="auth-user" name="username" autocomplete="username" maxlength="24" placeholder="3–24 位字母、数字、下划线或短横线">
+      </label>
+      <label id="auth-old-wrap" hidden>当前密码
+        <input id="auth-old" type="password" autocomplete="current-password">
+      </label>
+      <label id="auth-pass-wrap">密码
+        <input id="auth-pass" type="password" autocomplete="current-password" placeholder="至少 8 位">
+      </label>
+      <label id="auth-pass2-wrap" hidden>确认密码
+        <input id="auth-pass2" type="password" autocomplete="new-password">
+      </label>
+      <p id="auth-msg" class="auth-msg" role="alert"></p>
+      <button type="submit" class="btn primary" id="auth-submit">登录</button>
+    </form>
+    <p class="auth-note" id="auth-note">登录后可保存阅读进度、同步自检勾选，并使用「问 AI」——普通账号每天 5 次，管理员不限。</p>
+  </div>
+</div>
+
+<!-- 问 AI：面板 + 悬浮入口 -->
+<aside id="ask-panel" class="ask-panel" hidden aria-label="问 AI">
+  <header class="ask-head">
+    <div>
+      <div class="ask-kicker">问 AI · 本节</div>
+      <div id="ask-section" class="ask-section">—</div>
+    </div>
+    <button class="modal-x" id="ask-close" aria-label="关闭">&times;</button>
+  </header>
+  <div id="ask-quota" class="ask-quota"></div>
+  <div id="ask-log" class="ask-log"></div>
+  <form id="ask-form">
+    <textarea id="ask-input" rows="3" maxlength="500" placeholder="就这一节提问，例如：为什么这里说 300 个周期而不是 300 条指令？"></textarea>
+    <div class="ask-actions">
+      <span id="ask-hint" class="ask-hint"></span>
+      <button type="submit" class="btn primary" id="ask-send">发送</button>
+    </div>
+  </form>
+</aside>
+<button id="ask-fab" class="ask-fab" hidden aria-label="就本节问 AI">问 AI</button>
 
 <script>
 'use strict';
@@ -1383,6 +1596,7 @@ async function init() {
     renderSidebar();
     renderRoadmap();
     updateChapterCount();
+    detectServer();
 
     const fromHash = decodePathFromHash();
     if (fromHash && fromHash !== 'roadmap') {
@@ -1436,6 +1650,7 @@ function renderSidebar() {
       </div>
     </div>`;
   }).join('');
+  refreshProgressMarks();
 }
 
 // 侧边栏事件委托：加载章节 / 折叠分组 / 切换面板
@@ -1570,6 +1785,7 @@ async function loadChapter(path, opts) {
     const md = await fetchText(STATIC_MODE ? './' + path.split('/').map(encodeURIComponent).join('/') : '/api/chapter?path=' + encodeURIComponent(path));
     if (gen !== chapterGen) return; // 已被更新的请求取代
     renderContent(md, path);
+    markChapterRead(path);
     if (window.innerWidth <= 860) closeSidebar();
   } catch (e) {
     if (gen !== chapterGen) return;
@@ -1638,8 +1854,9 @@ function showRoadmap() {
   tocHeadings = [];
   $('toc-list').hidden = true;
   $('toc-placeholder').hidden = false;
+  updateAskFab();
   setActiveChapter(null);
-  document.title = '教材阅读器 — 学习路线图';
+  document.title = '速通笔记 — 学习路线图';
   window.scrollTo(0, 0);
 }
 
@@ -1822,6 +2039,7 @@ function renderContent(md, path) {
   // 本章目录（H2/H3）
   buildToc();
   setupSelfCheck();
+  setupAskButtons();
 
   // 侧边栏高亮当前章节（列表与路线图 chips）
   setActiveChapter(path);
@@ -1838,7 +2056,7 @@ function renderContent(md, path) {
 
   // 上一章 / 下一章
   updatePrevNext();
-  document.title = (meta.name || '') + ' — 教材阅读器';
+  document.title = (meta.name || '') + ' — 速通笔记';
 
   showContent();
 
@@ -2357,6 +2575,7 @@ function setupSelfCheck() {
       if (on) set.add(i); else set.delete(i);
       paint(on);
       try { localStorage.setItem(key, JSON.stringify([...set])); } catch (e) { /* 存储不可用时忽略 */ }
+      saveChecksToServer(currentPath, [...set]);
     });
   });
 }
@@ -2381,6 +2600,376 @@ if (themeToggle) {
   });
 }
 initTheme();
+
+/* ══════════════ 账号 · 进度 · 问 AI（服务器版功能） ══════════════ */
+// 仅当页面同源存在 api/health 时启用；GitHub Pages 静态版探测失败，
+// 入口由 body.no-server 隐藏，阅读/搜索/主题等原有功能不受影响。
+const API_BASE = 'api';
+let SERVER_MODE = false;
+let ACCOUNT = null;          // {username, role, quota:{used, limit}}
+let SERVER_PROGRESS = {};    // {path: {state, checks}}
+let AUTH_MODE = 'login';     // login | register | password
+let ASK_SECTION = null;      // {id, title}
+let ASK_BUSY = false;
+const CHECK_SAVE_DELAY = 700;
+const checkTimers = new Map();
+
+async function api(path, opts = {}) {
+  const init = { method: opts.method || 'GET', credentials: 'same-origin', headers: {} };
+  if (opts.body !== undefined) {
+    init.headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(API_BASE + path, init);
+  const text = await res.text();
+  let data = null;
+  if (text) { try { data = JSON.parse(text); } catch (e) { data = null; } }
+  if (!res.ok) {
+    const err = new Error((data && data.error) || ('HTTP ' + res.status));
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+let toastTimer = null;
+function toast(text) {
+  let el = $('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* —— 探测后端 —— */
+async function detectServer() {
+  try {
+    const h = await api('/health');
+    SERVER_MODE = !!(h && h.status === 'ok');
+  } catch (e) {
+    SERVER_MODE = false;
+  }
+  document.body.classList.toggle('no-server', !SERVER_MODE);
+  const chip = $('account-chip');
+  if (chip) chip.hidden = !SERVER_MODE;
+  updateAskFab();
+  if (!SERVER_MODE) return;
+  await refreshAccount();
+}
+
+/* —— 账号状态 —— */
+function isAdmin() { return !!(ACCOUNT && ACCOUNT.role === 'admin'); }
+function quotaHTML() {
+  if (!ACCOUNT) return '未登录';
+  const q = ACCOUNT.quota || { used: 0, limit: 0 };
+  if (q.limit === -1) return '管理员账号 · 提问不限次数';
+  return '今日剩余 <b>' + Math.max(0, q.limit - q.used) + '</b> / ' + q.limit + ' 次';
+}
+
+async function refreshAccount() {
+  try { ACCOUNT = await api('/auth/me'); }
+  catch (e) { ACCOUNT = null; }
+  renderAccount();
+  if (ACCOUNT) await loadServerProgress();
+  else SERVER_PROGRESS = {};
+  refreshProgressMarks();
+  updateAskQuota();
+}
+
+function renderAccount() {
+  const chip = $('account-chip');
+  if (!chip) return;
+  const name = $('account-name'), initial = $('account-initial');
+  if (ACCOUNT) {
+    chip.hidden = false;
+    name.textContent = ACCOUNT.username;
+    initial.textContent = String(ACCOUNT.username || '?').charAt(0).toUpperCase();
+    const q = ACCOUNT.quota || {};
+    $('account-menu-head').textContent = ACCOUNT.username + (isAdmin() ? '（管理员）' : '') +
+      ' · ' + (q.limit === -1 ? '不限次数' : '每日 ' + q.limit + ' 次');
+  } else {
+    chip.hidden = !SERVER_MODE;
+    name.textContent = '登录';
+    initial.textContent = '登';
+    $('account-menu').hidden = true;
+  }
+  updateMyProgress();
+}
+
+/* —— 登录 / 注册 / 改密码 —— */
+function openAuth(mode) {
+  AUTH_MODE = mode || 'login';
+  const isPwd = AUTH_MODE === 'password';
+  $('auth-modal').hidden = false;
+  $('auth-tabs').hidden = isPwd;
+  $('auth-title').textContent = isPwd ? '修改密码'
+    : (AUTH_MODE === 'register' ? '注册速通笔记' : '登录速通笔记');
+  $('auth-user-wrap').hidden = isPwd;
+  $('auth-old-wrap').hidden = !isPwd;
+  $('auth-pass2-wrap').hidden = AUTH_MODE === 'login';
+  $('auth-pass-wrap').firstChild.nodeValue = isPwd ? '新密码' : '密码';
+  $('auth-pass').setAttribute('autocomplete', AUTH_MODE === 'login' ? 'current-password' : 'new-password');
+  $('auth-submit').textContent = isPwd ? '保存新密码' : (AUTH_MODE === 'register' ? '注册并登录' : '登录');
+  $('auth-note').hidden = isPwd;
+  $('auth-msg').textContent = '';
+  document.querySelectorAll('.auth-tab').forEach(t => {
+    const on = t.dataset.tab === AUTH_MODE;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', String(on));
+  });
+  $('auth-user').value = (ACCOUNT && !isPwd) ? ACCOUNT.username : '';
+  $('auth-pass').value = '';
+  $('auth-pass2').value = '';
+  $('auth-old').value = '';
+  setTimeout(() => { (isPwd ? $('auth-old') : $('auth-user')).focus(); }, 30);
+}
+function closeAuth() { $('auth-modal').hidden = true; }
+
+async function submitAuth(event) {
+  event.preventDefault();
+  const msg = $('auth-msg');
+  const user = $('auth-user').value.trim();
+  const pass = $('auth-pass').value;
+  const pass2 = $('auth-pass2').value;
+  msg.textContent = '';
+  try {
+    if (AUTH_MODE === 'register') {
+      if (!/^[A-Za-z0-9_-]{3,24}$/.test(user)) throw new Error('用户名需为 3–24 位字母、数字、下划线或短横线');
+      if (pass.length < 8) throw new Error('密码至少 8 位');
+      if (pass !== pass2) throw new Error('两次输入的密码不一致');
+      await api('/auth/register', { method: 'POST', body: { username: user, password: pass } });
+      closeAuth();
+      await refreshAccount();
+      toast('注册成功，已登录：' + (ACCOUNT ? ACCOUNT.username : user));
+      return;
+    }
+    if (AUTH_MODE === 'password') {
+      if (pass.length < 8) throw new Error('新密码至少 8 位');
+      if (pass !== pass2) throw new Error('两次输入的新密码不一致');
+      await api('/auth/password', { method: 'POST', body: { old: $('auth-old').value, new: pass } });
+      closeAuth();
+      toast('密码已更新');
+      return;
+    }
+    await api('/auth/login', { method: 'POST', body: { username: user, password: pass } });
+    closeAuth();
+    await refreshAccount();
+    toast('已登录：' + (ACCOUNT ? ACCOUNT.username : user));
+  } catch (err) {
+    msg.textContent = (err && err.message) || '操作失败，请稍后重试';
+  }
+}
+
+/* —— 阅读进度（服务端保存，跨设备） —— */
+async function loadServerProgress() {
+  try {
+    const d = await api('/progress');
+    SERVER_PROGRESS = (d && d.progress) || {};
+  } catch (e) { SERVER_PROGRESS = {}; }
+  // 服务端勾选状态合并进本地缓存，供 setupSelfCheck 使用
+  Object.keys(SERVER_PROGRESS).forEach(path => {
+    const rec = SERVER_PROGRESS[path];
+    if (rec && Array.isArray(rec.checks)) {
+      try { localStorage.setItem('selfcheck:' + path, JSON.stringify(rec.checks)); } catch (e) { /* 忽略 */ }
+    }
+  });
+}
+function isRead(path) { return !!(SERVER_PROGRESS[path] && SERVER_PROGRESS[path].state === 'read'); }
+function refreshProgressMarks() {
+  document.querySelectorAll('.chapter-item[data-path]').forEach(btn => {
+    btn.classList.toggle('read', isRead(btn.dataset.path));
+  });
+  updateMyProgress();
+}
+function updateMyProgress() {
+  const el = $('my-progress');
+  if (!el) return;
+  if (!ACCOUNT) { el.hidden = true; return; }
+  const read = Object.keys(SERVER_PROGRESS).filter(p => isRead(p)).length;
+  el.hidden = false;
+  el.innerHTML = '我的进度 <b>' + read + '</b> / ' + chapters.length + ' 章' + (isAdmin() ? ' · 管理员' : '');
+}
+async function markChapterRead(path) {
+  updateAskFab();
+  if (!SERVER_MODE || !ACCOUNT || !path || isRead(path)) return;
+  SERVER_PROGRESS[path] = Object.assign({}, SERVER_PROGRESS[path], { state: 'read' });
+  refreshProgressMarks();
+  try { await api('/progress', { method: 'POST', body: { path, state: 'read' } }); }
+  catch (e) { /* 静默失败：不影响阅读 */ }
+}
+function saveChecksToServer(path, checks) {
+  if (!SERVER_MODE || !ACCOUNT || !path) return;
+  clearTimeout(checkTimers.get(path));
+  checkTimers.set(path, setTimeout(async () => {
+    try {
+      await api('/progress', { method: 'POST', body: { path, checks } });
+      SERVER_PROGRESS[path] = Object.assign({}, SERVER_PROGRESS[path], { checks });
+    } catch (e) { /* 忽略 */ }
+  }, CHECK_SAVE_DELAY));
+}
+
+/* —— 问 AI —— */
+function updateAskFab() {
+  const fab = $('ask-fab');
+  if (!fab) return;
+  fab.hidden = !(SERVER_MODE && !!currentPath);
+}
+function setupAskButtons() {
+  $('content').querySelectorAll('h2, h3').forEach(h => {
+    if (!h.id || h.querySelector('.h-ask')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'h-ask';
+    btn.textContent = '问 AI';
+    btn.title = '就这一节问 AI';
+    btn.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); openAsk(h.id); });
+    h.appendChild(btn);
+  });
+  updateAskFab();
+}
+function currentSectionAnchor() {
+  if (!tocHeadings.length) return null;
+  let cur = tocHeadings[0];
+  for (const t of tocHeadings) {
+    if (t.el.getBoundingClientRect().top <= 140) cur = t; else break;
+  }
+  return cur.id;
+}
+function renderAskNotice(html) { $('ask-log').innerHTML = '<div class="qa-empty">' + html + '</div>'; }
+function openAsk(anchorId) {
+  const id = anchorId || currentSectionAnchor();
+  const t = tocHeadings.find(x => x.id === id);
+  if (!t) { toast('请先打开一章，再就具体小节提问'); return; }
+  ASK_SECTION = { id: t.id, title: t.text };
+  $('ask-panel').hidden = false;
+  $('ask-section').textContent = ASK_SECTION.title;
+  updateAskQuota();
+  $('ask-send').disabled = false;
+  if (!SERVER_MODE) {
+    renderAskNotice('问答功能需要在服务器版使用。');
+    $('ask-send').disabled = true;
+    return;
+  }
+  if (!ACCOUNT) {
+    renderAskNotice('登录后即可就这一节提问（每天 5 次，管理员不限）。<br><button type="button" class="btn primary" id="ask-login-btn" style="margin-top:.6rem">登录 / 注册</button>');
+    $('ask-send').disabled = true;
+    const b = $('ask-login-btn');
+    if (b) b.addEventListener('click', () => openAuth('login'));
+    return;
+  }
+  loadAskHistory();
+  setTimeout(() => $('ask-input').focus(), 60);
+}
+function closeAsk() { $('ask-panel').hidden = true; }
+function renderAskLog(items, pendingQ) {
+  const log = $('ask-log');
+  let html = '';
+  if (!items.length && !pendingQ) {
+    html += '<div class="qa-empty">就这一节提问，AI 会结合本节正文回答；本节没讲到的，它会明确说“本节没有讲到”。</div>';
+  }
+  items.forEach(it => {
+    html += '<div class="qa"><div class="qa-q">' + escapeHtml(it.question) + '</div>' +
+            '<div class="qa-a">' + escapeHtml(it.answer) + '</div>' +
+            (it.created_at ? '<div class="qa-meta">' + escapeHtml(it.created_at) + '</div>' : '') +
+            '</div>';
+  });
+  if (pendingQ) {
+    html += '<div class="qa"><div class="qa-q">' + escapeHtml(pendingQ) +
+            '</div><div class="qa-a">思考中…</div></div>';
+  }
+  log.innerHTML = html;
+  log.scrollTop = log.scrollHeight;
+}
+async function loadAskHistory() {
+  if (!ASK_SECTION || !currentPath) return;
+  try {
+    const d = await api('/ask/history?path=' + encodeURIComponent(currentPath) + '&limit=30');
+    const items = ((d && d.items) || [])
+      .filter(it => it.section_title === ASK_SECTION.title)
+      .reverse();
+    renderAskLog(items);
+  } catch (e) { renderAskLog([]); }
+}
+function updateAskQuota() { $('ask-quota').innerHTML = quotaHTML(); }
+async function submitAsk(event) {
+  event.preventDefault();
+  if (ASK_BUSY || !SERVER_MODE || !ASK_SECTION) return;
+  const q = $('ask-input').value.trim();
+  if (!q) return;
+  if (!ACCOUNT) { openAuth('login'); return; }
+  ASK_BUSY = true;
+  $('ask-send').disabled = true;
+  renderAskLog([], q);
+  try {
+    const d = await api('/ask', { method: 'POST', body: {
+      path: currentPath, section_id: ASK_SECTION.id, section_title: ASK_SECTION.title, question: q } });
+    if (ACCOUNT.quota) { ACCOUNT.quota.used = d.used; ACCOUNT.quota.limit = d.limit; }
+    updateAskQuota();
+    $('ask-input').value = '';
+    await loadAskHistory();
+  } catch (err) {
+    const log = $('ask-log');
+    const box = document.createElement('div');
+    box.className = 'qa';
+    box.innerHTML = '<div class="qa-q">' + escapeHtml(q) +
+      '</div><div class="qa-a" style="color:var(--danger)">' + escapeHtml((err && err.message) || '提问失败') + '</div>';
+    log.appendChild(box);
+    log.scrollTop = log.scrollHeight;
+    if (err && err.status === 429 && err.data && ACCOUNT.quota) {
+      ACCOUNT.quota.used = err.data.used;
+      ACCOUNT.quota.limit = err.data.limit;
+      updateAskQuota();
+    }
+    if (err && err.status === 401) { ACCOUNT = null; renderAccount(); }
+  } finally {
+    ASK_BUSY = false;
+    $('ask-send').disabled = false;
+  }
+}
+
+/* —— 事件绑定 —— */
+$('account-chip').addEventListener('click', () => {
+  if (!ACCOUNT) { openAuth('login'); return; }
+  const m = $('account-menu');
+  m.hidden = !m.hidden;
+});
+document.addEventListener('click', e => {
+  const menu = $('account-menu');
+  if (menu && !menu.hidden && !e.target.closest('#account-menu') && !e.target.closest('#account-chip')) {
+    menu.hidden = true;
+  }
+});
+$('menu-logout').addEventListener('click', async () => {
+  try { await api('/auth/logout', { method: 'POST' }); } catch (e) { /* 忽略 */ }
+  $('account-menu').hidden = true;
+  ACCOUNT = null;
+  SERVER_PROGRESS = {};
+  renderAccount();
+  refreshProgressMarks();
+  updateAskQuota();
+  toast('已退出登录');
+});
+$('menu-password').addEventListener('click', () => { $('account-menu').hidden = true; openAuth('password'); });
+$('menu-progress').addEventListener('click', () => { $('account-menu').hidden = true; window.location.hash = 'roadmap'; });
+$('auth-close').addEventListener('click', closeAuth);
+$('auth-modal').addEventListener('click', e => { if (e.target.id === 'auth-modal') closeAuth(); });
+document.querySelectorAll('.auth-tab').forEach(t => t.addEventListener('click', () => openAuth(t.dataset.tab)));
+$('auth-form').addEventListener('submit', submitAuth);
+$('ask-close').addEventListener('click', closeAsk);
+$('ask-fab').addEventListener('click', () => openAsk(null));
+$('ask-form').addEventListener('submit', submitAsk);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('ask-panel').hidden) closeAsk();
+  else if (!$('auth-modal').hidden) closeAuth();
+});
 
 /* ══════════════ 启动 ══════════════ */
 marked.use({ gfm: true, breaks: false });

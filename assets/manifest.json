@@ -1,0 +1,24 @@
+{
+  "name": "速通笔记",
+  "short_name": "速通笔记",
+  "description": "面向算法竞赛生的计算机速通教材：从 OJ 到开发部署，覆盖终端、系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章。",
+  "start_url": "../",
+  "display": "standalone",
+  "background_color": "#0a0f1f",
+  "theme_color": "#0a0f1f",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
