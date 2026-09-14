@@ -12,7 +12,7 @@
 
 1. **README**——项目是什么、怎么构建、怎么运行
 2. **构建文件**——`CMakeLists.txt`、`Makefile`、`pyproject.toml`、`package.json`——告诉你入口在哪、依赖是什么
-3. **目录结构**——`ls` 或 `tree -L 2`——顶层目录名暗示了架构：`src/`、`lib/`、`tests/`、`docs/`、`include/`
+3. **目录结构**——`ls` 或 `tree -L 2`——顶层目录名暗示了架构：`src/`、`lib/`、`tests/`、`docs/`、`include/`（`tree` 多数系统要另装；PowerShell 自带的 `tree` 参数不同）
 4. **测试**——`tests/` 目录是最可靠的“文档”。测试告诉你每个模块的**输入**和**预期输出**——比注释更诚实
 5. **主入口**——`main.cpp`、`app.py`、`index.js`——从入口函数开始，跟踪调用链
 6. **最近修改**——`git log --oneline -20`——最近活跃的区域通常是项目当前焦点

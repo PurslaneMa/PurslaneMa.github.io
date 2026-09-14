@@ -4,15 +4,15 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 理解运行时与包管理器的分层模型（第 9 章）
-> - □ 会读 package.json 之类的清单文件
-> - □ 在终端运行过命令
+> - □ 理解运行时与包管理器的分层模型（第 9 章 §9.2、§9.3）
+> - □ 会读 package.json 之类的清单文件（第 9 章 §9.6）
+> - □ 在终端运行过命令（第 2 章 §2.4）
 
 ## $\rm \S \, 22.1$ Node.js：浏览器之外的 JavaScript
 
 ### $\rm \S \, 22.1.1$ 同一个语言，不同的运行时
 
-JavaScript 最初只能在浏览器中运行——按 `F12` 打开开发者工具，里面的 **Console**（控制台）面板可以直接输入 JavaScript 代码并立即看到结果，它就是一个浏览器 JavaScript 运行时（`F12` 工具的详细用法见第 24 章）。
+JavaScript 最初只能在浏览器中运行——按 `F12` 打开开发者工具，里面的 **Console**（控制台）面板可以直接输入 JavaScript 代码并立即看到结果，它就是一个浏览器 JavaScript 运行时（`F12` 工具的详细用法见第 5 章 §5.11）。
 
 **Node.js**（nodejs.org）在 2009 年改变了这一点——它把 Chrome 的 V8 JavaScript 引擎从浏览器中剥离出来，加上了文件系统、网络、进程等操作系统 API，让 JavaScript 可以像 Python 一样在终端中运行。
 
@@ -117,7 +117,7 @@ flowchart LR
 
 1. **开发模式**：启动一个本地 HTTP 服务器（默认 `localhost:5173`），在你修改代码时自动刷新浏览器（HMR——Hot Module Replacement，连刷新都不用，只替换改动的模块）。
 2. **构建模式**：把 JSX/TSX/Vue 文件编译为浏览器能理解的 JS，把 SCSS/Tailwind 编译为 CSS，把所有模块打包优化，输出到 `dist/` 目录。
-3. **代理**：把 `/api/*` 请求转发到后端服务器。浏览器出于安全限制，禁止页面从 `localhost:5173` 向 `localhost:8000` 发请求（不同端口 = 不同源）。代理让请求先到 `localhost:5173`，再由开发服务器**转发**到 `localhost:8000`——浏览器看到的始终是同一个地址，就不会触发跨域限制。正向代理的完整概念在第 24 章展开。
+3. **代理**：把 `/api/*` 请求转发到后端服务器。浏览器出于同源策略，不允许页面读取 `localhost:8000` 的跨源响应（不同端口 = 不同源；请求可能已发出，只是响应被拦下）。代理让请求先到 `localhost:5173`，再由开发服务器**转发**到 `localhost:8000`——浏览器看到的始终是同一个地址，就不会触发跨域限制。代理（正向与反向）的完整概念在第 24 章展开。
 
 ### $\rm \S \, 22.3.2$ 其他构建工具
 
@@ -125,7 +125,7 @@ flowchart LR
 |---|---|---|
 | **Vite**（vitejs.dev） | 开发服务器 + 构建 | 基于 esbuild（Go）+ Rollup，启动快、HMR 极快 |
 | **webpack** | 传统打包器 | 配置灵活但复杂，被 Vite 逐渐替代 |
-| **esbuild**（esbuild.github.io） | 极速打包器 | Go 编写，比 webpack 快 10-100 倍。Vite 内部用了它 |
+| **esbuild**（esbuild.github.io） | 极速打包器 | Go 编写，官方基准称比 webpack 快 10-100 倍（实际差距取决于项目）。Vite 内部用了它 |
 | **Turbopack** | Next.js 专属 | Rust 编写，Vercel 出品 |
 | **Rollup** | 库打包器 | 适合打包 npm 库（Vite 用 Rollup 做生产构建） |
 | **Parcel**（parceljs.org） | 零配置打包器 | 适合快速原型 |
@@ -178,16 +178,19 @@ npm 不是唯一选择。Node.js 生态有三个相互竞争的包管理器：
 
 ## $\rm \S \, 22.5$ 动手实践
 
-### 实践一：检查你的 Node.js 环境
+### $\rm \S \, 22.5.1$ 实践一：检查你的 Node.js 环境
 
 ```bash
 node --version           # Node.js 版本
 npm --version            # npm 版本
 command -v node          # 可执行文件路径
 npm config list          # 全局配置
+# PowerShell 中没有 command -v，改用 Get-Command node
 ```
 
-### 实践二：从零初始化一个前端项目
+> 前置：已按第 9 章安装 Node.js（安装包自带 npm）；任意目录。成功标志：`node --version` 打印 `v` 开头的版本号，`npm --version` 打印版本号，`command -v node`（或 PowerShell 的 `Get-Command node`）给出可执行文件路径——三条都有输出就说明 Node 与 npm 都在 PATH 上。清理：只读命令，无清理。
+
+### $\rm \S \, 22.5.2$ 实践二：从零初始化一个前端项目
 
 ```bash
 npm create vite@latest paper-frontend -- --template react-ts
@@ -198,12 +201,16 @@ npm run dev              # 启动开发服务器，浏览器打开
 npm run build            # 生产构建，观察 dist/ 目录的输出
 ```
 
-### 实践三：读懂 package.json
+> 前置：Node.js 已安装且版本满足当前 Vite 的要求（若 `npm create` 提示引擎不兼容，先升级 Node.js）；在一个新的空目录中运行，避免覆盖已有文件。成功标志：`npm run dev` 打印本地地址（默认 `http://localhost:5173`）并保持运行，浏览器打开能看到 Vite 示例页、改文字后页面自动刷新；`npm run build` 结束后生成 `dist/` 目录且命令以 0 退出。清理：开发服务器用 `Ctrl+C` 停止；`paper-frontend/` 是实践三要用的项目，建议保留，确要删除时确认路径后整个目录删除。
+
+### $\rm \S \, 22.5.3$ 实践三：读懂 package.json
 
 打开 `paper-frontend/package.json`，找出：
-- 3 个 `dependencies` 和 3 个 `devDependencies`
+- 全部 `dependencies`，以及至少 3 个 `devDependencies`
 - scripts 中有哪些可以执行的命令
 - 确认 `npm run dev` 实际执行的是哪个命令
+
+> 前置：完成实践二，`paper-frontend/` 目录存在。成功标志：能说清 `dependencies` 与 `devDependencies` 各装了哪些包（react-ts 模板通常只有 2 个运行时依赖，devDependencies 有十几个）、`scripts` 里每个命令对应的真实程序，并指出 `npm run dev` 实际执行的是 `vite`。清理：只读操作，无清理。
 
 ---
 
@@ -239,14 +246,14 @@ npm run build            # 生产构建，观察 dist/ 目录的输出
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 22.9.1$ 自测答案 · 关键概念回顾
 1. 语言相同，但可用的 API 不同：浏览器提供 DOM、window、fetch；Node.js 提供 fs（文件系统）、path、process、http，没有 DOM。
 2. dependencies 是运行时需要、用户浏览器会加载的（如 React）；devDependencies 只在开发/构建时需要（Vite、ESLint、Prettier），不会出现在最终产物中。
 3. npm 在 package.json 的 scripts 中查找 “dev” 的值（如 “vite”），用 Shell 执行；它优先使用项目内 node_modules/.bin 的版本，并把 .bin 临时加入 PATH。
 4. 开发模式启动本地服务器（默认 localhost:5173），带 HMR 热更新和 /api 代理；生产构建把 TSX/SCSS 编译、打包、优化后输出到 dist/。
 5. 完全消失——interface 和类型标注编译为 JavaScript 后不产生任何运行时开销，类型只存在于开发期（编辑器补全和 CI 的 tsc --noEmit）。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 22.9.2$ 自测答案 · 应用与辨析
 1. install 会按 manifest 更新依赖树；ci 严格按 package-lock.json 安装精确版本，并在安装前删除现有 node_modules/，保证每次结果一致——CI 环境用 npm ci。
 2. npm 自带、生态最大但较慢；pnpm 用硬链接在磁盘上共享依赖、占用小且依赖声明更严格；yarn 提供 PnP 模式可以不用 node_modules；bun 是极快的全能运行时。选型的共同原则是选一套坚持用，不在同一项目中叠加多个包管理器。
 

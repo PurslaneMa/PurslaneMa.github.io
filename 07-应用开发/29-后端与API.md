@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 理解 HTTP 方法与状态码（第 23 章）
+> - □ 理解 HTTP 方法与状态码（第 23 章 §23.3.2、§23.3.3）
 > - □ 写过 Python 脚本（第 17 章）
-> - □ 理解请求-响应与 JSON 数据
+> - □ 理解请求-响应与 JSON 数据（第 23 章 §23.3.1；第 6 章 §6.5.1 的 JSON）
 
 ## $\rm \S \, 29.1$ 后端做什么：一次请求的完整旅程
 
@@ -18,7 +18,7 @@ sequenceDiagram
 
     浏览器->>后端: GET /api/papers?tag=transformer&year=2020
     后端->>后端: 1. 路由匹配：/api/papers → papers_handler()
-    后端->>后端: 2. 参数校验：tag 是字符串，year 是 >1900 的整数
+    后端->>后端: 2. 参数校验：tag 是字符串，year 是整数
     后端->>DB: 3. SELECT * FROM papers JOIN ... WHERE ...
     DB-->>后端: 4. 查询结果（30 行）
     后端->>后端: 5. 格式化为 JSON
@@ -52,7 +52,10 @@ def list_papers():
     # 1. 获取并校验参数
     tag = request.args.get('tag')
     year_str = request.args.get('year')
-    year = int(year_str) if year_str else None
+    try:
+        year = int(year_str) if year_str else None
+    except ValueError:
+        return jsonify({'error': 'year 必须是整数'}), 400   # 非法输入是客户端的错，不是 500
 
     # 2. 构造查询（参数化查询——防止 SQL 注入）
     conn = sqlite3.connect('papers.db')
@@ -79,7 +82,7 @@ def list_papers():
     return jsonify(papers)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=8000)   # 仅本地开发；生产用 §29.8 的 WSGI 服务器，不要开 debug
 ```
 
 运行它：
@@ -137,7 +140,7 @@ HTTP 本身是无状态的——每个请求都是独立的，服务器不记得
 
 | 机制 | 原理 | 适用场景 |
 |---|---|---|
-| **API Key / Bearer Token** | 请求头中带 `Authorization: Bearer sk-xxxx` | 机器对机器的 API |
+| **API Key / Bearer Token** | 请求头中带 `Authorization: Bearer <token>`；token 从环境变量或密钥管理服务读取，不进源码、不进 Git（第 13 章 §13.5.2） | 机器对机器的 API |
 | **JWT**（JSON Web Token） | 服务器签发一个包含用户 ID 和过期时间的签名 token | 用户认证、微服务间通信 |
 | **Session + Cookie** | 服务器在内存/Redis 中存 session，浏览器在 Cookie 中存 session ID | 传统 Web 应用 |
 | **OAuth 2.0** | 委托认证——“用 GitHub 账号登录” | 第三方登录 |
@@ -166,9 +169,9 @@ JWT 的 payload 只是 **Base64 编码**，不是加密——任何人都能解�
 
 在[操作系统、进程与线程](../03-计算机系统/11-操作系统进程与线程.md)中你学过单线程 vs 多线程。后端框架对并发的处理方式不同：
 
-- **Flask** 默认同步单线程——一次只处理一个请求。`app.run(threaded=True)` 开多线程。
+- **Flask** 的处理函数默认是同步的（开发服务器从 Flask 1.0 起默认按线程处理请求）；`app.run(threaded=True)` 显式打开多线程，生产环境的并发能力则取决于 §29.8 的 WSGI 服务器配置。
 - **FastAPI** 原生异步（asyncio）——单线程事件循环，I/O 等待时不阻塞。
-- **Go** goroutine —— 每个请求一个轻量协程，百万并发无压力。
+- **Go** goroutine —— 每个请求一个轻量协程，创建开销远小于线程；能扛多少并发取决于内存、I/O 和每请求的工作量，不是无条件的。
 - **Node.js** 事件循环——单线程，所有 I/O 异步。
 
 对于论文管理器这种小项目，选哪个框架的并发差异完全可以忽略。当你的 API 每秒要处理几千个请求时，这个差异才变得重要。
@@ -179,7 +182,7 @@ JWT 的 payload 只是 **Base64 编码**，不是加密——任何人都能解�
 
 网络不可靠。“没收到响应”有两种可能：请求根本没到达服务器；或请求到了、服务器处理完了，响应在回来的路上丢了——客户端无法区分，于是每个请求都带着一个问题：如果重发，服务器会不会把同一件事做两遍？
 
-[网络基础到HTTP](../04-网络/23-网络基础到HTTP.md)的结论是：**幂等**的操作执行一次和十次副作用相同——PUT、DELETE 天然幂等，重发多少次都安全；POST 不幂等，每发一次就多创建一条数据。对 POST 这类操作，要靠**幂等键**（idempotency key）让重发变得无害：客户端为一次业务动作生成一个唯一标识随请求发送，服务器第一次见到这个 key 时正常处理并保存结果，同一个 key 再来，直接返回第一次的结果。生成幂等键用 **UUID**（Universally Unique Identifier，通用唯一标识符）——随机生成的 128 位标识，重复概率低到可以忽略；Stripe 支付 API 的 `Idempotency-Key` 请求头就是这么做的，是业界标准做法。
+[网络基础到HTTP](../04-网络/23-网络基础到HTTP.md)的结论是：**幂等**的操作执行一次和十次，对服务器状态的副作用相同——PUT、DELETE 天然幂等，重发不会多做一次修改（响应码可能不同，比如第二次 DELETE 通常返回 404，但状态没有被多改）；POST 不幂等，每发一次就多创建一条数据。对 POST 这类操作，要靠**幂等键**（idempotency key）让重发变得无害：客户端为一次业务动作生成一个唯一标识随请求发送，服务器第一次见到这个 key 时正常处理并保存结果，同一个 key 再来，直接返回第一次的结果。生成幂等键用 **UUID**（Universally Unique Identifier，通用唯一标识符）——随机生成的 128 位标识，重复概率低到可以忽略；Stripe 支付 API 的 `Idempotency-Key` 请求头就是这么做的，是业界标准做法。
 
 服务器端实现——幂等键先占位，结果与业务数据在同一事务里提交：
 
@@ -209,22 +212,25 @@ def create_paper():
                      (json.dumps(result), key))
         conn.commit()
         return jsonify(result), 201
-    except IntegrityError:      # 同样的 key 违反主键约束：说明已处理过
+    except IntegrityError:      # 同样的 key 违反主键约束：说明已处理过（或正在处理）
         conn.rollback()
         row = conn.execute('SELECT response_json FROM idempotency WHERE key = ?',
                            (key,)).fetchone()
+        if row is None or row[0] is None:   # 第一次请求还没写完结果
+            return jsonify({'error': '同一幂等键的请求正在处理中，请稍后重试'}), 409
         return jsonify(json.loads(row[0])), 201
     finally:
         conn.close()
 ```
 
-关键在两点：`key` 是 `idempotency` 表的主键（唯一性约束在[SQL 从零开始](26-SQL从零开始.md)学过），重复插入抛 `IntegrityError`，整个事务回滚——重复的论文不会写入，然后取回第一次的结果返回。
+关键在两点：`key` 是 `idempotency` 表的主键（唯一性约束在[SQL 从零开始](26-SQL从零开始.md)学过），重复插入抛 `IntegrityError`，整个事务回滚——重复的论文不会写入，然后取回第一次的结果返回；如果第一次请求还在处理（结果尚未写入），返回 409 让客户端稍后重试。
 
 客户端配合幂等键重试（`requests` 是 Python 的 HTTP 客户端库，第 17 章装过）：
 
 ```python
 import time, uuid, requests
 
+RETRYABLE = {429, 502, 503, 504}   # 临时性故障的状态码
 key = str(uuid.uuid4())          # 一次业务动作一个 key，重试时复用
 for attempt in range(4):
     try:
@@ -233,13 +239,13 @@ for attempt in range(4):
                           headers={'Idempotency-Key': key}, timeout=5)
     except requests.RequestException:
         r = None                 # 网络问题，值得重试
-    if r and r.status_code < 500 and r.status_code != 429:
-        break                    # 成功或 4xx：重试无用
+    if r is not None and r.status_code not in RETRYABLE:
+        break                    # 成功、4xx 或其他 5xx：重试无用
     time.sleep(2 ** attempt)     # 指数退避：1s、2s、4s
 ```
 
 - **超时**（timeout）是客户端愿意等待响应的最长时间（`timeout=5` 即最多 5 秒）——没有它，一次网络卡死会让客户端无限期挂起。
-- **指数退避**（exponential backoff）：等待时间按 1s、2s、4s 翻倍，给过载的服务器喘息时间，而不是用重试把它压垮。重试只适合网络瞬时错误（连接失败、超时）和服务器过载（5xx）。
+- **指数退避**（exponential backoff）：等待时间按 1s、2s、4s 翻倍，给过载的服务器喘息时间，而不是用重试把它压垮。重试只适合网络瞬时错误（连接失败、超时）和临时性的服务端故障（429/502/503/504；500、501 这类是确定性错误，重试无用）。
 - 4xx 不重试：请求本身有错，重试一万次结果一样；唯一的例外是 **429 Too Many Requests**——“你太快了”，等一会儿再试是合理的（§29.9 讲限流时细说）。
 
 验证：同一个 key 连发两次 `curl -X POST http://localhost:8000/api/papers -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-key-1' -d '{"title":"A","year":2026}'`，两次响应里的 `id` 相同，`papers` 表里只有一行；换一个 key 才插入第二行。
@@ -279,7 +285,7 @@ if __name__ == '__main__':
     app.run(threaded=True, port=8000)
 ```
 
-收到 SIGTERM 后，`begin_shutdown` 只改一个标志位：正在执行的请求处理函数照常跑完并返回——这就是**排空**（drain）在途请求；新请求看到标志位返回 503，告诉调用方“正在关闭”。数据库连接的收尾放在处理函数的 `finally` 或 `@app.teardown_request` 钩子里（26.2 的示例就是每个请求新建连接，关闭它即可）。
+收到 SIGTERM 后，`begin_shutdown` 只改一个标志位：正在执行的请求处理函数照常跑完并返回——这就是**排空**（drain）在途请求；新请求看到标志位返回 503，告诉调用方“正在关闭”。数据库连接的收尾放在处理函数的 `finally` 或 `@app.teardown_request` 钩子里（§29.2 的示例就是每个请求新建连接，关闭它即可）。
 
 收尾不能无限进行：`docker stop` 发完 SIGTERM 默认等 10 秒（可配 `stop_grace_period`），超时后补发 SIGKILL 强制杀死——所以排空的上限必须小于调用方的耐心。生产环境用 gunicorn、waitress 这类 WSGI 服务器时，它们内置了排空逻辑（如 gunicorn 的 `--graceful-timeout`），原理和上面的标志位相同。
 
@@ -385,33 +391,54 @@ curl 适合“发一个请求、看一个响应”的快速检查，也能写进
 
 ## $\rm \S \, 29.12$ 动手实践
 
-### 实践一：写论文管理器的后端
+四个实践都围绕同一个后端服务，先建工作目录并进入（Bash：`mkdir api-lab && cd api-lab`；PowerShell：`mkdir api-lab; cd api-lab`）。除实践二的前端部分外，都不需要前端构建工具。
 
-用 Flask 或 FastAPI 实现以下 API：
+### $\rm \S \, 29.12.1$ 实践一：写论文管理器的后端
+
+前置：Python 与 Flask（`pip install flask`，§29.2）；把第 26 章练习的 `papers.db` 复制到当前目录（没有的话，脚本首次连接会新建一个空库，查询会报 `no such table: papers`）。
+
+用 Flask 或 FastAPI 实现以下 API（选 FastAPI 需要 `pip install fastapi uvicorn`，启动命令是 `uvicorn main:app --reload`，不是 `python main.py`）：
 - `GET /api/papers`：支持 `?tag=` 和 `?year=` 筛选
 - `GET /api/papers/:id`：返回单条论文的完整信息（含标签）
 - `POST /api/papers`：创建新论文（请求体 JSON）
 - `DELETE /api/papers/:id`：删除论文
 
-### 实践二：前后端对接
+每实现一个路由就验证一次：`python app.py` 启动，预期终端打印 `* Running on http://127.0.0.1:8000`；另开终端 `curl "http://localhost:8000/api/papers"`，预期返回 JSON 数组（没有数据时是 `[]`）；`curl -i "http://localhost:8000/api/papers/999"`，预期 `404` 和 JSON 错误体；`curl -X POST -H "Content-Type: application/json" -d '{"title":"A","year":2026}' ...`，预期 `201`。清理：Ctrl+C 停止服务；`papers.db` 保留。
 
-1. 启动后端（`python app.py`）。
-2. 启动前端开发服务器（`npm run dev`）。
-3. 配置 Vite 代理把 `/api/*` 转发到 `localhost:8000`。
-4. 确认前端能正常加载论文列表。
+### $\rm \S \, 29.12.2$ 实践二：前后端对接
 
-### 实践三：添加认证
+前置：实践一的后端在 `localhost:8000` 运行；前端页面来自第 28 章实践（也可以新写一个只含 `fetch` 的页面）。若用 Vite 项目（第 22 章 §22.5.2 建过），在 `vite.config.js` 里加开发代理，让前端的 `/api/...` 请求转发到后端——这样浏览器看到的是同源请求，不涉及 CORS：
 
-1. 生成一个简单的 API Key（`openssl rand -hex 32`）。
-2. 后端添加中间件：检查 `Authorization: Bearer <key>` 头。
-3. 前端在 `fetch` 中添加 Authorization 头。
-4. 确认不带 key 的请求返回 401。
+```js
+// vite.config.js：把 /api 开头的请求转发到本地后端
+export default { server: { proxy: { '/api': 'http://localhost:8000' } } }
+```
 
-### 实践四：让 API 更抗造
+不建 Vite 项目也可以：用 `python -m http.server 8080` 托管静态页面，由后端在响应里加 CORS 头允许 `http://localhost:8080`。
 
-1. 给 `POST /api/papers` 加幂等键（§29.7 的代码）：同一个 key 发两次 `curl`，验证两次返回的 `id` 相同、`papers` 表里只有一行。
-2. 加上限流中间件（§29.9 的代码）：循环快速发 70 个请求，观察第 61 个起返回 429 并带 `Retry-After` 头。
-3. （Linux/macOS）启动后另开终端 `kill <PID>`：在途请求正常返回、新请求返回 503，验证优雅关闭（§29.8）。
+1. 启动后端（`python app.py`）。预期输出：终端打印 `* Running on http://127.0.0.1:8000`。
+2. 启动前端开发服务器（`npm run dev`）。预期输出：Vite 打印 `Local: http://localhost:5173/`。
+3. 浏览器打开前端地址，在开发者工具 Network 面板确认 `/api/papers` 请求返回 `200`，页面列出论文。若请求 404，先检查代理路径是否多写/少写了 `/api`。
+4. 停掉后端再刷新，预期前端显示“加载失败”提示——这验证了第 28 章实践三的错误状态处理。
+5. 清理：Ctrl+C 停掉两个开发服务器。
+
+### $\rm \S \, 29.12.3$ 实践三：添加认证
+
+前置：实践一的后端可运行。生成密钥：`openssl rand -hex 32`（WSL/Git Bash 可用；PowerShell 里用 `python -c "import secrets;print(secrets.token_hex(32))"`）。预期输出 64 个十六进制字符。
+
+1. 后端从环境变量读取 key——`export API_KEY=$(openssl rand -hex 32)`（Windows：`$env:API_KEY = ...`），代码里用 `os.environ["API_KEY"]`，**不要把 key 写进源码**（第 13 章 §13.5.2）。
+2. 后端添加中间件：检查 `Authorization: Bearer <token>` 头。预期输出：不带头的请求返回 `401`，头正确时返回数据。
+3. 在测试脚本或 curl 里带上头验证：`curl -i localhost:8000/api/papers` 预期 `401`；`curl -i -H "Authorization: Bearer $API_KEY" localhost:8000/api/papers` 预期 `200`。注意：密钥放进浏览器端源码就等于公开——真实应用里浏览器不持有长期 API Key，用户认证走 §29.4 的 JWT/Session/OAuth；这里只演示中间件的位置。
+4. 清理：`unset API_KEY`（Windows：`Remove-Item Env:API_KEY`）；密钥只留在本地环境变量里，不要提交到 Git。
+
+### $\rm \S \, 29.12.4$ 实践四：让 API 更抗造
+
+前置：实践一的后端已加入 §29.7 的幂等键代码和 §29.9 的限流中间件；`curl` 可用。
+
+1. 给 `POST /api/papers` 加幂等键（§29.7 的代码）：同一个 key 发两次 `curl`，预期两次响应里的 `id` 相同，且 `SELECT COUNT(*) FROM papers` 只多了一行。
+2. 加上限流中间件（§29.9 的代码）：循环快速发 70 个请求，预期第 61 个起返回 `429` 并带 `Retry-After` 头（这是你自己本机的服务，不要对别人的服务做这件事）。
+3. （Linux/macOS/WSL）启动后另开终端 `kill <PID>`：预期在途请求正常返回、之后的新请求返回 `503`，验证优雅关闭（§29.8）。
+4. 清理：停掉服务；删掉 `idempotency` 表里的演示行（或在练习库里直接重建表），不要留下演示用的 key。
 
 ---
 
@@ -421,7 +448,7 @@ curl 适合“发一个请求、看一个响应”的快速检查，也能写进
 - REST API 约定：用名词路径 + HTTP 方法表达操作，用状态码表达结果，用 JSON 做数据格式。
 - 认证在无状态的 HTTP 之上建立“你是谁”的认知。JWT 签名防篡改，不加密。
 - 中间件是请求的“安检管道”——日志、认证、CORS、压缩，各司其职。
-- 幂等键 + 重试：POST 这类非幂等操作靠客户端生成的幂等键去重；重试按指数退避（1s、2s、4s），4xx 不重试、429 例外。
+- 幂等键 + 重试：POST 这类非幂等操作靠客户端生成的幂等键去重；重试按指数退避（1s、2s、4s），只重试 429/502/503/504 这类临时故障，4xx 与确定性 5xx 不重试。
 - 优雅关闭：收到 SIGTERM 后停收新请求 → 排空在途请求（设上限）→ 关闭数据库 → 退出；Docker stop 默认等 10 秒再 SIGKILL。
 - 限流：固定窗口有边界漏洞，滑动窗口、令牌桶更稳；被拒返回 429 + Retry-After。
 - API 版本：URL 路径最常用；只有破坏性变更才升版本；旧版本设停用日期。
@@ -442,30 +469,27 @@ curl 适合“发一个请求、看一个响应”的快速检查，也能写进
 
 ## $\rm \S \, 29.15$ 应用与辨析
 
-4. `GET /api/papers/42` 和 `DELETE /api/papers/42` 的 URL 相同，后端怎么区分？
+6. JWT 的 payload 可以放密码吗？为什么？
 
-5. JWT 的 payload 可以放密码吗？为什么？
+7. 用户提交了一个不存在的 tag 值，后端应该返回什么状态码？为什么不是 500？
 
-6. 用户提交了一个不存在的 tag 值，后端应该返回什么状态码？为什么不是 500？
-
-7. 你做了“每分钟 60 次”的固定窗口限流，却发现有客户端在 2 秒内发出了 120 个请求。漏洞在哪？怎么修？
+8. 你做了“每分钟 60 次”的固定窗口限流，却发现有客户端在 2 秒内发出了 120 个请求。漏洞在哪？怎么修？
 
 ## $\rm \S \, 29.16$ 本章自测答案
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 29.16.1$ 自测答案 · 关键概念回顾
 1. 路由匹配（URL→处理函数）、参数校验（确保输入合法）、业务逻辑（查数据库/计算）、序列化（对象→JSON）、错误处理（合适的状态码和错误消息）。
 2. 路径用名词（`/api/papers`）、HTTP 方法表达动作（GET/POST/PUT/DELETE）、状态码表达结果（200/201/400/404/500）、JSON 做数据格式。
 3. 在请求到达处理函数之前和之后，串行执行通用逻辑（日志、认证、CORS、压缩），避免在每个处理函数中重复代码。
 4. POST 不幂等，服务器可能已经处理过第一次请求（只是响应丢了），重发会重复创建。幂等键是客户端为一次业务动作生成的 UUID，服务器以它为表主键：同一个 key 只处理一次，重复请求触发主键冲突，直接返回第一次的结果。
 5. 停收新请求 → 等待在途请求完成（设超时上限）→ 关闭数据库连接 → 退出。调用方（如 Docker stop）默认等 10 秒就会补发 SIGKILL 强杀，收尾必须在此时间内完成。
 
-### 自测答案 · 应用与辨析
-4. 通过 HTTP 方法区分——Flask/FastAPI 的路由装饰器同时绑定路径和方法（`@app.route('/api/papers/<id>', methods=['DELETE'])`）。
-5. 不能。JWT payload 只是 Base64 编码（非加密），任何人都能解码读取。JWT 的安全靠签名（防篡改），不靠加密（防读取）。敏感信息永远不放 JWT。
-6. 200 OK + 空列表（[]）。这不是错误——查询条件有效，只是没有匹配的数据。500 表示“服务器内部出了问题”，用户传了合法但无匹配的参数不是服务器的错。
-7. 固定窗口的边界漏洞：第 59 秒用光当前窗口额度，第 61 秒进入新窗口又满额，两个窗口的额度在 2 秒内叠加。改用滑动窗口（统计最近 60 秒）或令牌桶（平均速率 + 突发额度）。
+### $\rm \S \, 29.16.2$ 自测答案 · 应用与辨析
+6. 不能。JWT payload 只是 Base64 编码（非加密），任何人都能解码读取。JWT 的安全靠签名（防篡改），不靠加密（防读取）。敏感信息不放 JWT。
+7. 200 OK + 空列表（[]）。这不是错误——查询条件有效，只是没有匹配的数据。500 表示“服务器内部出了问题”，用户传了合法但无匹配的参数不是服务器的错。
+8. 固定窗口的边界漏洞：第 59 秒用光当前窗口额度，第 61 秒进入新窗口又满额，两个窗口的额度在 2 秒内叠加。改用滑动窗口（统计最近 60 秒）或令牌桶（平均速率 + 突发额度）。
 
 ---
 

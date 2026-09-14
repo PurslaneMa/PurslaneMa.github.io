@@ -1,8 +1,8 @@
 # $\rm Appendix \, G$ 测试策略、模糊测试与不稳定测试
 
-> 你已经在 Ch21 中学会了 CI 的基本工作流。但 CI 管道只是“跑测试的机器”——写什么样的测试、怎样写得可信、怎样不被 flaky test 拖垮，是 CI 学不到的。本章从测试金字塔出发，建立单元/集成/端到端的边界直觉，然后进入两个竞赛生最容易忽略但工业界每天在用的领域：模糊测试和 flaky test 治理。
+> 你已经在第 21 章学会了 CI 的基本工作流。但 CI 管道只是“跑测试的机器”——写什么样的测试、怎样写得可信、怎样不被 flaky test 拖垮，是 CI 学不到的。本章从测试金字塔出发，建立单元/集成/端到端的边界直觉，然后进入两个竞赛生最容易忽略但工业界每天在用的领域：模糊测试和 flaky test 治理。
 
-你应该已经知道 `assert` 和基本的 `pytest` 用法（[第 19 章](../05-开发工作流/21-依赖构建测试与CI.md)）。本章不绑定测试框架。
+你应该已经知道 `assert` 和基本的 `pytest` 用法（[第 21 章](../05-开发工作流/21-依赖构建测试与CI.md)）。本章不绑定测试框架。
 
 ## $\rm \S \, G.1$ 测试金字塔：不是“所有测试都跑一遍”
 
@@ -38,7 +38,7 @@
 |------|--------|------|
 | **Stub** | 返回预设值，不关心被怎么调用 | `get_temperature()` 始终返回 `22.0` |
 | **Mock** | 记录被如何调用，验证调用次数/参数 | “确认 `save()` 被调用且参数是期望值” |
-| **Fake** | 可以工作的轻量实现 | SQLite 代替 PostgreSQL（Ch27 中讲过） |
+| **Fake** | 可以工作的轻量实现 | SQLite 代替 PostgreSQL（第 27 章讲过） |
 
 > **经验规则**：优先 Fake > Stub > Mock。Fake 的行为最接近真实依赖；Mock 过度使用会导致测试“验证了代码的写法而非代码的行为”——重构时所有 mock 测试都要重写。
 
@@ -53,7 +53,7 @@
 ### $\rm \S \, G.3.2$ 五分钟开始 Fuzz
 
 ```bash
-# libFuzzer（Clang 内置，GCC 也支持）
+# libFuzzer（Clang 内置；GCC 不支持 -fsanitize=fuzzer，用 Clang 或 AFL++）
 clang++ -fsanitize=fuzzer,address parse.cpp -o parse_fuzzer
 ./parse_fuzzer
 # 自动生成输入，直到发现崩溃。崩溃的输入保存在 crash-* 文件中。
@@ -91,7 +91,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 ### $\rm \S \, G.4.3$ Flaky test 的处置策略
 
 1. **隔离**——标记为 `@flaky` 并移到单独的测试套件（不阻塞 CI 主流程）
-2. **复现**——在同一环境跑 100 次（`pytest --count=100 -k test_name`）
+2. **复现**——在同一环境跑 100 次（`pytest --count=100 -k test_name`，`--count` 来自 `pytest-repeat`，先 `pip install pytest-repeat`）
 3. **修复**——找到根因（时间、顺序、网络？）并消除不确定性
 4. **如果不修**——删掉它。一个不稳定的测试比没有测试更糟糕——它教会团队**忽略测试失败**
 

@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 会用 C++ 写循环、函数、类
-> - □ 会运行命令行与脚本文件（第 2、6 章）
-> - □ 理解变量、类型与函数的基本概念
+> - □ 会用 C++ 写循环、函数、类（竞赛基础；第 15 章 §15.1、§15.3.2 的示例）
+> - □ 会运行命令行与脚本文件（第 2 章 §2.8；脚本的换行符与编码坑见第 6 章 §6.3、§6.8.1）
+> - □ 理解变量、类型与函数的基本概念（竞赛基础；类型推导见第 15 章 §15.3.3）
 
 ## $\rm \S \, 17.1$ 思维转换：从“声明即创建”到“名字绑定”
 
@@ -27,9 +27,9 @@ x = "hello"        # x 现在指向一个 str 对象——完全没有类型错�
 这像 C++ 的指针引用语义——所有 Python 变量都像是指向堆对象的智能指针，只是你不需要写 `*` 和 `->`：
 
 ```cpp
-// C++（伪代码，Python 的实际语义）
-auto x = make_shared<int>(42);   // x 是一个引用计数的 int
-x = make_shared<string>("hello"); // x 现在是引用计数的 string——类型变了
+// C++ 无法编译这段（int 和 string 是不同类型）——只用来对照 Python 的引用语义
+auto x = std::make_shared<int>(42);         // x 是一个引用计数的 int
+x = std::make_shared<std::string>("hello"); // 在 Python 里等价于：x 改指向 str 对象
 ```
 
 Python 的赋值从不拷贝对象——只拷贝引用：
@@ -99,7 +99,7 @@ arr[::2]      # [0, 2, 4]——每隔一个
 arr[::-1]     # [5, 4, 3, 2, 1, 0]——反转
 ```
 
-C++20 的 `std::views::take`/`drop`/`stride` 提供了类似的能力，但语法远不如切片简洁。数据处理中，切片是你最频繁使用的操作。
+C++20 的 `std::views::take`/`drop`（以及 C++23 的 `std::views::stride`）提供了类似的能力，但语法远不如切片简洁。数据处理中，切片是你最频繁使用的操作。
 
 ### $\rm \S \, 17.2.4$ 列表推导 vs C++ 循环
 
@@ -166,7 +166,7 @@ Python 的模块搜索路径由 `sys.path` 决定——搜索顺序是：脚本�
 
 ### $\rm \S \, 17.3.3$ `pip` 和 `venv`——你已经在 [软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md) 中理解了概念
 
-回忆那边的分层模型：系统包管理器装 Python 解释器；语言包管理器（pip）装第三方库；虚拟环境（venv）隔离项目依赖。Python 项目中修复“找不到模块”的标准路径永远是：
+回忆那边的分层模型：系统包管理器装 Python 解释器；语言包管理器（pip）装第三方库；虚拟环境（venv）隔离项目依赖。Python 项目中修复“找不到模块”的标准排查路径是：
 
 ```bash
 command -v python && python --version      # 哪个解释器？
@@ -196,7 +196,7 @@ finally:
     file.close()  # 无论如何都执行——但通常不需要，见第 5 节
 ```
 
-和 C++ 的关键差异：Python 的异常栈默认就是展开的（不需要编译时特殊的调试信息），而且异常是几乎所有错误处理的默认方式——文件不存在抛 `FileNotFoundError`，字典键不存在抛 `KeyError`，除法除零抛 `ZeroDivisionError`。
+和 C++ 的关键差异：Python 的异常自带完整 traceback（不需要 `-g` 之类的编译期调试信息），而且异常是几乎所有错误处理的默认方式——文件不存在抛 `FileNotFoundError`，字典键不存在抛 `KeyError`，除法除零抛 `ZeroDivisionError`。
 
 ---
 
@@ -312,51 +312,88 @@ if __name__ == "__main__":
 | **Cython**（cython.org） | Python 的超集，编译为 C 扩展——在高性能计算中广泛使用 |
 | **Numba**（numba.pydata.org） | 用装饰器 JIT 编译 Python 函数（尤其数值计算）到机器码 |
 | **PyInstaller**（pyinstaller.org） | 把 Python 脚本打包成独立可执行文件（含解释器） |
-| **uv**（astral.sh/uv） | Rust 写的 pip 替代，10x 快；也做 venv 和 Python 版本管理 |
+| **uv**（astral.sh/uv） | Rust 写的 pip 替代，官方基准约 10 倍（实际随场景变化）；也做 venv 和 Python 版本管理 |
 | **Ruff**（astral.sh/ruff） | Rust 写的 Python linter + formatter，极快 |
 
 ---
 
 ## $\rm \S \, 17.9$ 动手实践
 
-### 实践一：C++ → Python 重写
+### $\rm \S \, 17.9.1$ 实践一：C++ → Python 重写
 
-选一个你之前在 OJ 上写的 C++ 程序（不含算法竞赛特有的数据结构，含文件输入输出的更好），用 Python 改写。重点关注：
+前置：一个你写过的 OJ C++ 程序（带文件输入输出的更好），放进练习目录 `py-lab/`；Python 3 已装好（`python --version` 有版本输出）。当前目录：`py-lab/`。
 
-1. 哪些 C++ 代码需要手动管理内存但 Python 不需要？
-2. 哪些 C++ 的冗长语法被 Python 简化了？
-3. 类型相关的错误在什么时候暴露（C++ 编译时 vs Python 运行时）？
-
-### 实践二：用虚拟环境管理依赖
+1. 用 Python 重写，再用同一份输入分别跑两个版本、比对输出：
 
 ```bash
-python -m venv papers-env
-source papers-env/bin/activate    # Linux/macOS
-# 或 papers-env\Scripts\Activate.ps1 (Windows PowerShell)
-
-pip install requests
-pip freeze > requirements.txt
-deactivate
-
-# 模拟同事从空目录重建环境
-python -m venv papers-env2
-source papers-env2/bin/activate
-pip install -r requirements.txt
-python -c "import requests; print(requests.__version__)"
+# Bash / WSL（当前目录：py-lab）
+./solution < input.txt > out-cpp.txt
+python solution.py < input.txt > out-py.txt
+diff out-cpp.txt out-py.txt     # 预期输出：没有任何输出，说明内容一致
 ```
 
-### 实践三：体验切片和推导式
+```powershell
+# PowerShell 5.1 不支持 < 输入重定向（第 2 章 §2.10），改用管道
+Get-Content -Raw input.txt | .\solution.exe > out-cpp.txt
+Get-Content -Raw input.txt | python solution.py > out-py.txt
+Compare-Object (Get-Content out-cpp.txt) (Get-Content out-py.txt)   # 预期：无差异
+```
 
-在 Python 交互环境（`python` 回车）中：
+2. 回答三个问题并各写一句话笔记：哪些内存管理消失了？哪些冗长语法被简化了？类型相关的错误分别在什么时候暴露（C++ 编译期 vs Python 运行时）？
+3. 成功标志：两份输出内容一致，且你能指出至少一处“C++ 编译期就报错、Python 要执行到那一行才报错”的具体代码。
+
+清理：`solution.py` 与 `input.txt` 保留作后续练习；先确认当前目录在 `py-lab/` 里，再删除 `out-cpp.txt`、`out-py.txt` 与 C++ 可执行文件。
+
+### $\rm \S \, 17.9.2$ 实践二：用虚拟环境管理依赖
+
+前置：Python 3；当前目录：新建的空练习目录 `venv-lab/`。Windows 上 `.ps1` 被 PowerShell 执行策略拦住时，按第 9 章 §9.3.5 处理（下面用只影响本窗口的 `-Scope Process` 写法，关掉窗口即恢复）。
+
+```bash
+# Bash / WSL / Git Bash（当前目录：venv-lab）
+python -m venv papers-env
+source papers-env/bin/activate    # 预期：提示符前出现 (papers-env)
+python -m pip install requests
+python -m pip freeze > requirements.txt   # 预期：文件里出现 requests 及其依赖
+deactivate
+```
+
+```powershell
+# Windows PowerShell（当前目录：venv-lab）
+python -m venv papers-env
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass   # 只影响本窗口，关窗即恢复
+.\papers-env\Scripts\Activate.ps1    # 预期：提示符前出现 (papers-env)
+python -m pip install requests
+python -m pip freeze > requirements.txt
+deactivate
+```
+
+```bash
+# 模拟同事从空目录重建环境（Bash/WSL；PowerShell 把激活命令换成上面的写法即可）
+python -m venv papers-env2
+source papers-env2/bin/activate
+python -m pip install -r requirements.txt
+python -c "import requests; print(requests.__version__)"   # 预期：打印版本号，且与 papers-env 中装的一致
+deactivate
+```
+
+成功标志：两个环境打印的 `requests` 版本相同，说明 `requirements.txt` 足以重建依赖。
+清理：先 `deactivate`；用 `pwd` 确认当前目录不在两个环境目录里，再删除它们——Bash：`rm -r papers-env papers-env2`；PowerShell：`Remove-Item -Recurse papers-env, papers-env2`；`requirements.txt` 保留。
+
+### $\rm \S \, 17.9.3$ 实践三：体验切片和推导式
+
+前置：Python 3 交互环境（终端里输入 `python` 回车）；当前目录不限，不产生文件。
 
 ```python
 s = "Hello, Python!"
-s[::-1]                    # 反转字符串
-s.split(",")               # 按逗号拆分
+s[::-1]                    # 预期：'!nohtyP ,olleH'
+s.split(",")               # 预期：['Hello', ' Python!']
 words = ["hello", "world", "python", "is", "fun"]
-[w.upper() for w in words if len(w) > 3]  # 长单词大写
-{w[0]: w for w in words}   # 首字母→单词 字典
+[w.upper() for w in words if len(w) > 3]  # 预期：['HELLO', 'WORLD', 'PYTHON']
+{w[0]: w for w in words}   # 预期：{'h': 'hello', 'w': 'world', 'p': 'python', 'i': 'is', 'f': 'fun'}
 ```
+
+成功标志：`s[::-1]` 返回倒序的新字符串而 `s` 本身不变；字典推导的结果与你手写的 `for` 循环一致。
+清理：没有文件产生；`exit()` 或 Ctrl+D 退出即可。
 
 ---
 
@@ -391,18 +428,18 @@ words = ["hello", "world", "python", "is", "fun"]
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 17.13.1$ 自测答案 · 关键概念回顾
 1. `[1, 2, 3, 4]`——Python 的赋值从不拷贝对象，只拷贝引用，a 和 b 指向同一个列表对象。
 2. 反转后的新序列：从末尾到开头、步长为 -1 取全部元素。
 3. 替代 RAII 的资源自动释放（文件自动关闭、锁自动释放）；差异是 with 只在作用域退出时触发，不能绑定整个对象的生命周期，但已覆盖 90% 的资源管理场景。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 17.13.2$ 自测答案 · 应用与辨析
 4. `#include` 是编译期的文本替换；import 在运行时执行模块的顶层代码并缓存模块对象，后续 import 直接返回缓存——所以模块里不能有反复执行的副作用。
 5. `python -c "import sys; print(sys.executable)"`（最可靠），或 Bash 的 `command -v python`、PowerShell 的 `Get-Command python`。
 6. 前者调用 PATH 中第一个 pip——它可能属于另一个 Python 安装；后者调用当前 `python` 自己关联的 pip，保证包装进当前解释器的环境。
 
 ---
 
-下一章（第 18 章）进入 Python 的生态系统：Jupyter Notebook 是什么（它不是“浏览器里的 Python 编辑器”）、NumPy 的 ndarray 为什么比 Python list 快 50 倍、科学计算栈（pandas/Matplotlib/scikit-learn）各自负责什么——以及 AI 初学者最常遇到的环境混乱问题。
+下一章（第 18 章）进入 Python 的生态系统：Jupyter Notebook 是什么（它不是“浏览器里的 Python 编辑器”）、NumPy 的 ndarray 为什么通常比 Python 循环快几十倍、科学计算栈（pandas/Matplotlib/scikit-learn）各自负责什么——以及 AI 初学者最常遇到的环境混乱问题。
 
 > 你现在能：读与写 Python 脚本，解释名字绑定、切片、推导式与 import 机制，并把一段 C++ 逻辑等价改写为 Python

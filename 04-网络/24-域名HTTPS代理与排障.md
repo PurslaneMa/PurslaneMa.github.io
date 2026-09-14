@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 理解 HTTP 请求-响应链路（第 23 章）
-> - □ 会用 curl 发起请求并看状态码
-> - □ 知道 IP 与端口的基本概念
+> - □ 理解 HTTP 请求-响应链路（第 23 章 §23.3）
+> - □ 会用 curl 发起请求并看状态码（第 23 章 §23.3.3、§23.4）
+> - □ 知道 IP 与端口的基本概念（第 23 章 §23.1.1）
 
 ## $\rm \S \, 24.1$ DNS：互联网的电话簿
 
@@ -223,7 +223,7 @@ VPN（Virtual Private Network，虚拟专用网络）在你和 VPN 服务器之�
            localhost:8000（Python 后端）
 ```
 
-Vite（前端构建工具）自带的代理功能本质就是一个简化的反向代理。它的目的是解决**跨域**（CORS）问题——浏览器禁止 `localhost:5173` 上的 JavaScript 向 `api.example.com` 发请求（不同源），但如果前端和后端都通过同一个地址（`localhost:5173`）访问，浏览器就认为它们是同源的。代理在中间把 `/api/*` 请求默默转发到真正的后端。
+Vite（前端构建工具）自带的代理功能本质就是一个简化的反向代理。它的目的是解决**跨域**（CORS）问题——浏览器出于同源策略，不允许页面读取不同源（`localhost:5173` 与 `api.example.com` 不同源）的响应；但请求可能已经发出，只是响应被浏览器拦下。如果前端和后端都通过同一个地址（`localhost:5173`）访问，浏览器就认为它们是同源的。代理在中间把 `/api/*` 请求默默转发到真正的后端。
 
 ---
 
@@ -256,7 +256,7 @@ flowchart TD
 |---|---|---|
 | IP | `ping 8.8.8.8` | 网络连通性 |
 | DNS | `nslookup domain` / `dig domain` | 域名能否解析、解析结果是否正确 |
-| TCP | `nc -zv host port` / `Test-NetConnection` | 端口是否开放 |
+| TCP | `nc -zv host port`（Linux/macOS/WSL）/ `Test-NetConnection host -Port port`（PowerShell） | 端口是否开放 |
 | TLS | `curl -v https://host` / `openssl s_client -connect host:443` | 证书是否有效、TLS 握手是否成功 |
 | HTTP | `curl -v http://host` | 状态码、响应头、响应体 |
 
@@ -285,7 +285,9 @@ flowchart TD
 
 ## $\rm \S \, 24.5$ 动手实践
 
-### 实践一：DNS 实验
+### $\rm \S \, 24.5.1$ 实践一：DNS 实验
+
+`dig` 在 Linux/macOS/WSL 中可用；Windows PowerShell 中没有 `dig`，用 `nslookup github.com` 或 `Resolve-DnsName github.com` 代替。
 
 ```bash
 # 查询不同记录类型
@@ -297,7 +299,9 @@ dig @8.8.8.8 github.com   # 指定 DNS 服务器
 dig +trace github.com     # 从根开始逐步追踪
 ```
 
-### 实践二：TLS 证书检查
+> 前置：任意可访问外网的目录。成功标志：A 记录返回若干 IPv4 地址；MX 可能为空（该域名没有邮件服务）；`+trace` 从根服务器开始逐级列出委派，最后给出答案。清理：只读查询，无文件产生，无需清理。
+
+### $\rm \S \, 24.5.2$ 实践二：TLS 证书检查
 
 ```bash
 # 查看某个网站的证书详情
@@ -307,16 +311,20 @@ openssl s_client -connect github.com:443 -servername github.com | openssl x509 -
 curl -vI https://github.com 2>&1 | grep -E "SSL|subject|issuer|expire"
 ```
 
-### 实践三：分层排障演练
+> 前置：`openssl` 在 Linux/macOS/WSL 和 Git Bash 中自带；命令里有 `grep`，纯 PowerShell 中改用 `Select-String`。成功标志：输出能看到 `notBefore`/`notAfter` 日期、`subject=CN=github.com` 和签发它的 CA（不同 OpenSSL 版本输出格式略有差异，以能看到 subject/issuer/有效期为准）。清理：只读查询，无文件产生，无需清理。
+
+### $\rm \S \, 24.5.3$ 实践三：分层排障演练
 
 1. 故意输入一个不存在的域名，用 `nslookup` 查看结果。
 2. 用 `nc -zv localhost 12345` 尝试连接一个没有服务在监听的端口。
 3. 用 `curl -v https://expired.badssl.com` 观察证书过期错误。
 4. 用 `curl -v https://self-signed.badssl.com` 观察自签名证书错误。
 
-### 实践四：反向代理最简体验
+> 前置：`nc` 在 Linux/macOS/WSL 中可用（Windows PowerShell 改用 `Test-NetConnection localhost -Port 12345`，看 `TcpTestSucceeded: False`）。成功标志：第 1 步返回 NXDOMAIN（`nslookup` 提示找不到域名）；第 2 步报 `Connection refused`；第 3、4 步 curl 以非 0 退出码报证书过期／自签名错误（badssl 站点可达时）。清理：无文件产生，无需清理。
 
-如果你有一台能装 Docker 的机器：
+### $\rm \S \, 24.5.4$ 实践四：反向代理最简体验
+
+如果你有一台能装 Docker 的机器（并已有一个解析到它的域名；没有域名就用 `localhost`，Caddy 会用内部 CA 签发本地证书，浏览器会提示不受信任——这是预期的）：
 
 ```bash
 # 用 Caddy 在三行配置中启用自动 HTTPS 反向代理
@@ -324,10 +332,13 @@ curl -vI https://github.com 2>&1 | grep -E "SSL|subject|issuer|expire"
 # your-domain.com {
 #     reverse_proxy localhost:8000
 # }
-docker run -d -p 80:80 -p 443:443 -v $PWD/Caddyfile:/etc/caddy/Caddyfile caddy
+docker run -d --name caddy-demo -p 80:80 -p 443:443 -v $PWD/Caddyfile:/etc/caddy/Caddyfile caddy
+# PowerShell 中挂载路径改为 ${PWD}\Caddyfile；80/443 需未被占用
 ```
 
 不需要手动申请证书、配置 TLS 参数——Caddy 自动完成。
+
+> 前置：Docker（或 Podman）可用，后端已在 `localhost:8000` 提供 HTTP 服务，80/443 端口空闲。成功标志：`docker ps` 中容器为 `Up`，用浏览器或 `curl -v` 访问该域名返回后端内容，证书由 Caddy 自动签发。清理：`docker rm -f caddy-demo` 停止并删除演示容器（删除的是容器，不会动你的 Caddyfile）。
 
 ---
 
@@ -362,14 +373,14 @@ docker run -d -p 80:80 -p 443:443 -v $PWD/Caddyfile:/etc/caddy/Caddyfile caddy
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 24.9.1$ 自测答案 · 关键概念回顾
 1. nslookup 两个平台通用、输出简单；dig 是 Linux/macOS 工具、输出更详细（可 +trace 看完整解析过程）；hosts 是本地手工维护的映射，先查本地文件既快又能覆盖/测试域名。
 2. HTTP 明文传输，可被窃听、篡改和冒充；HTTPS 在 TCP 之上加 TLS，同时提供加密（防窃听）、完整性校验（防篡改）和身份认证（防冒充）。
 3. 把服务器的证书信任追溯到浏览器预装的根证书：CA 签发服务器证书、根证书签发 CA；验证域名匹配、有效期、CA 签名有效且未被吊销。
 4. 正向代理位于客户端一侧（帮客户端访问外部资源，可缓存、审计、控制访问）；反向代理位于服务器一侧（帮服务器接收请求，做 TLS 终止、负载均衡、路由）。
 5. IP 层（ping 连通性）→ DNS 层（域名能否解析）→ 传输层（端口是否开放，nc -zv）→ TLS 层（证书、握手）→ HTTP 层（状态码、响应）。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 24.9.2$ 自测答案 · 应用与辨析
 1. TCP 层——对端端口没有进程监听，SYN 被 RST 拒绝，发生在 HTTP 请求之前；如果端口是开的而应用有问题，你看到的会是 HTTP 错误而不是 refused。
 2. 代理工作在应用层——HTTP 代理理解 HTTP、可以缓存和过滤，SOCKS5 代理不关心协议；VPN 工作在更低层（通常 L3/IP 层），把 HTTP、DNS、游戏、SSH 等所有流量都封装进加密隧道，因此两者不能互相替代。
 

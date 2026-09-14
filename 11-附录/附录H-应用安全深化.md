@@ -1,8 +1,8 @@
 # $\rm Appendix \, H$ 应用安全、身份认证与供应链安全
 
-> Ch32 覆盖了 SQL 注入、XSS、Secret 管理和依赖漏洞。本章在这个基础上展开——不是“更多漏洞类型”的清单，而是建立**威胁建模**的思维习惯，理解认证和授权的完整链路，并从攻击者和防御者两个视角审视供应链。
+> 第 32 章覆盖了 SQL 注入、XSS、Secret 管理和依赖漏洞。本章在这个基础上展开——不是“更多漏洞类型”的清单，而是建立**威胁建模**的思维习惯，理解认证和授权的完整链路，并从攻击者和防御者两个视角审视供应链。
 
-你应该已经理解 HTTP、Session/Cookie、JWT 和基本的 SQL 操作。本章不重复 Ch32 已覆盖的内容。
+你应该已经理解 HTTP、Session/Cookie、JWT 和基本的 SQL 操作。本章不重复第 32 章已覆盖的内容。
 
 ## $\rm \S \, H.1$ 威胁建模：先画地图，再修墙
 
@@ -29,7 +29,7 @@
 
 ---
 
-## $\rm \S \, H.2$ 常见 Web 漏洞的防御（Ch32 未覆盖的部分）
+## $\rm \S \, H.2$ 常见 Web 漏洞的防御（第 32 章未覆盖的部分）
 
 ### $\rm \S \, H.2.1$ CSRF：别人“替你”发了一个请求
 
@@ -47,6 +47,7 @@
 - **白名单**允许的目标域名/IP
 - **禁止内网地址**：`127.0.0.0/8`、`10.0.0.0/8`、`169.254.0.0/16` 等
 - **限制协议**：只允许 HTTP/HTTPS，禁止 `file://`、`gopher://`
+- **校验要落在真正建立连接的那一步**：只检查 URL 字符串挡不住 DNS 重绑定（域名解析到内网 IP）和“下载时自动跟随重定向”——解析出的 IP 也要在内网段之外，重定向要么禁止、要么每一跳重新校验
 
 ### $\rm \S \, H.2.3$ 路径穿越：`../` 能走到哪
 
@@ -57,11 +58,13 @@
 with open(f"uploads/{user_filename}", "wb") as f:
     f.write(data)
 
-# ✅ 安全
-safe_name = os.path.basename(user_filename)  # 去掉所有路径部分
+# ✅ 好一些：去掉所有路径部分（但还不够，见代码下面两条）
+safe_name = os.path.basename(user_filename)  # ".."、空名、Windows 的反斜杠路径它都不管
 with open(f"uploads/{safe_name}", "wb") as f:
     f.write(data)
 ```
+
+`basename` 只是第一层：还要拒绝 `..`、空文件名和带 `\` 的名字，再用 `os.path.realpath` 确认拼出来的绝对路径仍落在 `uploads/` 目录内（防符号链接绕路），最后限制扩展名与文件大小。
 
 ---
 
@@ -81,7 +84,7 @@ JWT（JSON Web Token）把用户身份和权限编码为一个签名 token。优
 
 ### $\rm \S \, H.3.2$ OAuth 2.0 的角色
 
-OAuth 不是你实现的东西——是你作为用户时看到的“用 GitHub 登录”弹窗。它涉及四个角色：
+OAuth 2.0 是授权框架（RFC 6749）——你作为用户看到的“用 GitHub 登录”弹窗就是它的授权码流程，而在你的项目里要动手实现的是其中的 **Client**（注册应用、拿到 client_id/client_secret、用它换取访问 token）。它涉及四个角色：
 
 ```text
 用户（Resource Owner）→ "用我的 GitHub 账号登录你的论文管理器"
@@ -108,7 +111,7 @@ OpenID Connect（OIDC）在 OAuth 2.0 上增加了一层**身份认证**。当�
 | 措施 | 做什么 |
 |------|--------|
 | **lockfile** | `package-lock.json` / `poetry.lock`——锁定精确版本。但 lockfile 不等于安全——它只锁定版本号，不审查版本内容 |
-| **依赖审计** | `npm audit` / `pip audit` / `cargo audit`——检查已知漏洞 |
+| **依赖审计** | `npm audit` / `pip-audit` / `cargo audit`——检查已知漏洞 |
 | **最小依赖** | 能用一个标准库函数解决的，不加一个包 |
 | **镜像/代理** | 公司内部 npm/PyPI 镜像——依赖不直接来自公网，经过审查 |
 | **SBOM** | Software Bill of Materials——你的软件“成分表”。如果有人报告 `log4j` 有高危漏洞，你能立刻知道你是否用了它 |

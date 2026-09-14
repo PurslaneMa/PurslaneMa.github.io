@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 理解进程、端口与配置文件（第 11、13 章）
-> - □ 装过并运行过软件或服务
-> - □ 在终端执行过命令
+> - □ 理解进程、端口与配置文件（第 11 章 §11.5；第 13 章 §13.5、§13.7.2）
+> - □ 装过并运行过软件或服务（第 13 章 §13.1.2、§13.4）
+> - □ 在终端执行过命令（第 2 章 §2.4、§2.8）
 
 ## $\rm \S \, 30.1$ Docker 的核心思想：把环境“装箱”
 
@@ -36,7 +36,7 @@ graph LR
 
 同一个镜像可以同时启动多个容器，就像 `std::vector<int>` 可以创建多个实例。每个容器有自己的文件系统可写层，修改不会影响镜像或其他容器。
 
-> 如果删除一个容器（`docker rm`），容器可写层上所有修改都会丢失。需要持久化的数据（数据库、文件）必须存储在**数据卷**（volume）中——卷独立于容器生命周期。
+> 如果删除一个容器（`docker rm`），容器可写层上所有修改都会丢失。需要持久化的数据（数据库、文件）要存放在容器的可写层之外，通常用**数据卷**（volume）——卷独立于容器生命周期（绑定挂载宿主目录是另一种方式，见 §30.6）。
 
 ---
 
@@ -82,7 +82,7 @@ docker run -p 8000:8000 paper-api
 # 访问 localhost:8000 → 转发到容器内 8000 端口
 ```
 
-回顾[域名、HTTPS、代理与排障](../04-网络/24-域名HTTPS代理与排障.md)中的反向代理概念——Docker 的端口映射就是一层简化的反向代理。
+回顾[域名、HTTPS、代理与排障](../04-网络/24-域名HTTPS代理与排障.md)中的反向代理概念——Docker 的端口映射在效果上类似一层简化的反向代理（准确说它工作在四层：只按端口转发，不解析 HTTP 内容）。
 
 ---
 
@@ -175,7 +175,7 @@ docker compose down -v      # 同时删除数据卷——彻底重置
 
 ## $\rm \S \, 30.6$ 安全与最佳实践
 
-1. **不要在 Dockerfile 中写密码/Token**。用环境变量（`${VAR}`）或 Docker Secrets（Swarm 模式）。
+1. **不要在 Dockerfile 中写密码/Token**。用环境变量（`${VAR}`）或 Docker Secrets（`docker secret`，只在 Swarm 集群模式下可用，超出本书范围）。
 2. **不要以 root 运行容器**。在 Dockerfile 中添加 `USER 1000`（或非 root 用户）。
 3. **用 `.dockerignore` 排除不需要的文件**——和 `.gitignore` 类似规则。排除 `.git`、`node_modules`、`venv`、`__pycache__` 可以显著减小构建上下文。
 4. **不挂载不必要的宿主目录**。谨慎使用 `bind mount`（`-v /host/path:/container/path`）——容器对挂载目录的写操作直接影响宿主机。
@@ -184,27 +184,33 @@ docker compose down -v      # 同时删除数据卷——彻底重置
 
 ## $\rm \S \, 30.7$ 动手实践
 
-### 实践一：容器化 Python 后端
+### $\rm \S \, 30.7.1$ 实践一：容器化 Python 后端
 
-1. 在论文管理器后端目录创建 Dockerfile。
-2. `docker build -t paper-api .`
-3. `docker run -p 8000:8000 paper-api`
-4. 用 `curl` 或浏览器验证 API 正常响应。
-5. `docker logs` 查看输出；`docker exec -it <id> bash` 进入容器探索文件系统。
+1. 在论文管理器后端目录创建 Dockerfile（内容见 §30.4）——目录里应有可运行的 `app.py`、`requirements.txt`。
+2. `docker build -t paper-api .`——构建输出随构建器版本略有差异，成功标志是最后出现 `paper-api` 镜像名（BuildKit 会打印 `naming to docker.io/library/paper-api:latest`）；失败时看第一条 `ERROR`。
+3. `docker run -p 8000:8000 paper-api`——成功判据：另一个终端里 `curl http://localhost:8000/api/papers` 返回 JSON；若报 `port is already allocated`，换一个宿主机端口再试。
+4. 用 `curl` 或浏览器验证 API 正常响应（同上一步）。
+5. `docker logs <container>` 查看输出——应看到后端启动日志；`docker exec -it <container> bash` 进入容器后 `ls /app` 能看到源码，说明镜像内容符合预期。
 
-### 实践二：添加数据卷
+> 前置：论文管理器后端可本地运行，当前目录就是后端目录（含 Dockerfile）；Docker 可用（`docker --version` 有输出）。成功判据：`docker ps` 显示容器 `Up`，`curl http://localhost:8000/api/papers` 返回 JSON。清理：`docker stop <container> && docker rm <container>`；若要连镜像一起删，再加 `docker rmi paper-api`。
 
-1. 修改 Dockerfile，确保 SQLite 数据库文件存储在 `/data/` 目录。
-2. `docker run -v paper-data:/data -p 8000:8000 paper-api`
-3. 在容器内插入几条数据，然后删除容器。
-4. 重新启动一个同样的容器（挂载同一个卷）——数据还在。
+### $\rm \S \, 30.7.2$ 实践二：添加数据卷
 
-### 实践三：Compose 启动全栈
+1. 修改 Dockerfile，确保 SQLite 数据库文件存储在 `/data/` 目录（例如把数据库路径改成由 `DATABASE_PATH=/data/papers.db` 之类的环境变量控制）。
+2. `docker run -v paper-data:/data -p 8000:8000 paper-api`——成功判据：`docker volume ls` 里出现 `paper-data`，容器正常响应请求。
+3. 在容器内插入几条数据（用后端的 POST 接口最省事；`python:*-slim` 镜像里没有 `sqlite3` 命令行，用 `docker exec <container> python -c ...` 走 Python 的 sqlite3 模块也可以），然后删除容器：`docker rm -f <container>`。
+4. 重新启动一个同样的容器（挂载同一个卷）：`docker run -v paper-data:/data -p 8000:8000 paper-api`——成功判据：之前插入的数据仍能查到（卷独立于容器生命周期）。
 
-1. 用上面的 `docker-compose.yml` 启动前端+后端+数据库。
-2. `docker compose logs -f` 观察三个服务的启动顺序。
-3. 在前端页面中添加一条论文，确认数据库已持久化。
-4. `docker compose down -v` 彻底清理。
+> 前置：完成实践一且镜像可构建；后端支持把数据库路径配置到 `/data`。成功判据：删除容器并重建后，数据仍然存在。清理：`docker rm -f <container>`；确认不再需要这些数据后，再 `docker volume rm paper-data`（该命令会永久删除卷内数据）。
+
+### $\rm \S \, 30.7.3$ 实践三：Compose 启动全栈
+
+1. 用上面的 `docker-compose.yml` 启动前端+后端+数据库——成功判据：`docker compose ps` 三个服务都是 `running`。
+2. `docker compose logs -f` 观察三个服务的启动顺序——应看到 db 先就绪、backend 与 frontend 随后开始监听；`depends_on` 只保证启动顺序，不保证 db 已经能接受连接。
+3. 在前端页面中添加一条论文，确认数据库已持久化——成功判据：`docker compose restart backend` 后这条记录仍能查到（或后端 API 返回的条数增加）。
+4. `docker compose down -v` 彻底清理——成功判据：`docker compose ps` 不再列出服务，数据卷也被删除。
+
+> 前置：项目根目录有 §30.5 的 `docker-compose.yml`，并在同目录的 `.env` 里设置 `DB_PASSWORD`（Compose 会读取它）。成功判据：三个服务同时运行，写入的数据在容器重启后仍在。清理：只想停止服务、保留数据用 `docker compose down`；`docker compose down -v` 会连数据卷一起删除（数据永久丢失，确认不需要后再执行）。
 
 ---
 
@@ -237,12 +243,12 @@ docker compose down -v      # 同时删除数据卷——彻底重置
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 30.11.1$ 自测答案 · 关键概念回顾
 1. 镜像是只读模板，容器是镜像的运行实例（加可写层）。Docker 容器和宿主机共享内核（不是虚拟机——不需要启动完整的 OS），因此启动极快（秒级）、内存开销极小。
 2. COPY 在构建时执行（把宿主机文件复制到镜像），RUN 在构建时执行（运行命令）。先 COPY requirements.txt → RUN pip install → 再 COPY 源码——利用 Docker 的层缓存：只要 requirements.txt 没变，pip install 的结果就被缓存。
 3. 容器可写层和容器生命周期绑定——删除容器会丢失数据。数据卷独立于容器，删除容器不影响卷中数据（如数据库文件）。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 30.11.2$ 自测答案 · 应用与辨析
 4. 容器内是隔离的文件系统、网络栈和进程空间——不依赖宿主机的 Python 版本、系统库、全局包。但容器内服务监听 `0.0.0.0:8000` 需要容器自己的端口映射才能从宿主机访问。
 5. 前者停止并删除容器和网络，保留数据卷。后者同时删除数据卷——数据彻底丢失（类似 `DROP DATABASE` + 删除备份）。
 6. `.env` 包含密钥/密码/Tokens。镜像可能被推送到公开仓库或被其他人拉取。密钥通过运行时环境变量注入（`-e` 或 Compose environment），不进镜像。

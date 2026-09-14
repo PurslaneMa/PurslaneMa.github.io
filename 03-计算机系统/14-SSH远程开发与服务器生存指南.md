@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 知道 IP 地址标识主机、端口标识服务（第 1 章）
-> - □ 会用终端执行命令
-> - □ 理解客户端-服务器的基本对话方式
+> - □ 知道 IP 地址标识主机、端口标识服务（第 1 章 §1.5）
+> - □ 会用终端执行命令（第 2 章 §2.4）
+> - □ 理解客户端-服务器的基本对话方式（第 1 章 §1.5）
 
 ## $\rm \S \, 14.1$ SSH 解决什么问题
 
@@ -70,6 +70,8 @@ ssh-copy-id alice@server.example.com
 # 服务器上 ~/.ssh/authorized_keys 文件中
 ```
 
+Windows 自带的 OpenSSH 客户端有 `ssh`、`scp`、`ssh-keygen`，但没有 `ssh-copy-id`：在 Windows 上可以在 WSL 或 Git Bash 里执行它，或者手动把 `~/.ssh/id_ed25519.pub` 的内容追加到服务器的 `~/.ssh/authorized_keys` 里。
+
 之后登录就不需要密码了：
 
 ```bash
@@ -132,7 +134,7 @@ ssh-add -l                    # 列出 agent 中已加载的密钥
 # 之后本机所有 SSH 连接都不再询问密码短语
 ```
 
-macOS 和常见 Linux 桌面通常自动运行 agent；如果提示 `Could not open a connection to your authentication agent`，先执行 `eval "$(ssh-agent -s)"` 启动它。
+macOS 和常见 Linux 桌面通常自动运行 agent；如果提示 `Could not open a connection to your authentication agent`，先执行 `eval "$(ssh-agent -s)"` 启动它。Windows 上 ssh-agent 是系统服务（默认未启动）：在管理员 PowerShell 里 `Start-Service ssh-agent`；想开机自动启动，用 `Set-Service ssh-agent -StartupType Automatic`。
 
 agent 的真正威力是**转发**（agent forwarding）：`~/.ssh/config` 中的 `ForwardAgent yes`（上一节 `gpu-server` 的例子）让密钥穿过中间机器——本机 → 服务器 A → 服务器 B 逐层跳转时，A 不保存你的私钥，只是把签名请求转发回你本机的 agent。典型场景：你在 A 上 `git clone` 私有仓库或 `git push`，用的都是本机的 GitHub 密钥，A 上不需要放任何私钥。
 
@@ -166,12 +168,14 @@ scp alice@server:/home/alice/results.txt ./
 # rsync——增量同步（只传输变化的部分，支持断点续传）
 rsync -avzP local_dir/ alice@server:/home/alice/data/
 # -a: 归档模式（保留权限、时间戳）
-# -v: 显示进度
+# -v: 详细输出（列出传输了哪些文件）
 # -z: 压缩
 # -P: 断点续传 + 进度条
 ```
 
 **rsync vs scp：什么时候用哪个**
+
+`scp` 随 Windows 自带的 OpenSSH 客户端一起提供；`rsync` 在 Windows 上要经 WSL 使用，或用 MSYS2/cwRsync 之类单独安装。
 
 | 场景 | 工具 |
 |------|------|
@@ -232,12 +236,12 @@ tmux attach -t training        # -t: 目标会话名称
 |---|---|
 | **tmux** | 最广泛使用，Ctrl+B 操作 |
 | **screen** | tmux 的前身，功能较少但几乎所有系统都预装 |
-| **nohup** | `nohup python train.py &`——最简单的后台化，但无法重连查看输出 |
+| **nohup** | `nohup python train.py &`——最简单的后台化，输出默认写进 `nohup.out`，但没法像 tmux 那样重连交互 |
 | **systemd service** | [日常系统管理：软件、用户、服务与日志](13-系统服务日志与软件安装.md)讲过，适合长期运行的服务而非临时训练 |
 
 ### $\rm \S \, 14.4.4$ asciinema：把终端会话录成文字
 
-想给别人看“我敲了什么、输出是什么”——截图只能截一帧，录屏是几十 MB 的像素视频。**asciinema** 把终端会话录成**文本格式的录像**（cast 文件）：体积只有几 KB、里面的文字可以直接复制粘贴、上传后得到一个分享链接（asciinema.org）。
+想给别人看“我敲了什么、输出是什么”——截图只能截一帧，录屏是几十 MB 的像素视频。**asciinema** 把终端会话录成**文本格式的录像**（cast 文件）：体积远小于录屏（短演示只有几 KB 到几十 KB，长时间的日志输出会更大）、里面的文字可以直接复制粘贴、上传后得到一个分享链接（asciinema.org）。
 
 ```bash
 asciinema rec demo.cast    # 开始录制，之后正常操作终端
@@ -246,7 +250,7 @@ asciinema play demo.cast   # 本地回放
 asciinema upload demo.cast # 上传，输出一个分享链接
 ```
 
-典型用途：录下 bug 的复现步骤发给队友（对方能逐字看到你输入的命令和输出）、做 CLI 工具演示、记录“我当时就是这样操作的”。安装：`apt install asciinema`（Debian/Ubuntu）或 `brew install asciinema`（macOS）。
+典型用途：录下 bug 的复现步骤发给队友（对方能逐字看到你输入的命令和输出）、做 CLI 工具演示、记录“我当时就是这样操作的”。安装：`sudo apt install asciinema`（Debian/Ubuntu）或 `brew install asciinema`（macOS）。
 
 ---
 
@@ -338,25 +342,34 @@ VS Code 的 **Remote - SSH** 扩展让你在本地 VS Code 中直接编辑远程
 
 如果你有一台能 SSH 登录的远程机器（云服务器、实验室服务器、甚至本地的虚拟机）：
 
+Windows 上建议在 WSL 里做这些实践——PowerShell 自带 `ssh`/`scp`/`ssh-keygen`，但没有 `ssh-copy-id` 和 `tmux`；涉及服务器端的 Python 命令统一写 `python3`（Ubuntu 20.04 起默认不再提供 `python` 这个命令）。
+
 ### $\rm \S \, 14.8.1$ 实践一：密钥认证
 
-1. 生成密钥对（`ssh-keygen -t ed25519`）。
-2. 用 `ssh-copy-id` 把公钥放到远程服务器。
-3. SSH 登录——不再需要密码。
-4. 查看 `~/.ssh/known_hosts` 的内容。
+1. 生成密钥对（`ssh-keygen -t ed25519`）。预期输出：提示保存路径（默认 `~/.ssh/id_ed25519`）和 passphrase，结束后打印一个 fingerprint 与随机艺术图；`ls ~/.ssh` 能看到 `id_ed25519` 与 `id_ed25519.pub` 两个文件。
+2. 用 `ssh-copy-id alice@server` 把公钥放到远程服务器（PowerShell 里没有这条命令：在 WSL/Git Bash 里执行，或手动把 `id_ed25519.pub` 的内容追加到服务器的 `~/.ssh/authorized_keys`）。预期输出：打印 `Number of key(s) added: 1`。
+3. SSH 登录——不再需要密码。预期输出：`ssh alice@server` 直接进入服务器提示符，不再询问服务器的登录密码（若给私钥设了 passphrase，问的是本地私钥的 passphrase）。
+4. 查看 `~/.ssh/known_hosts` 的内容。预期输出：能看到服务器主机名/IP 与它的公钥条目。
+5. 清理：本实践不产生临时文件；若要撤销授权，从服务器的 `~/.ssh/authorized_keys` 中删掉那一行（删掉本地私钥就再也无法登录，确认不再需要时再做）。
 
 ### $\rm \S \, 14.8.2$ 实践二：tmux 持久会话
 
-1. SSH 登录，`tmux new -s test`。
-2. 在 tmux 中运行 `python -c "import time; [print(i, flush=True) or time.sleep(1) for i in range(1000)]"`。
-3. `Ctrl+B` `D` 断开。退出 SSH。
-4. 重新 SSH 登录，`tmux attach -t test`——确认程序一直在运行。
+前置条件：服务器上已装 tmux（`tmux -V` 检查，没有则 `sudo apt install tmux`）。
+
+1. SSH 登录，`tmux new -s test`。预期输出：屏幕底部出现状态栏，显示会话名 `test`。
+2. 在 tmux 中运行 `python3 -c "import time; [print(i, flush=True) or time.sleep(1) for i in range(1000)]"`。预期输出：从 0 开始每秒打印一个数字。
+3. `Ctrl+B` `D` 断开。退出 SSH。预期输出：回到本地提示符；重新登录后 `tmux ls` 仍显示 `test` 会话。
+4. 重新 SSH 登录，`tmux attach -t test`——确认程序一直在运行。预期输出：看到的数字比离开时大得多，说明会话期间打印没有中断。
+5. 清理：在会话里按 `Ctrl+C` 停掉程序，再 `tmux kill-session -t test`（之后 `tmux ls` 会提示没有服务器在运行）。
 
 ### $\rm \S \, 14.8.3$ 实践三：端口转发
 
-1. 在远程服务器上运行 `python -m http.server 8888`。
-2. 在本地运行 `ssh -L 8888:localhost:8888 alice@server`。
-3. 在本地浏览器中打开 `http://localhost:8888`——你看到的是远程服务器上的文件列表。
+前置条件：远程服务器有 `python3`；本地 8888 端口没有被别的程序占用。
+
+1. 在远程服务器上运行 `python3 -m http.server 8888 --bind 127.0.0.1`。预期输出：打印 `Serving HTTP on 127.0.0.1 port 8888 ...`。（`--bind 127.0.0.1` 只监听本机；不加的话默认监听所有网卡，会把当前目录暴露给整个网络——隧道访问本机端口不受影响。）
+2. 在本地运行 `ssh -L 8888:localhost:8888 alice@server`。预期输出：无，命令保持挂起说明隧道已建立（本地 8888 被别的程序占用时会报 `bind: Address already in use`）。
+3. 在本地浏览器中打开 `http://localhost:8888`——你看到的是远程服务器上的文件列表。成功标志：列出的是服务器当前目录的内容，而不是你本机的目录。
+4. 清理：本地按 Ctrl+C 关闭隧道；回到服务器终端按 Ctrl+C 停掉 `http.server`，确认目录不再暴露在外。
 
 ---
 
@@ -375,40 +388,34 @@ VS Code 的 **Remote - SSH** 扩展让你在本地 VS Code 中直接编辑远程
 
 1. SSH 解决什么核心问题？它默认使用哪个端口？
 
-2. 公钥和私钥分别应该存放在什么地方？哪个绝不可以发送给任何人？
+2. 公钥和私钥分别应该存放在什么地方？哪个绝不可以发送给任何人？`known_hosts` 文件的作用是什么？
 
-3. `known_hosts` 文件的作用是什么？
+3. 为什么直接 SSH 登录后运行的程序在断开 SSH 后会停止？tmux 的 `Ctrl+B` `D` 和 `Ctrl+B` `C` 分别做什么？
 
-4. 为什么直接 SSH 登录后运行的程序在断开 SSH 后会停止？
+4. `ssh -L 8888:localhost:8888 alice@server` 让本地浏览器访问 `localhost:8888` 时实际看到了什么？
 
-5. tmux 的 `Ctrl+B` `D` 和 `Ctrl+B` `C` 分别做什么？
-
-6. `ssh -L 8888:localhost:8888 alice@server` 让本地浏览器访问 `localhost:8888` 时实际看到了什么？
-
-7. 共享服务器上的三条基本规矩是什么？
+5. 共享服务器上的三条基本规矩是什么？
 
 ## $\rm \S \, 14.11$ 应用与辨析
 
-8. `scp` 和 `rsync` 有什么区别？什么时候用 `rsync`？
+6. `scp` 和 `rsync` 有什么区别？什么时候用 `rsync`？
 
-9. 你 SSH 登录服务器运行 `python train.py` 后直接关闭电脑，第二天发现训练早就停了。原因是什么？正确做法是什么？
+7. 你 SSH 登录服务器运行 `python train.py` 后直接关闭电脑，第二天发现训练早就停了。原因是什么？正确做法是什么？
 
 ## $\rm \S \, 14.12$ 本章自测答案
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 14.12.1$ 自测答案 · 关键概念回顾
 1. 提供加密通信、身份认证和远程执行命令——安全地登录远程机器并操作它；默认端口 22。
-2. 私钥（~/.ssh/id_ed25519）留存在你的电脑上，绝不发送给任何人；公钥（.pub）放到服务器的 ~/.ssh/authorized_keys。
-3. 记录你确认过的服务器指纹，防止中间人攻击；下次连接时如果指纹变了，SSH 会发出严重警告并拒绝连接。
-4. SSH 会话是一个终端：断开时 Shell 向附着于该终端的进程发送 SIGHUP（挂断信号），默认行为是终止进程。
-5. `Ctrl+B` `D` 断开会话（detach，会话和其中的程序继续运行）；`Ctrl+B` `C` 创建新窗口。
-6. 实际访问的是远程服务器上的 localhost:8888 服务（如 Jupyter），所有流量经过 SSH 加密隧道传输。
-7. 用 GPU 前先 `nvidia-smi` 查看再占用，不抢正在使用的 GPU；磁盘不是无限的，大数据集放共享分区并及时清理临时文件；Token/密码/私钥不进命令行（用权限 600 的环境变量文件）。
+2. 私钥（~/.ssh/id_ed25519）留存在你的电脑上，绝不发送给任何人；公钥（.pub）放到服务器的 ~/.ssh/authorized_keys。`known_hosts` 记录你确认过的服务器指纹，防止中间人攻击；下次连接时如果指纹变了，SSH 会发出严重警告并拒绝连接。
+3. SSH 会话是一个终端：断开时 Shell 向附着于该终端的进程发送 SIGHUP（挂断信号），默认行为是终止进程。`Ctrl+B` `D` 断开会话（detach，会话和其中的程序继续运行）；`Ctrl+B` `C` 创建新窗口。
+4. 实际访问的是远程服务器上的 localhost:8888 服务（如 Jupyter），所有流量经过 SSH 加密隧道传输。
+5. 用 GPU 前先 `nvidia-smi` 查看再占用，不抢正在使用的 GPU；磁盘不是无限的，大数据集放共享分区并及时清理临时文件；Token/密码/私钥不进命令行（用权限 600 的环境变量文件）。
 
-### 自测答案 · 应用与辨析
-8. scp 简单全量复制；rsync 增量同步（只传变化的部分）、支持断点续传和压缩；传输大量小文件或传输可能中断时用 rsync。
-9. SSH 断开时终端关闭，Shell 向附着于该终端的子进程发送 SIGHUP，训练进程被终止；正确做法是先在服务器上 `tmux new -s training` 创建持久会话，在会话内运行训练，断开 SSH 不影响它，第二天 `tmux attach -t training` 查看输出。
+### $\rm \S \, 14.12.2$ 自测答案 · 应用与辨析
+6. scp 简单全量复制；rsync 增量同步（只传变化的部分）、支持断点续传和压缩；传输大量小文件或传输可能中断时用 rsync。
+7. SSH 断开时终端关闭，Shell 向附着于该终端的子进程发送 SIGHUP，训练进程被终止；正确做法是先在服务器上 `tmux new -s training` 创建持久会话，在会话内运行训练，断开 SSH 不影响它，第二天 `tmux attach -t training` 查看输出。
 
 ---
 

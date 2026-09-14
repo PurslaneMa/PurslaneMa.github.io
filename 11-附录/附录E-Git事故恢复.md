@@ -2,11 +2,11 @@
 
 > 你已经会用 `git add`、`git commit`、`git push` 和 `git bisect`。现在的问题是：**当你搞砸了怎么办？** 误删了分支、`git reset --hard` 删掉了想要的代码、merge 到一半想放弃、文件已经被跟踪但 `.gitignore` 不生效——这些不是“高级操作”，是每个开发者每周都会遇到的日常事故。本章教你出事后怎么救。
 
-你应该已经理解 Git 的基本工作流（[第 17 章](../05-开发工作流/19-Git与团队协作.md)）。误删分支、`reset --hard` 丢了代码、merge 到一半想放弃——这些是本章要解决的事故场景。
+你应该已经理解 Git 的基本工作流（[第 19 章](../05-开发工作流/19-Git与团队协作.md)）。误删分支、`reset --hard` 丢了代码、merge 到一半想放弃——这些是本章要解决的事故场景。
 
 ## $\rm \S \, E.1$ reflog：你的后悔药
 
-### $\rm \S \, E.1.1$ Git 不会真的“删除”任何东西（至少 90 天内）
+### $\rm \S \, E.1.1$ Git 不会真的“删除”任何东西——但有时间窗口
 
 Git 的“引用日志”（reflog / reference log）记录了 **HEAD 和分支指针移动的每一步**。你 `reset --hard`、`rebase`、`commit --amend`——每一步都被记录下来。
 
@@ -24,10 +24,10 @@ git reflog
 ### $\rm \S \, E.1.2$ 找回“丢失”的提交
 
 ```bash
-# 场景：git reset --hard HEAD~3，删掉了最近 3 个提交，然后发现第 2 个提交里有一段重要的代码
+# 场景：git reset --hard HEAD~3，删掉了最近 3 个提交，然后发现其中一个提交里有一段重要的代码
 
 git reflog                         # 找到 reset 之前的 HEAD
-# def5678 HEAD@{1}: reset: moving to HEAD~1
+# def5678 HEAD@{1}: reset: moving to HEAD~3   ← 这一条里记录的旧位置就是被丢掉的提交
 
 git checkout def5678               # 切到那个"丢失"的提交（进入 detached HEAD）
 git switch -c recovered-branch     # 基于它创建新分支——提交回来了
@@ -36,16 +36,16 @@ git switch -c recovered-branch     # 基于它创建新分支——提交回来�
 ### $\rm \S \, E.1.3$ 找回误删的分支
 
 ```bash
-git branch -D feature-x            # 误删！
+git branch -d feature-x            # 正常删分支：-d 只允许删已合并的；-D 跳过这个检查，删错就靠下面找回
 
-git reflog | grep feature-x
-# abc1234 feature-x@{0}: branch: Created from main
-# def5678 feature-x@{1}: commit: 实现按关键词搜索
+# 分支自己的 reflog 会随分支一起被删除，所以要查 HEAD 的 reflog：
+git reflog
+# def5678 HEAD@{2}: commit: 实现按关键词搜索   ← 这条提交原本在 feature-x 上
 
-git branch feature-x abc1234       # 从 reflog 中记录的那个提交重建分支
+git branch feature-x def5678       # 用这个提交重建分支，内容就回来了
 ```
 
-> **经验规则**：在 Git 中，“删除”不是真的删除——至少 90 天的 reflog 窗口内，失误几乎总是可逆的。`git reflog` 应该在你学到 `git reset --hard` 的同一天学会。
+> **经验规则**：“删除”不会立刻让对象消失，但窗口比想象中短：reflog 里**可达**的记录默认保留 90 天，而 `reset --hard` 丢下的提交属于**不可达**对象——`gc.pruneExpire` 默认只有 2 周，期间一旦触发 `git gc` 就可能被真正清掉。发现搞砸了就立刻 `git reflog` 找回，别拖。`git reflog` 应该在你学到 `git reset --hard` 的同一天学会。
 
 ---
 
@@ -128,7 +128,7 @@ Squash 适用于：开发过程中频繁的“修 typo”“加注释”“改�
 |------|------|
 | 合并公共分支到 main | `merge`——保留完整历史 |
 | 在 push 之前整理自己的分支 | `rebase` + `squash`——让历史干净 |
-| 已经 push 的分支 | 永远不要 `rebase`，用 `merge` |
+| 已经 push 的**共享**分支 | 不要 `rebase`（别人的历史会对不上），用 `merge`；只有自己一人在用的分支才可以 `rebase` + `--force-with-lease` |
 | 代码审查前整理提交 | interactive rebase + squash |
 
 ---

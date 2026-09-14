@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 会用 git 做本地提交（第 19 章）
-> - □ 理解远程与本地仓库的关系
-> - □ 会用终端执行 git 命令
+> - □ 会用 git 做本地提交（第 19 章 §19.2）
+> - □ 理解远程与本地仓库的关系（第 19 章 §19.1.2）
+> - □ 会用终端执行 git 命令（第 19 章 §19.1.3、§19.2）
 
 ## $\rm \S \, 20.1$ Git、GitHub、本地仓库和远程仓库的关系
 
@@ -44,6 +44,7 @@ cd paper-manager
 git init
 git add .
 git commit -m "Initial commit"
+git branch -M main    # 若默认分支是 master（旧版 Git），先重命名为 main，与 GitHub 默认一致
 git remote add origin https://github.com/YOUR_USERNAME/paper-manager.git
 git push -u origin main
 # -u 设置 upstream——之后只需 git push 即可
@@ -81,7 +82,7 @@ ssh -T git@github.com
 # "Hi USERNAME! You've successfully authenticated..."
 ```
 
-**Token 和私钥永远不要出现在代码、命令行参数或环境变量中**——这是从[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)的安全原则在 Git 层面的延伸。GitHub 的 Personal Access Token 按仓库权限细分，定期过期——比你用主密码更安全。
+**Token 和私钥不要写进代码、不要提交进仓库，也不要放进会进入日志或 Shell 历史的命令行参数中**——需要时把它们交给 Git 凭据管理器、本地环境变量（第 13 章 §13.5.2）或 CI 的 Repository Secrets（§20.7.2）。这是从[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)的安全原则在 Git 层面的延伸。GitHub 的 Personal Access Token 按仓库权限细分，定期过期——比你用主密码更安全。
 
 ---
 
@@ -277,9 +278,10 @@ __pycache__/
 .vscode/
 .idea/
 
-# 操作系统
-.DS_Store    # macOS
-Thumbs.db    # Windows
+# 操作系统：macOS
+.DS_Store
+# 操作系统：Windows
+Thumbs.db
 ```
 
 规则：编译产物、第三方依赖（可以从 lockfile 重建的）、包含密钥的配置文件、编辑器/OS 的临时文件——全部进 `.gitignore`。
@@ -315,25 +317,31 @@ gh run watch         # 实时查看 CI 日志
 
 ## $\rm \S \, 20.9$ 实践
 
-### 实践一：创建仓库并推送
+### $\rm \S \, 20.9.1$ 实践一：创建仓库并推送
 
 1. 在 GitHub 上创建一个 Public 仓库。
 2. 将论文管理器项目初始化为 Git 仓库。
 3. 创建 `.gitignore`，提交，推送到 GitHub。
 4. 在 GitHub 网页上确认文件已出现。
 
-### 实践二：完整的 PR 流程
+> 前置：已有 GitHub 账号，并按 §20.2.2 配置好 HTTPS Token 或 SSH 密钥；本地有一个可推送的项目目录。成功标志：`git push` 成功，网页上能看到你提交的文件，而 `.gitignore` 中的 `build/`、`venv/`、`node_modules/` 等没有出现在仓库里。清理：该仓库后面还要用，建议保留；确要删除时在 GitHub 仓库 Settings → General → Danger Zone 中删除（只删远程，本地目录不受影响）。
+
+### $\rm \S \, 20.9.2$ 实践二：完整的 PR 流程
 
 1. 在 GitHub 上从 `main` 创建一个 Issue（如“添加 CSV 导入功能”）。
 2. 本地创建分支 `add-csv-import`，实现功能，提交，推送。
 3. 在 GitHub 上创建 Pull Request，在描述中写上 `Closes #1`（自动关联 Issue）。
 4. 自己审查自己的 PR diff——有没有不该出现的文件或调试代码？
 
-### 实践三：SSH 认证
+> 前置：完成实践一，本地仓库已能 push 到 GitHub。成功标志：PR 页面显示它与 Issue #1 已关联，diff 中只有预期的改动、没有构建产物或调试代码；合并后 Issue 自动关闭。清理：合并后在本地运行 `git switch main && git pull && git branch -d add-csv-import`，把已合并的功能分支删掉。
+
+### $\rm \S \, 20.9.3$ 实践三：SSH 认证
 
 1. 生成 SSH 密钥对（如果没有的话）。
 2. 将公钥添加到 GitHub Settings。
 3. 用 SSH URL 克隆一个仓库，确认不需要输入密码。
+
+> 前置：有一个可克隆的仓库（自己的或别人的公开仓库）。成功标志：`ssh -T git@github.com` 输出 `Hi USERNAME! You've successfully authenticated...`；克隆后 `git remote -v` 显示 `git@github.com:` 地址，push 不再要求输入密码。清理：公钥可以留在账号里长期使用；只做实验的话，在 GitHub 的 SSH keys 页面删除该公钥即可（本地私钥文件不会被动到）。
 
 ---
 
@@ -369,14 +377,14 @@ gh run watch         # 实时查看 CI 日志
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 20.13.1$ 自测答案 · 关键概念回顾
 1. Git 是本地运行的版本控制工具；GitHub 是托管 Git 仓库并提供 Issue、Pull Request、Actions 等协作功能的网站/服务（GitLab、Gitee 类似）。
 2. fetch 从远程下载新提交但不改动工作区；pull = fetch + merge（拉取并合并到当前分支）；push 把本地提交推送到远程。
 3. clone 是拿到仓库的本地副本；fork 是把别人的仓库完整复制到你自己的 GitHub 账户下（不影响原仓库）；向原项目贡献代码时用 fork + PR。
 4. 在合并前插入人类审查环节：查看 diff、讨论、请求修改、批准后才合并；它是代码质量保障，也让多人共享代码的所有权。
 5. 每次 push 或创建 PR 时自动在干净虚拟机中安装依赖、构建、运行测试——项目的“云端 OJ”，失败会显示红叉并可用分支保护阻止合并。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 20.13.2$ 自测答案 · 应用与辨析
 1. 立即轮换密钥——在服务提供商处生成新密钥使旧密钥作废；从 Git 历史中删除只是补救，不能保证没有人已经 clone 了仓库。
 2. HTTPS 无需额外配置、受限网络通常也通，但每次 push 需要用户名和 Token（可交给凭据管理器缓存）；SSH 需要先生成密钥对并上传公钥，配置一次后免重复认证——长期个人开发常用 SSH，临时环境或网络受限时用 HTTPS。
 

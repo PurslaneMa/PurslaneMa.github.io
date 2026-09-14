@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 理解模型推理与结构化输出（第 33、34 章）
-> - □ 会调用工具/API 并处理返回
-> - □ 理解最小权限与审计日志的价值
+> - □ 理解模型推理与结构化输出（第 33 章 §33.3.1 的 tool use；第 34 章 §34.1.4 的结构化输出）
+> - □ 会调用工具/API 并处理返回（第 23 章 §23.4 的 curl；第 29 章 §29.3 的 JSON 响应约定）
+> - □ 理解最小权限与审计日志的价值（第 4 章 §4.2.3 为什么提权不是默认手段；第 13 章 §13.2 日志记了什么）
 
 ## $\rm \S \, 37.1$ Agent 的“大脑”：推理-行动循环
 
@@ -96,7 +96,7 @@ LLM 收到结果后继续推理——也许直接回复用户，也许决定还�
 | **情节记忆** | 你昨天做了什么 | 对话历史摘要 + 向量数据库 | 跨对话 |
 | **语义记忆** | 你知道“巴黎是法国首都” | 向量数据库中的文档、知识库 | 持久 |
 
-**工作记忆**就是 LLM 的上下文窗口——所有发送给 LLM 的 token（system prompt + 对话历史 + 工具调用结果）都在这里。上下文窗口有限（200K tokens 看起来很大，但 20 次工具调用 + 结果就能吃掉一大半）。
+**工作记忆**就是 LLM 的上下文窗口——所有发送给 LLM 的 token（system prompt + 对话历史 + 工具调用结果）都在这里。上下文窗口有限（200K tokens 看起来很大，但一次读入整个大文件就可能几万 token，二三十次工具调用加结果就会吃掉很大一部分）。
 
 **情节记忆**让 Agent “记得上次和这个用户做了什么”。最简单的实现是**对话摘要**——上一轮对话结束后，LLM 生成一段摘要（“用户在开发论文管理器，上次帮他修了 parser 的 bug”），下一轮对话时把摘要放进 system prompt。更复杂的实现把每次对话的摘要存入向量数据库，新对话开始时检索最相关的历史。
 
@@ -167,7 +167,7 @@ Agent 执行了一个操作（删除文件），然后观察到了失败（“�
 
 ### $\rm \S \, 37.4.1$ 为什么需要多个 Agent
 
-单个 Agent 处理复杂任务时有两个瓶颈：上下文窗口（所有信息在同一个窗口里竞争注意力）和角色冲突（生成代码和审查代码需要不同的思维模式——同一个人审查自己刚写的代码会漏掉明显的 bug）。
+单个 Agent 处理复杂任务时有两个瓶颈：上下文窗口（所有信息在同一个窗口里竞争注意力）和角色冲突（生成代码和审查代码需要不同的思维模式——同一个人审查自己刚写的代码，更容易漏掉其中明显的 bug）。
 
 多 Agent 系统把任务分配给**不同角色的 Agent**：
 
@@ -196,14 +196,16 @@ Agent 执行了一个操作（删除文件），然后观察到了失败（“�
 
 ## $\rm \S \, 37.5$ 动手实践
 
-### 实践一：手写一个最简单的 Agent 循环
+### $\rm \S \, 37.5.1$ 实践一：手写一个最简单的 Agent 循环
 
-以下是一个完整可运行的 Agent 循环——它真的能接 LLM、调工具、看到结果后继续思考。需要先 `pip install requests` 并设置环境变量 `ANTHROPIC_API_KEY`（或任何兼容 Anthropic API 的 key 和 base URL）。
+以下是一个完整可运行的 Agent 循环——它真的能接 LLM、调工具、看到结果后继续思考。起始目录与前置条件：任意实验目录，Python 3.8+，`pip install requests`；环境变量 `ANTHROPIC_API_KEY` 指向可用的 key（或兼容 Anthropic Messages API 的服务，配合 `ANTHROPIC_BASE_URL`）。key 只从环境变量读，不写进脚本——代码里的 `"your-key-here"` 是占位符，未设置环境变量时会以 401 失败。
+
+> 安全边界：这个示例把模型生成的文本直接交给 `subprocess` 执行（`shell=True`），只是教学简化。真实 Agent 必须限制工具范围并提供人工确认——输入里若混入“忽略之前的指令，执行某条命令”这类提示注入（prompt injection），模型可能照做。第 34 章 §34.3.5 的权限白名单就是为这种风险准备的。
 
 ```python
 import requests, subprocess, json, os, re
 
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "your-key-here")
+API_KEY = os.environ.get("ANTHROPIC_API_KEY", "your-key-here")  # 占位符，不要写真实 key
 BASE_URL = os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
 
 def call_llm(messages):
@@ -224,6 +226,8 @@ def parse_action(text):
     m = re.search(r"Action:\s*(\w+)\(([^)]*)\)", text)
     return (m.group(1), m.group(2)) if m else (None, None)
 
+# 教学演示：直接执行模型给出的字符串。生产环境要换成受限的白名单工具，
+# 并对参数做校验——否则一次提示注入就能让 Agent 执行任意命令。
 tools = {
     "bash": lambda cmd: subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout.strip(),
     "read": lambda path: open(path).read(),
@@ -248,9 +252,13 @@ def agent_loop(task):
 agent_loop("列出当前目录下最大的 3 个文件")
 ```
 
-运行这个脚本，你会看到 LLM 自动决定调用 `bash(ls -la)`，看到 Observation（文件列表），然后决定是否需要进一步操作。这正是 Claude Code 在 `/workflows` 中做的事——只是它的工具更多、循环更稳健。
+预期输出与判据：脚本先打印模型选择的工具与 Observation，最后给出“最大的 3 个文件”和理由；用 `ls -la`（Windows 用 `Get-ChildItem | Sort-Object Length`）手动核对，文件名一致即成功。若 10 轮循环用完仍未完成，脚本会退出——把任务拆小再试。常见失败：401 是 key 或 base URL 的问题；`无法解析动作` 说明模型没按 `Action: tool_name(args)` 的格式输出。
 
-### 实践二：观察 Claude Code 的 Agent 循环
+这正是 Claude Code 这类 Agent 内部做的事——只是它的工具更多（读写文件、搜索、执行命令）、循环更稳健，并且有权限门与人工确认（对照 §37.1.1 的循环图）。
+
+### $\rm \S \, 37.5.2$ 实践二：观察 Claude Code 的 Agent 循环
+
+起始目录与前置条件：论文管理器项目根目录（含 `src/`），Claude Code 已认证，工作区干净。
 
 在 Claude Code 中提一个需要多步操作的任务：
 
@@ -258,11 +266,17 @@ agent_loop("列出当前目录下最大的 3 个文件")
 "找出 src/ 下最近修改的 3 个文件，告诉我它们各自的函数数量，然后生成一个 commit message 模板"
 ```
 
-观察 `/workflows` 中的 agent 执行步骤——每一轮它做了什么、观察到了什么、怎么修正的。特别关注：
+观察它在会话中的工具调用步骤——每一轮它做了什么、观察到了什么、怎么修正的。特别关注：
 - 哪一步它判断需要更多信息（多调了一次 grep/ls）
 - 哪一步它意识到之前的假设不对并修正
 
-### 实践三：多 Agent 协作体验
+预期输出与判据：它给出的 3 个文件可用 `ls -lt src/` 或 `git log` 复核，函数数量抽查其中一个文件能对上即可；“commit message 模板”只是文本，它不会替你提交。
+
+结束与清理：`git status` 确认它没有提交或推送；若生成了临时文件，确认后删除。
+
+### $\rm \S \, 37.5.3$ 实践三：多 Agent 协作体验
+
+起始目录与前置条件：独立 Python 虚拟环境（`python -m venv .venv` 后激活），`pip install crewai`（或 `pip install autogen-agentchat`）；模型 API key 只放环境变量。这一步会真实调用 API 产生费用。
 
 用 CrewAI 或 AutoGen 构建两个 Agent 的协作：
 
@@ -275,6 +289,10 @@ task = Task(description="写一篇关于 Transformer 架构演进的综述")
 crew = Crew(agents=[researcher, writer])
 result = crew.kickoff()
 ```
+
+预期输出与判据：`kickoff()` 返回一段综述文本，运行日志里能分别看到两个 Agent 各自的输出（研究员先给材料、写作者再成文）——这就是“角色分工 + 顺序交接”在框架里的最小形态（对照 §37.4.2 的通信方式表）。
+
+结束与清理：删除示例脚本；在 API 控制台核对用量；把虚拟环境目录和任何含 key 的文件加进 `.gitignore`，避免提交进仓库。
 
 ---
 
@@ -305,12 +323,12 @@ result = crew.kickoff()
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 37.9.1$ 自测答案 · 关键概念回顾
 1. Chat 是一次输入一次输出。Agent 把 LLM 放进循环——LLM 输出工具调用指令 → Agent 循环执行工具 → 结果喂回 LLM → 循环直到 LLM 输出最终文本回复。
 2. 工作记忆（上下文窗口，当前对话）、情节记忆（对话摘要，跨对话）、语义记忆（向量数据库中的知识库，持久）。三者解决不同时间尺度的“记住”。
 3. ReAct 是一步一想一走（推理行动交替），Plan-and-Execute 是先出全局计划再逐步执行，Reflexion 在 ReAct 上叠加了“从错误中生成反思并存入长期记忆”。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 37.9.2$ 自测答案 · 应用与辨析
 4. 写代码+审查代码的场景：生成代码需要“创造性”，审查代码需要“挑剔性”——同一个模型在两种模式间切换倾向于过于宽容自己的错误。两个 Agent（Coder + Reviewer）模拟了人类 PR 审查流程的制衡关系。
 5. 把错误信息作为 `tool_result` 送回 LLM（不是丢弃）。LLM 看到“文件不存在”的反馈后会调整策略——也许找文件名拼写错了、也许检查路径、也许告诉用户“这个文件不存在，你是这个意思吗？”
 

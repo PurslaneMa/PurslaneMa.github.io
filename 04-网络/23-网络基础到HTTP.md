@@ -4,9 +4,9 @@
 
 > **开始前自检**：本章假设你已经会：
 >
-> - □ 理解客户端-服务器与服务、端口（第 1 章）
-> - □ 会在终端运行命令
-> - □ 用过浏览器访问网页
+> - □ 理解客户端-服务器与服务、端口（第 1 章 §1.5）
+> - □ 会在终端运行命令（第 2 章 §2.4）
+> - □ 用过浏览器访问网页（第 5 章 §5.11 浏览器开发者工具）
 
 ## $\rm \S \, 23.1$ 网络是怎样把两台机器连起来的
 
@@ -128,7 +128,7 @@ sequenceDiagram
 
 ### $\rm \S \, 23.2.5$ TIME_WAIT：为什么端口不能立刻复用
 
-TCP 关闭连接后有 **TIME_WAIT** 状态（默认持续约 $2 \, \text{msl} \approx 60$ 秒）。你重启服务器时可能遇到过 `Address already in use`——就是这个原因。旧连接的残留数据包可能还在网络中漂，TIME_WAIT 确保这些残留包过期后才允许同一端口被新连接复用。
+TCP 关闭连接后有 **TIME_WAIT** 状态（时长由操作系统决定，Linux 上默认约为 $2 \times \text{MSL} \approx 60$ 秒）。你重启服务器时可能遇到过 `Address already in use`——就是这个原因。旧连接的残留数据包可能还在网络中漂，TIME_WAIT 确保这些残留包过期后才允许同一端口被新连接复用。
 
 ### $\rm \S \, 23.2.6$ HTTP keep-alive：不用每次都三次握手
 
@@ -136,7 +136,7 @@ HTTP/1.0 中，每个请求都要新建一个 TCP 连接——请求 HTML → �
 
 ### $\rm \S \, 23.2.7$ tcpdump 最小实践：不是“抓包黑客工具”
 
-`tcpdump`（或 Wireshark）让你看到网络上实际传输了什么——对于调试“API 调不通到底是请求没发出去还是响应没返回来”是终极武器：
+`tcpdump`（或 Wireshark）让你看到网络上实际传输了什么——对于调试“API 调不通到底是请求没发出去还是响应没返回来”是终极武器（`tcpdump` 在 Linux/WSL 中可用，`-i any` 是 Linux 的写法；Windows 原生环境用 Wireshark 图形界面抓包）：
 
 ```bash
 sudo tcpdump -i any port 5000 -A
@@ -168,7 +168,7 @@ GET /papers?tag=transformer HTTP/1.1        ← 方法 路径?参数 协议版�
 Host: api.example.com                       ← 头部（Headers）——键值对
 Accept: application/json
 User-Agent: paper-manager/1.0
-Authorization: Bearer sk-xxxx
+Authorization: Bearer <access-token>       ← 真实 Token 只放在环境变量或密钥管理器中，不进文档
                                              ← 空行表示头部结束
                                              ← 请求体（Body）——GET 请求通常没有
 ```
@@ -223,7 +223,7 @@ Date: Sat, 15 Mar 2026 10:30:00 GMT
 | `Host` | 请求 | 我要访问哪个域名（同一 IP 可能托管多个网站） |
 | `Content-Type` | 双向 | 请求体/响应体的格式：`application/json`、`text/html` |
 | `Content-Length` | 双向 | 体的字节数 |
-| `Authorization` | 请求 | 认证凭据：`Bearer sk-xxxx` |
+| `Authorization` | 请求 | 认证凭据：`Bearer <access-token>`（占位符，真实 Token 不进文件） |
 | `Accept` | 请求 | 我想要什么格式的响应 |
 | `User-Agent` | 请求 | 我是浏览器/curl/Python |
 | `Set-Cookie` | 响应 | 请在你的浏览器中保存这个 Cookie |
@@ -243,6 +243,7 @@ curl -v https://api.github.com/repos/torvalds/linux
 # 显示时间分解（DNS、TCP、TLS、首字节、总耗时）
 curl -w '\nDNS: %{time_namelookup}s\nTCP: %{time_connect}s\nTLS: %{time_appconnect}s\nFirstByte: %{time_starttransfer}s\nTotal: %{time_total}s\n' \
   -o /dev/null -s https://api.github.com
+# -o /dev/null 是 Unix 写法；Windows PowerShell 中改用 -o NUL（丢弃响应体）
 
 # POST JSON
 curl -X POST https://httpbin.org/post \
@@ -297,13 +298,13 @@ sequenceDiagram
     HTTP-->>客户端: 解析 JSON → 渲染到页面
 ```
 
-`curl -w` 可以单独测量每一段的耗时。当 API “慢”时，先确定是哪一段慢，再决定优化方向——加缓存（减少后端处理时间）、换 CDN（减少 RTT）还是升级 TLS 证书（减少握手往返）。
+`curl -w` 可以单独测量每一段的耗时。当 API “慢”时，先确定是哪一段慢，再决定优化方向——加缓存（减少后端处理时间）、换 CDN（减少 RTT）还是优化 TLS 配置（启用 TLS 1.3 或会话复用，减少握手往返）。
 
 ---
 
 ## $\rm \S \, 23.6$ 动手实践
 
-### 实践一：用 curl 解剖 HTTP 交互
+### $\rm \S \, 23.6.1$ 实践一：用 curl 解剖 HTTP 交互
 
 ```bash
 curl -v https://httpbin.org/json          # 完整交互
@@ -316,30 +317,42 @@ curl -v -L http://github.com             # 跟随重定向
 
 每次观察：状态码、响应头（特别是 `Content-Type`）、响应体格式。
 
-### 实践二：traceroute 看物理路径
+> 前置：在任意可访问外网的目录中运行，不需要先建项目。成功标志：`-v` 输出里有 `> GET /json` 与 `< HTTP/1.1 200 OK`；POST 的响应体回显你发送的 JSON；`-L` 跟随重定向后最终为 `200 OK`。清理：命令不写本地文件，无需清理。
+
+### $\rm \S \, 23.6.2$ 实践二：traceroute 看物理路径
 
 ```bash
 traceroute github.com      # Linux/macOS
+```
+
+```powershell
 tracert github.com         # Windows
 ```
 
 观察：经过了多少跳？哪些跳延迟突然增大？
 
-### 实践三：浏览器 Network 面板
+> 前置：Linux/macOS/WSL 用 `traceroute`，Windows 用 `tracert`。成功标志：输出若干“跳数 + 路由器 IP + 往返延迟”行；部分跳显示 `* * *` 表示该路由器不响应探测，属正常。清理：只读命令，无文件产生，无需清理。
+
+### $\rm \S \, 23.6.3$ 实践三：浏览器 Network 面板
 
 1. 打开 F12 → Network 标签页，刷新任意网页。
 2. 点击第一个请求，查看 Headers → Request Headers 和 Response Headers。
 3. 找到 `Content-Type`、`Cache-Control`、请求方法。
 4. 在 Timing 标签页中查看 DNS、TCP、TLS 各段耗时。
 
-### 实践四：分析状态码
+> 前置：任意现代浏览器，不需要预先准备页面。成功标志：列表中出现多条请求，任一请求的 Headers 同时有 Request Headers 与 Response Headers（含 `Content-Type`），Timing 中有 DNS/TCP/TLS 分段。清理：只读操作，无需清理。
+
+### $\rm \S \, 23.6.4$ 实践四：分析状态码
 
 ```bash
 curl -v https://httpbin.org/status/404
 curl -v https://httpbin.org/status/500
 curl -v https://httpbin.org/status/302
 curl -v https://httpbin.org/basic-auth/user/pass -u user:wrongpass  # 401
+# 这里用 httpbin 的公开测试账号故意给错密码；真实密码不要写在命令行里（会进入 Shell 历史）
 ```
+
+> 前置：可访问外网的目录。成功标志：四条命令分别返回 `404`、`500`、`302`、`401` 状态码（httpbin 偶发限流时响应体可能不同，以状态码为准）。清理：无文件产生，无需清理。
 
 ---
 
@@ -374,14 +387,14 @@ curl -v https://httpbin.org/basic-auth/user/pass -u user:wrongpass  # 401
 
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
-### 自测答案 · 关键概念回顾
+### $\rm \S \, 23.10.1$ 自测答案 · 关键概念回顾
 1. IP 地址标识网络中的主机（寄到哪栋楼），端口标识主机上的哪个进程（楼里哪个房间）；完整目的地是 IP:端口。
 2. GET 获取资源、不应有副作用（只读）；POST 创建资源、有副作用；PUT 和 DELETE 是幂等的（执行多次结果相同），POST 不是。
 3. 401 表示没有提供认证凭据或凭据无效；403 表示身份已确认，但无权访问这个资源。
 4. 头部携带关于请求/响应的元信息（Host、Content-Type、Authorization 等键值对）；请求体携带实际数据（如 POST 要创建的资源内容）。
 5. DNS 解析 → TCP 三次握手 → TLS 握手（HTTPS）→ 发送请求 → 服务器处理 → 收到首个响应字节；`curl -w` 可以分段测量每段耗时。
 
-### 自测答案 · 应用与辨析
+### $\rm \S \, 23.10.2$ 自测答案 · 应用与辨析
 1. 同步双方的初始序号、建立可靠连接；refused 表示对端端口没有进程监听（SYN 被 RST 拒绝），timed out 表示 SYN 发出后没有回复——大概率是防火墙丢包或主机不可达。
 2. TCP 有序、无丢失，适合 HTTP、文件传输、数据库查询；UDP 不保证送达但开销小、延迟低，适合视频通话、DNS、实时游戏——时效性大于可靠性的场景。
 
