@@ -703,6 +703,37 @@ kbd {
 #page-chapter { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 #page-path { font-size: 0.7rem; color: var(--text-dim); font-family: 'Cascadia Code', Consolas, monospace; }
 
+/* 续读提示条：切章后若该章有历史位置，给出「继续上次读到的小节」入口 */
+.resume-bar {
+  flex-basis: 100%; display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
+  margin-top: .15rem; padding: .45rem .7rem; border-radius: 10px;
+  background: rgba(var(--accent-rgb), .07); border: 1px solid rgba(var(--accent-rgb), .22);
+  font-size: .76rem; color: var(--text-dim);
+}
+.resume-bar[hidden] { display: none; }
+.resume-bar .rs-icon { color: var(--accent); font-size: .9rem; line-height: 1; }
+.resume-bar .rs-text { flex: 1; min-width: 8rem; color: var(--text); }
+.resume-bar .rs-text b { color: var(--accent); font-weight: 600; }
+.resume-bar button {
+  font: inherit; font-size: .74rem; padding: .18rem .6rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(var(--accent-rgb), .35); background: rgba(var(--accent-rgb), .12); color: var(--accent);
+  transition: background .16s;
+}
+.resume-bar button:hover { background: rgba(var(--accent-rgb), .24); }
+.resume-bar button.ghost { border-color: var(--border); background: transparent; color: var(--text-dim); }
+.resume-bar button.ghost:hover { color: var(--text); background: rgba(148,163,184,.1); }
+
+/* 小节书签星标：悬停标题时出现，已收藏则常驻 */
+.h-mark {
+  margin-left: .4rem; padding: .1rem .28rem; vertical-align: middle;
+  border: 0; background: none; color: var(--text-dim); cursor: pointer;
+  font-size: .95rem; line-height: 1; opacity: 0; transition: opacity .18s, color .18s, transform .18s;
+}
+#content h2:hover .h-mark, #content h3:hover .h-mark, .h-mark:focus-visible { opacity: 1; }
+.h-mark:hover { color: var(--accent-2); transform: scale(1.18); }
+.h-mark.on { opacity: 1; color: var(--accent-2); }
+@media (hover: none) { .h-mark { opacity: .7; } }
+
 /* ══════════════ 正文排版 ══════════════ */
 #content h1 {
   font-size: clamp(1.72rem, 2.5vw, 2.15rem);
@@ -1285,6 +1316,12 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 .browse-item .bi-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .browse-item .bi-meta { flex: none; font-size: .68rem; color: var(--text-dim); }
 .browse-item .bi-q { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); }
+/* 主页「继续阅读」条目底部的小进度条 */
+.browse-item { position: relative; overflow: hidden; }
+.browse-item .ci-progress-wrap {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(148,163,184,.16);
+}
+.browse-item .ci-progress-bar { display: block; height: 100%; background: var(--accent); }
 .empty-note { padding: .7rem .2rem; font-size: .78rem; color: var(--text-dim); line-height: 1.7; }
 .empty-note .btn { margin-top: .55rem; }
 
@@ -1537,6 +1574,12 @@ body.no-server #main { padding-top: 2.6rem; }
     <div class="doc-head" id="doc-head" hidden>
       <span id="page-chapter"></span>
       <span id="page-path"></span>
+      <div class="resume-bar" id="resume-bar" hidden>
+        <span class="rs-icon" aria-hidden="true">◷</span>
+        <span class="rs-text" id="resume-text"></span>
+        <button type="button" id="resume-go">继续阅读</button>
+        <button type="button" class="ghost" id="resume-from-top">从章首开始</button>
+      </div>
     </div>
 
     <div id="loading" class="state-panel">
@@ -1828,6 +1871,16 @@ async function init() {
       const known = chapters.find(c => c.path === fromHash && c.exists);
       if (known) { await loadChapter(known.path); return; }
     }
+    // 冷启动（无 hash）回到上次读的章节；没有历史则留在路线图
+    if (!fromHash) {
+      await loadServerProgress();
+      const last = lastReadPath();
+      if (last) {
+        rememberChapterPath(last);
+        await loadChapter(last);
+        return;
+      }
+    }
     showRoadmap();
   } catch (e) {
     showError('无法连接到教材服务器',
@@ -1838,6 +1891,24 @@ async function init() {
 function decodePathFromHash() {
   try { return decodeURIComponent(window.location.hash.slice(1)); }
   catch (e) { return ''; }
+}
+
+/* 冷启动续读：记住最后一次打开的章节路径。
+   注意这不是「进度」——进度由 scroll 上报，这里只是导航记忆。 */
+const LAST_PATH_KEY = 'reader-last-path';
+
+function rememberChapterPath(path) {
+  if (!path) return;
+  try { localStorage.setItem(LAST_PATH_KEY, path); } catch (e) { /* 忽略 */ }
+}
+
+function lastReadPath() {
+  let saved = '';
+  try { saved = localStorage.getItem(LAST_PATH_KEY) || ''; } catch (e) { saved = ''; }
+  if (!saved) return '';
+  // 章节可能已被改名或删除，必须校验仍在目录里
+  const known = chapters.find(c => c.path === saved && c.exists);
+  return known ? known.path : '';
 }
 
 /* ══════════════ 侧边栏 ══════════════ */
@@ -1996,11 +2067,15 @@ async function loadChapter(path, opts) {
     scrollToSection(opts.section);
     return;
   }
-  // 切章前结算上一章的停留时长，并按需求关闭 AI 窗口、清空对话
-  if (currentPath && currentPath !== path) accumulateSeconds(currentPath);
+  // 切章前结算上一章的停留时长与阅读位置，并关闭 AI 窗口、清空对话
+  if (currentPath && currentPath !== path) {
+    rememberSection();
+    accumulateSeconds(currentPath);
+  }
   if (currentPath !== path) resetAskForChapter();
 
   currentPath = path;
+  rememberChapterPath(path);
   pendingSection = opts.section || null;
   REPORTED_PCT[path] = REPORTED_PCT[path] || pctOf(path);
   chapterEnterAt = Date.now();
@@ -2083,6 +2158,8 @@ function showRoadmap() {
   $('error').hidden = true;
   $('content').hidden = true;
   $('doc-head').hidden = true;
+  $('resume-bar').hidden = true;
+  RESUME_OFFER = null;
   $('chapter-nav').classList.remove('show');
   $('roadmap').hidden = false;
   tocHeadings = [];
@@ -2294,14 +2371,20 @@ function renderContent(md, path) {
 
   showContent();
 
-  // 滚动定位
+  // 滚动定位：显式指定小节 > 上次读到的位置 > 章首
   const sec = pendingSection;
   pendingSection = null;
   if (sec) {
     scrollToSection(sec);
   } else {
-    window.scrollTo(0, 0);
+    const key = LAST_SECTION[path];
+    if (!key || !scrollToKey(key)) window.scrollTo(0, 0);
   }
+  // 无论是否自动恢复都给出提示条：恢复成功时它告诉读者「你落在哪一节、
+  // 可以一键回章首」，恢复失败时它就是入口。章首附近与低进度章不显示。
+  updateResumeBar();
+  // 书签要等 DOM 与 tocHeadings 都就绪后再拉，否则星标找不到对应标题
+  loadBookmarks(path);
 }
 
 function setActiveChapter(path) {
@@ -2913,6 +2996,7 @@ window.addEventListener('scroll', () => {
   scrollThrottle = now;
   reportScrollProgress();
   syncAskSection();
+  rememberSection();
 }, { passive: true });
 
 
@@ -3020,6 +3104,11 @@ let REPORTED_PCT = {};       // {path: 已上报过的最大百分比}，避免�
 let chapterEnterAt = 0;      // 本章进入时刻（毫秒），用于累计停留秒数
 let sessionSeconds = {};     // {path: 本次会话累计秒数}
 let LOCAL_UPLOADED = {};     // {path: true}，保证本地进度只补传一次
+// 续读定位：lastSection[path] 是「上一次看到的小节标题签名」，不是进度百分比——
+// 读者可能中途回翻，百分比取最大值会把人送到错的地方。
+let LAST_SECTION = {};       // {path: sectionKey}
+let RESUME_OFFER = null;     // {path, key, title} 当前章节可用的续读目标
+let BOOKMARKS = {};          // {path: Set<sectionKey>} 本章书签（服务端权威）
 
 // 服务端未登录时用本地记录兜底，保证 ✓ 与进度条在本地也生效
 function localProgress(path) {
@@ -3042,6 +3131,8 @@ function mergeProgress(server, local) {
     checks: Array.isArray(server.checks) ? server.checks : local.checks,
     progress_pct: Math.max(server.progress_pct || 0, local.progress_pct || 0),
     seconds: Math.max(server.seconds || 0, local.seconds || 0),
+    // 位置不取最大，以服务端（最近一次真实阅读）为准，本地兜底
+    last_section: server.last_section || local.last_section || '',
     updated_at: server.updated_at || local.updated_at || '',
   };
 }
@@ -3096,6 +3187,7 @@ async function detectServer() {
     // 静态版也把本地阅读进度读回来，否则 ✓ 与进度条不显示
     await loadServerProgress();
     refreshProgressMarks();
+    if (currentPath) updateResumeBar();
     return;
   }
   await refreshAccount();
@@ -3123,6 +3215,8 @@ async function refreshAccount() {
   }
   refreshProgressMarks();
   updateAskQuota();
+  // 进度是异步到位的：它决定「上次读到哪」是否可用，到了要重算提示条
+  if (currentPath) updateResumeBar();
   // 若聊天窗口正开着（例如刚在窗口内点「登录 / 注册」成功），刷新它的可用状态
   if (ASK_OPEN && ACCOUNT) {
     $('ask-input').disabled = false;
@@ -3150,7 +3244,11 @@ function renderAccount() {
     if (badge) badge.hidden = true;
     $('account-menu').hidden = true;
   }
+  // 供样式判断是否显示「收藏 / 问 AI」这类需要账号的控件
+  document.body.classList.toggle('has-account', !!ACCOUNT);
   updateMyProgress();
+  // 登录状态变化会影响星标可点击性，重新上色一次
+  if (currentPath && $('content').querySelector('.h-mark')) applyBookmarkMarks();
 }
 
 /* —— 登录 / 注册 / 改密码 —— */
@@ -3239,6 +3337,12 @@ async function loadServerProgress() {
       try { localStorage.setItem('selfcheck:' + path, JSON.stringify(rec.checks)); } catch (e) { /* 忽略 */ }
     }
   });
+  // 续读位置也走同一份记录
+  LAST_SECTION = {};
+  Object.keys(SERVER_PROGRESS).forEach(path => {
+    const key = SERVER_PROGRESS[path] && SERVER_PROGRESS[path].last_section;
+    if (key) LAST_SECTION[path] = key;
+  });
 }
 
 // 登录后把本地进度补传一次。去重：同一个 path 只传一次；
@@ -3260,10 +3364,12 @@ async function uploadLocalProgress() {
     if (pct > (srv.progress_pct || 0)) body.progress_pct = Math.min(100, pct);
     if (secs > (srv.seconds || 0)) body.seconds = Math.min(86400, Math.round(secs));
     if (needRead) { body.state = 'read'; body.progress_pct = 100; }
+    if (local.last_section && !(srv.last_section)) body.last_section = local.last_section;
     try {
       await api('/progress', { method: 'POST', body });
       SERVER_PROGRESS[path] = mergeProgress(SERVER_PROGRESS[path], body);
     } catch (e) { LOCAL_UPLOADED[path] = false; }  // 失败则下次登录重试
+    if (body.last_section && !LAST_SECTION[path]) LAST_SECTION[path] = body.last_section;
   }
   refreshProgressMarks();
 }
@@ -3430,6 +3536,7 @@ function setupAskButtons() {
     });
     h.appendChild(btn);
   });
+  setupBookmarkButtons();
   updateAskFab();
 }
 function currentSectionAnchor() {
@@ -3461,6 +3568,193 @@ function renderAskSectionHint() {
 function currentChapterName() {
   const meta = chapters.find(c => c.path === currentPath);
   return meta ? meta.name : (currentPath || '—');
+}
+
+/* ══════════════ 续读定位 ══════════════
+   位置用小节标题签名（headingSig）而不是 DOM id —— id 是每次渲染按顺序生成的
+   sec-N，章节内容一变就全错位；标题签名跨会话稳定，正好也能被 scrollToSection
+   复用做模糊匹配。未登录时存 localStorage，登录后与服务端同步。 */
+const LAST_SECTION_KEY = p => 'lastsec:' + p;
+
+function currentSectionKey() {
+  const t = currentSectionAnchor();
+  return t ? headingSig(t.text) : '';
+}
+
+// 记录当前小节。两个刻意的取舍：
+//  ① 只往前走：读者回翻到前面几节做对照时，不该把「读到哪」倒退回去，
+//     否则下次打开就落在很久以前的位置；
+//  ② 停在章首不动：滚到最顶通常是「回到开头看看」，不是放弃已读进度。
+function rememberSection() {
+  const path = currentPath;
+  if (!path) return;
+  const key = currentSectionKey();
+  if (!key) return;
+  const prev = LAST_SECTION[path];
+  if (prev === key) return;
+  const cur = findSectionByKey(key);
+  const old = prev ? findSectionByKey(prev) : null;
+  const first = tocHeadings[0];
+  // 从非首节退回首节：保留原位置
+  if (old && first && cur && cur.id === first.id && old.id !== first.id) return;
+  LAST_SECTION[path] = key;
+  saveLocalProgress(path, { last_section: key });
+  if (SERVER_MODE && ACCOUNT) {
+    api('/progress', { method: 'POST', body: { path, last_section: key } })
+      .catch(() => { /* 静默失败：本地已记，下次滚动重试 */ });
+  }
+}
+
+// 打开章节后决定是否给出「继续阅读」提示条。
+// 判据是「记住的小节不是本章第一节」——位置本身就是续读的证据，
+// 不必依赖进度百分比（百分比只在跨过 5 点时才上报，跳转式滚动会漏掉）。
+function updateResumeBar() {
+  const bar = $('resume-bar');
+  if (!bar) return;
+  const key = currentPath ? LAST_SECTION[currentPath] : '';
+  const item = key ? findSectionByKey(key) : null;
+  const first = tocHeadings[0];
+  const isFirst = !!(item && first && item.id === first.id);
+  if (!key || !item || isFirst) {
+    bar.hidden = true;
+    RESUME_OFFER = null;
+    return;
+  }
+  RESUME_OFFER = { path: currentPath, key, title: item.text };
+  $('resume-text').innerHTML = '上次读到 <b>' + escapeHtml(item.text) + '</b>';
+  bar.hidden = false;
+}
+
+function findSectionByKey(key) {
+  if (!key) return null;
+  if (!tocHeadings.length) return null;
+  const exact = tocHeadings.find(t => headingSig(t.text) === key);
+  if (exact) return exact;
+  // 标题被改过一字：退化为前缀匹配
+  return tocHeadings.find(t => {
+    const sig = headingSig(t.text);
+    return sig && (sig.startsWith(key) || key.startsWith(sig));
+  }) || null;
+}
+
+function scrollToKey(key) {
+  const item = findSectionByKey(key);
+  if (!item) return false;
+  item.el.scrollIntoView({ block: 'start' });
+  flashSection(item.el);
+  return true;
+}
+
+$('resume-go').addEventListener('click', () => {
+  if (!RESUME_OFFER) return;
+  scrollToKey(RESUME_OFFER.key);
+});
+$('resume-from-top').addEventListener('click', () => {
+  $('resume-bar').hidden = true;
+  RESUME_OFFER = null;
+  window.scrollTo(0, 0);
+});
+
+// 关页 / 切到后台时补记一次位置：滚动节流可能正好把最后一次移动吞掉，
+// 而 pagehide 是唯一在移动端 Safari 上可靠触发的时机。
+window.addEventListener('pagehide', () => {
+  if (currentPath) {
+    rememberSection();
+    accumulateSeconds(currentPath);
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && currentPath) rememberSection();
+});
+
+/* ══════════════ 小节书签 ══════════════
+   键同样是标题签名，因此章节正文重排后书签仍能落回同一小节。
+   服务端为权威副本；未登录时仅本地内存有效（刷新即失效，界面会提示登录）。 */
+function bookmarkSet(path) {
+  if (!BOOKMARKS[path]) BOOKMARKS[path] = new Set();
+  return BOOKMARKS[path];
+}
+function isBookmarked(path, key) { return bookmarkSet(path).has(key); }
+
+function paintBookmark(btn, on) {
+  btn.textContent = on ? '★' : '☆';
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', String(on));
+  btn.title = on ? '取消收藏这一节' : '收藏这一节';
+}
+
+async function toggleBookmark(btn, heading) {
+  const path = currentPath;
+  if (!path) return;
+  if (!SERVER_MODE || !ACCOUNT) {
+    toast('登录后可收藏小节，并在主页里统一查看');
+    return;
+  }
+  const t = tocHeadings.find(x => x.id === heading.id);
+  const title = t ? t.text : headingLabel(heading);
+  const key = headingSig(title);
+  if (!key) { toast('这一节没有可用的标题，无法收藏'); return; }
+
+  const set = bookmarkSet(path);
+  const wasOn = set.has(key);
+  // 先改界面，失败再回滚：收藏是轻操作，不该等网络
+  if (wasOn) set.delete(key); else set.add(key);
+  paintBookmark(btn, !wasOn);
+  try {
+    await api('/bookmarks', { method: 'POST', body: {
+      action: wasOn ? 'remove' : 'add', path, section_key: key, section_title: title,
+    } });
+    toast(wasOn ? '已取消收藏' : '已收藏：' + title);
+  } catch (e) {
+    if (wasOn) set.add(key); else set.delete(key);
+    paintBookmark(btn, wasOn);
+    toast('操作失败：' + ((e && e.message) || '网络错误'));
+  }
+}
+
+// 打开章节时拉取该章书签，用于给星标上色
+async function loadBookmarks(path) {
+  BOOKMARKS[path] = new Set();
+  if (!SERVER_MODE || !ACCOUNT || !path) return;
+  try {
+    const d = await api('/bookmarks?path=' + encodeURIComponent(path));
+    const set = bookmarkSet(path);
+    (d.items || []).forEach(it => { if (it.section_key) set.add(it.section_key); });
+    applyBookmarkMarks();
+  } catch (e) { /* 静默：书签不可用不影响阅读 */ }
+}
+
+function applyBookmarkMarks() {
+  const path = currentPath;
+  if (!path) return;
+  const set = bookmarkSet(path);
+  $('content').querySelectorAll('.h-mark').forEach(btn => {
+    const raw = btn.dataset.key || '';
+    paintBookmark(btn, !!raw && set.has(raw));
+  });
+}
+
+// 在每个 H2/H3 标题后追加收藏星标（与「问 AI」按钮并列，但位置更靠前）
+function setupBookmarkButtons() {
+  $('content').querySelectorAll('h2, h3').forEach(h => {
+    if (!h.id || h.querySelector('.h-mark')) return;
+    const t = tocHeadings.find(x => x.id === h.id);
+    const key = headingSig(t ? t.text : headingLabel(h));
+    if (!key) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'h-mark';
+    btn.dataset.key = key;
+    paintBookmark(btn, isBookmarked(currentPath, key));
+    btn.addEventListener('click', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      toggleBookmark(btn, h);
+    });
+    // 插在「问 AI」前面，视觉顺序是「★ 问 AI」
+    const ask = h.querySelector('.h-ask');
+    if (ask) h.insertBefore(btn, ask); else h.appendChild(btn);
+  });
 }
 
 function openAsk(opts) {
@@ -3682,13 +3976,28 @@ function renderProfile(d) {
     ? escapeHtml(d.email_masked)
     : '未设置　<span style="color:var(--accent)">可在「设置」里填写</span>';
 
-  const readPaths = (d.read_paths || []).slice(0, 5);
-  const readHTML = readPaths.length
-    ? readPaths.map(p => `<button type="button" class="browse-item" data-goto="${escapeHtml(p)}">
-        <span class="bi-name">${escapeHtml(chapterNameOf(p))}</span>
-        <span class="bi-meta">继续阅读 →</span>
+  // 续读：按最近更新时间列出有进度的章节，并带上「上次读到哪一节」
+  const cont = (d.continue_paths || []).slice(0, 6);
+  const contHTML = cont.length
+    ? cont.map(c => {
+        const pct = Math.max(0, Math.min(100, Math.round(c.progress_pct || 0)));
+        const name = escapeHtml(chapterNameOf(c.path));
+        const meta = pct >= 100 ? '已读完' : (pct > 0 ? '已读 ' + pct + '%' : '刚开始');
+        return `<button type="button" class="browse-item" data-goto="${escapeHtml(c.path)}">
+          <span class="bi-name">${name}</span>
+          <span class="bi-meta">${meta} · 继续 →</span>
+          <span class="ci-progress-wrap" aria-hidden="true"><span class="ci-progress-bar" style="width:${pct}%"></span></span>
+        </button>`;
+      }).join('')
+    : '<div class="empty-note">还没有阅读记录。打开任意一章开始阅读，这里就会显示上次的进度。</div>';
+
+  const marks = (d.bookmarks || []).slice(0, 8);
+  const markHTML = marks.length
+    ? marks.map(b => `<button type="button" class="browse-item" data-goto="${escapeHtml(b.path)}">
+        <span class="bi-name">★ ${escapeHtml(b.section_title || b.section_key)}</span>
+        <span class="bi-meta">${escapeHtml(chapterNameOf(b.path))}</span>
       </button>`).join('')
-    : '<div class="empty-note">还没有读完的章节。读满一章进度后，这里会列出最近读过的章。</div>';
+    : '<div class="empty-note">还没有收藏的小节。把鼠标移到正文里的标题上，点 ☆ 即可收藏，方便日后跳回。</div>';
 
   const asks = (d.recent_asks || []).slice(0, 5);
   const askHTML = asks.length
@@ -3712,11 +4021,13 @@ function renderProfile(d) {
     <div class="stat-grid">
       <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.read_chapters || 0))}</div><div class="stat-cap">已读章数</div></div>
       <div class="stat-cell"><div class="stat-num" style="font-size:.86rem">${escapeHtml(fmtDuration(stats.read_seconds))}</div><div class="stat-cap">累计阅读</div></div>
+      <div class="stat-cell"><div class="stat-num">${escapeHtml(String(d.bookmark_count || 0))}</div><div class="stat-cap">收藏小节</div></div>
       <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.asked || 0))}</div><div class="stat-cap">提问次数</div></div>
-      <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.streak_days || 0))}</div><div class="stat-cap">连续学习天数</div></div>
     </div>
     <div class="sec-title">继续阅读</div>
-    <div class="browse-list">${readHTML}</div>
+    <div class="browse-list">${contHTML}</div>
+    <div class="sec-title">收藏的小节</div>
+    <div class="browse-list">${markHTML}</div>
     <div class="sec-title">最近提问</div>
     <div class="browse-list">${askHTML}</div>
   `;
