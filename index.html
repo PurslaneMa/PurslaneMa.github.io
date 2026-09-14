@@ -103,8 +103,6 @@ body {
   line-height: 1.75;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* 右上角固定工具条浮在正文之上，给内容让出高度 */
-  padding-top: 3.1rem;
   background-image:
     radial-gradient(closest-side at 78% -10%, rgba(var(--accent-strong-rgb), 0.20), transparent 42rem),
     radial-gradient(closest-side at 6% 6%, rgba(var(--accent-2-rgb), 0.10), transparent 34rem),
@@ -411,6 +409,8 @@ kbd {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* 让出右上角固定工具条的高度；侧栏是 fixed，不受影响 */
+  padding-top: 3.1rem;
 }
 
 .content-wrap {
@@ -424,8 +424,8 @@ kbd {
 
 .search-shell {
   position: sticky;
-  /* 停靠在右上角工具条下方，避免滚动时被工具条压住 */
-  top: 3.1rem;
+  /* 顶部让位由 #main 的 padding 承担，此处贴近顶边即可 */
+  top: 0;
   z-index: 40;
   padding: 0.85rem 1.25rem 0.4rem;
   background: linear-gradient(var(--bg) 88%, rgba(var(--bg-rgb), 0));
@@ -943,6 +943,8 @@ kbd {
   #main { margin-left: 0; }
   .content-wrap { padding: 1rem 1.1rem 3rem; }
   .search-shell { padding: 0.75rem 0.75rem 0.35rem; }
+  /* 抽屉打开时工具条要让到侧栏之下，否则会盖住侧栏顶部 */
+  body.drawer-open .top-tools { z-index: 140; }
   #search-results { left: 0.75rem; right: 0.75rem; max-height: 50vh; }
   #content h1 { font-size: 1.45rem; }
   #content h2 { font-size: 1.15rem; }
@@ -950,7 +952,7 @@ kbd {
   #content .mermaid { margin-inline: -0.25rem; padding-inline: 0.7rem; }
   .kbd-hint { display: none; }
   /* 移动端：工具栏缩小，避免遮挡正文；聊天窗口占满宽度并保证输入框可见 */
-  body { padding-top: 3.4rem; }
+  #main { padding-top: 3.4rem; }
   .top-tools { top: .5rem; right: .55rem; gap: .35rem; }
   #theme-toggle { width: 32px; height: 32px; }
   .account-chip { height: 32px; font-size: .72rem; }
@@ -962,6 +964,9 @@ kbd {
   }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .content-wrap { padding-top: 0.5rem; }
+  .modal { padding: .75rem; align-items: start; }
+  .modal-card { width: 100%; max-height: calc(100vh - 1.5rem); padding: 1.1rem 1rem .9rem; }
+  .modal-card.wide { width: 100%; max-height: calc(100vh - 1.5rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1222,11 +1227,15 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 
 /* 通用弹窗 */
 .modal { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 1rem;
-  background: rgba(var(--bg-rgb), .72); backdrop-filter: blur(6px); }
+  background: rgba(var(--bg-rgb), .72); backdrop-filter: blur(6px);
+  /* 小屏或内容多时整层可滚，避免卡片被裁掉又滚不动 */
+  overflow-y: auto; overscroll-behavior: contain; }
 .modal-card { position: relative; width: min(404px, 100%); padding: 1.3rem 1.4rem 1.1rem;
+  max-height: calc(100vh - 2rem); overflow-y: auto;
   background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); }
 .modal-card h2 { margin: 0 0 .8rem; font-size: 1.05rem; color: var(--heading); }
-.modal-x { position: absolute; top: .7rem; right: .8rem; width: 30px; height: 30px; border-radius: 8px;
+.modal-x { position: sticky; float: right; top: .7rem; margin: -.5rem -.6rem 0 0;
+  width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid transparent; background: none; color: var(--text-dim); font-size: 1.2rem; line-height: 1; cursor: pointer; }
 .modal-x:hover { background: var(--hover-bg); color: var(--text); }
 .auth-tabs { display: flex; gap: .3rem; padding: .25rem; margin-bottom: .9rem; border-radius: 10px; background: rgba(var(--bg-rgb), .5); }
@@ -1393,7 +1402,7 @@ html[data-theme="light"] #theme-toggle .ic-sun { opacity: 1; transform: none; }
 /* 未连接后端（GitHub Pages 静态版）时隐藏账号与问 AI 入口 */
 body.no-server #account-chip, body.no-server #ask-fab, body.no-server .h-ask { display: none !important; }
 /* 静态版只剩主题按钮，工具条更窄，顶部留白相应减小 */
-body.no-server { padding-top: 2.6rem; }
+body.no-server #main { padding-top: 2.6rem; }
 
 /* 尊重系统“减少动态效果”设置 */
 @media (prefers-reduced-motion: reduce) {
@@ -2654,11 +2663,14 @@ function toggleSidebar() {
   const open = $('sidebar').classList.toggle('open');
   $('overlay').classList.toggle('show', open);
   $('menu-toggle').setAttribute('aria-expanded', String(open));
+  // 抽屉打开时工具条要让到它下面（见 CSS 的 body.drawer-open）
+  document.body.classList.toggle('drawer-open', open);
 }
 function closeSidebar() {
   $('sidebar').classList.remove('open');
   $('overlay').classList.remove('show');
   $('menu-toggle').setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('drawer-open');
 }
 $('menu-toggle').addEventListener('click', toggleSidebar);
 $('overlay').addEventListener('click', closeSidebar);
