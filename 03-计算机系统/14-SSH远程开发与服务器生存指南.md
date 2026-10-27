@@ -10,14 +10,14 @@
 
 ## $\rm \S \, 14.1$ SSH 解决什么问题
 
-在[计算机、程序与开发全景](../01-基础观念/01-计算机程序与开发全景.md)中你学过：IP 地址标识网络中的一台主机，端口号标识该主机上的一个进程。但知道 IP 和端口只能让你“找到”那台机器——你需要一种安全的、加密的方式**登录并在上面执行命令**。
+在[计算机、程序与开发全景](../01-基础观念/01-计算机程序与开发全景.md)中你学过：IP 地址标识网络中的一台主机，端口号标识该主机上的一个进程。但知道 IP 和端口只能让你“找到”那台机器，你需要一种安全的、加密的方式**登录并在上面执行命令**。
 
 **SSH**（Secure Shell）提供：
 1. **加密通信**：你和服务器之间的所有内容（包括密码）都被加密。有人在同一个 WiFi 上抓包也看不到你在输入什么。
 2. **身份认证**：服务器验证“你确实是你”。可以用密码，但强烈建议用密钥。
 3. **远程执行**：登录后在服务器上运行命令，就像坐在服务器前面打开的终端一样。
 
-SSH 默认端口是 **22**——当你 `ssh alice@server.example.com`，实际是连接到 `server.example.com:22`。
+SSH 默认端口是 **22**：当你 `ssh alice@server.example.com`，实际是连接到 `server.example.com:22`。
 
 
 ---
@@ -35,7 +35,7 @@ alice@192.168.1.100's password: ********
 
 ### $\rm \S \, 14.2.2$ 密钥认证的原理
 
-密钥认证使用**非对称加密**（asymmetric encryption）——一把钥匙加密的内容只有另一把能解开。这和 HTTPS 中 TLS 证书的原理相同（详见第 24 章）：
+密钥认证使用**非对称加密**（asymmetric encryption）：一把钥匙加密的内容只有另一把能解开。这和 HTTPS 中 TLS 证书的原理相同（详见第 24 章）：
 
 ```mermaid
 sequenceDiagram
@@ -50,7 +50,7 @@ sequenceDiagram
     S-->>C: 验证通过，允许登录
 ```
 
-**私钥永远不离开你的电脑**——服务器只收到一个签名结果，而不是私钥本身。服务器上的公钥可以公开（但没必要），私钥必须严格保密。
+**私钥永远不离开你的电脑**，服务器只收到一个签名结果，而不是私钥本身。服务器上的公钥可以公开（但没必要），私钥必须严格保密。
 
 ### $\rm \S \, 14.2.3$ 生成和使用密钥对
 
@@ -89,7 +89,7 @@ ED25519 key fingerprint is SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.
 Are you sure you want to continue connecting (yes/no/[fingerprint])?
 ```
 
-这不是错误——是 SSH 在说“我不认识这台服务器，这是它的指纹，你确认吗？”。输入 `yes` 后，指纹被保存到 `~/.ssh/known_hosts`。下次连接时，SSH 会比较指纹——如果指纹变了（可能是服务器重装了系统，也可能是中间人攻击），SSH 会发出严重警告并拒绝连接。
+这不是错误，而是 SSH 在说“我不认识这台服务器，这是它的指纹，你确认吗？”。输入 `yes` 后，指纹被保存到 `~/.ssh/known_hosts`。下次连接时，SSH 会比较指纹，如果指纹变了（可能是服务器重装了系统，也可能是中间人攻击），SSH 会发出严重警告并拒绝连接。
 
 ### $\rm \S \, 14.2.5$ `~/.ssh/config`：别再记 IP 和端口了
 
@@ -124,7 +124,7 @@ ssh lab "nvidia-smi" # 不需要登录交互式 Shell，直接执行命令
 
 ### $\rm \S \, 14.2.6$ ssh-agent：只输一次密码
 
-`ssh-keygen` 生成密钥时可以设一个**密码短语**（passphrase）保护私钥——这样即使私钥文件泄露，对方没有密码短语也用不了。代价是每次 SSH 连接都要输一次密码短语，频繁登录很烦。
+`ssh-keygen` 生成密钥时可以设一个**密码短语**（passphrase）保护私钥，这样即使私钥文件泄露，对方没有密码短语也用不了。代价是每次 SSH 连接都要输一次密码短语，频繁登录很烦。
 
 **ssh-agent** 解决这个问题：一个在后台运行的守护进程，把你的私钥**解密后缓存在内存**里，SSH 需要签名时直接找它要：
 
@@ -136,9 +136,9 @@ ssh-add -l                    # 列出 agent 中已加载的密钥
 
 macOS 和常见 Linux 桌面通常自动运行 agent；如果提示 `Could not open a connection to your authentication agent`，先执行 `eval "$(ssh-agent -s)"` 启动它。Windows 上 ssh-agent 是系统服务（默认未启动）：在管理员 PowerShell 里 `Start-Service ssh-agent`；想开机自动启动，用 `Set-Service ssh-agent -StartupType Automatic`。
 
-agent 的真正威力是**转发**（agent forwarding）：`~/.ssh/config` 中的 `ForwardAgent yes`（上一节 `gpu-server` 的例子）让密钥穿过中间机器——本机 → 服务器 A → 服务器 B 逐层跳转时，A 不保存你的私钥，只是把签名请求转发回你本机的 agent。典型场景：你在 A 上 `git clone` 私有仓库或 `git push`，用的都是本机的 GitHub 密钥，A 上不需要放任何私钥。
+agent 的真正威力是**转发**（agent forwarding）：`~/.ssh/config` 中的 `ForwardAgent yes`（上一节 `gpu-server` 的例子）让密钥穿过中间机器，本机 → 服务器 A → 服务器 B 逐层跳转时，A 不保存你的私钥，只是把签名请求转发回你本机的 agent。典型场景：你在 A 上 `git clone` 私有仓库或 `git push`，用的都是本机的 GitHub 密钥，A 上不需要放任何私钥。
 
-**安全注意**：ForwardAgent 期间，服务器 A 上能访问 agent socket 的人（root 用户、或攻破 A 的攻击者）可以冒用你的密钥。**只对信任的服务器开启 ForwardAgent**；对不信任的跳板机，改用 `ProxyJump`——它只借用 A 的网络通道到达 B，不把密钥暴露给 A。
+**安全注意**：ForwardAgent 期间，服务器 A 上能访问 agent socket 的人（root 用户、或攻破 A 的攻击者）可以冒用你的密钥。**只对信任的服务器开启 ForwardAgent**；对不信任的跳板机，改用 `ProxyJump`，它只借用 A 的网络通道到达 B，不把密钥暴露给 A。
 
 ---
 
@@ -179,15 +179,15 @@ rsync -avzP local_dir/ alice@server:/home/alice/data/
 
 | 场景 | 工具 |
 |------|------|
-| 传一个文件到服务器 | `scp`——简单直接 |
-| 传整个项目目录（含几百个文件） | `rsync`——增量传输，第二次只传变化的文件 |
-| 从服务器下载训练结果，网络不稳定 | `rsync -P`——断了可以续传 |
-| 同步本地目录到服务器（像 Dropbox） | `rsync -avz --delete`——删掉服务器上本地已不存在的文件 |
-| 传输前先预览哪些文件会被传 | `rsync -avzn`——`-n` 是 dry-run，只列文件不真传 |
+| 传一个文件到服务器 | `scp`：简单直接 |
+| 传整个项目目录（含几百个文件） | `rsync`：增量传输，第二次只传变化的文件 |
+| 从服务器下载训练结果，网络不稳定 | `rsync -P`：断了可以续传 |
+| 同步本地目录到服务器（像 Dropbox） | `rsync -avz --delete`：删掉服务器上本地已不存在的文件 |
+| 传输前先预览哪些文件会被传 | `rsync -avzn`：`-n` 是 dry-run，只列文件不真传 |
 
-**`rsync` 的核心优势是增量**——它比较源和目标文件的修改时间和大小，只传输有变化的文件。对于代码项目（几百个小文件，每次只改几个），第二次同步从 30 秒降到不到 1 秒。
+**`rsync` 的核心优势是增量**，它比较源和目标文件的修改时间和大小，只传输有变化的文件。对于代码项目（几百个小文件，每次只改几个），第二次同步从 30 秒降到不到 1 秒。
 
-**`/` 的陷阱**：`rsync local_dir/ server:dir/`（源路径末尾有 `/`）和 `rsync local_dir server:dir/`（没有 `/`）行为不同——前者复制目录**内容**，后者复制目录**本身**。不确定时先加 `-n` 预览。
+**`/` 的陷阱**：`rsync local_dir/ server:dir/`（源路径末尾有 `/`）和 `rsync local_dir server:dir/`（没有 `/`）行为不同：前者复制目录**内容**，后者复制目录**本身**。不确定时先加 `-n` 预览。
 
 ---
 
@@ -195,11 +195,11 @@ rsync -avzP local_dir/ alice@server:/home/alice/data/
 
 ### $\rm \S \, 14.4.1$ 问题：为什么关终端程序就停了
 
-在[操作系统、进程与线程](11-操作系统进程与线程.md)中你学过 `SIGHUP` 信号——当终端关闭时，Shell 向所有附着于该终端的子进程发送 `SIGHUP`，默认行为是终止进程。你的 SSH 会话是一个终端——你通过 SSH 启动的程序会收到 `SIGHUP`。
+在[操作系统、进程与线程](11-操作系统进程与线程.md)中你学过 `SIGHUP` 信号，当终端关闭时，Shell 向所有附着于该终端的子进程发送 `SIGHUP`，默认行为是终止进程。你的 SSH 会话是一个终端，你通过 SSH 启动的程序会收到 `SIGHUP`。
 
 ### $\rm \S \, 14.4.2$ tmux：会话管理器
 
-**tmux**（terminal multiplexer，终端多路复用器）是最广泛使用的方案。它在服务器上创建一个**持久会话**——即使你的 SSH 断开，tmux 会话和其中的所有进程仍然在运行。
+**tmux**（terminal multiplexer，终端多路复用器）是最广泛使用的方案。它在服务器上创建一个**持久会话**，即使你的 SSH 断开，tmux 会话和其中的所有进程仍然在运行。
 
 ```bash
 # 在服务器上安装 tmux
@@ -236,12 +236,12 @@ tmux attach -t training        # -t: 目标会话名称
 |---|---|
 | **tmux** | 最广泛使用，Ctrl+B 操作 |
 | **screen** | tmux 的前身，功能较少但几乎所有系统都预装 |
-| **nohup** | `nohup python train.py &`——最简单的后台化，输出默认写进 `nohup.out`，但没法像 tmux 那样重连交互 |
+| **nohup** | `nohup python train.py &`，最简单的后台化，输出默认写进 `nohup.out`，但没法像 tmux 那样重连交互 |
 | **systemd service** | [日常系统管理：软件、用户、服务与日志](13-系统服务日志与软件安装.md)讲过，适合长期运行的服务而非临时训练 |
 
 ### $\rm \S \, 14.4.4$ asciinema：把终端会话录成文字
 
-想给别人看“我敲了什么、输出是什么”——截图只能截一帧，录屏是几十 MB 的像素视频。**asciinema** 把终端会话录成**文本格式的录像**（cast 文件）：体积远小于录屏（短演示只有几 KB 到几十 KB，长时间的日志输出会更大）、里面的文字可以直接复制粘贴、上传后得到一个分享链接（asciinema.org）。
+想给别人看“我敲了什么、输出是什么”，截图只能截一帧，录屏是几十 MB 的像素视频。**asciinema** 把终端会话录成**文本格式的录像**（cast 文件）：体积远小于录屏（短演示只有几 KB 到几十 KB，长时间的日志输出会更大）、里面的文字可以直接复制粘贴、上传后得到一个分享链接（asciinema.org）。
 
 ```bash
 asciinema rec demo.cast    # 开始录制，之后正常操作终端
@@ -269,7 +269,7 @@ ssh -L 8888:localhost:8888 alice@server.example.com
 # 所有流量通过 SSH 加密隧道传输
 ```
 
-**反向端口转发**（`-R`）让远程服务器可以访问你本地的服务——比如你在本地跑了一个 Webhook 调试器，想让远程服务器上的应用能回调到你的本地：
+**反向端口转发**（`-R`）让远程服务器可以访问你本地的服务，比如你在本地跑了一个 Webhook 调试器，想让远程服务器上的应用能回调到你的本地：
 
 ```bash
 ssh -R 9090:localhost:3000 alice@server.example.com
@@ -288,7 +288,7 @@ ssh -R 9090:localhost:3000 alice@server.example.com
 nvidia-smi                # 查看 GPU 状态：谁在用？用了多少显存？利用率如何？
 ```
 
-在占用 GPU 前，先看有没有人正在用。如果有空闲 GPU，用这个。如果所有 GPU 都被占用，问一下对方大概什么时候结束——不要直接 `kill -9` 别人的进程（回顾[操作系统、进程与线程](11-操作系统进程与线程.md)中 `SIGKILL` 不可捕获——对方连保存 checkpoint 的机会都没有）。
+在占用 GPU 前，先看有没有人正在用。如果有空闲 GPU，用这个。如果所有 GPU 都被占用，问一下对方大概什么时候结束，不要直接 `kill -9` 别人的进程（回顾[操作系统、进程与线程](11-操作系统进程与线程.md)中 `SIGKILL` 不可捕获，对方连保存 checkpoint 的机会都没有）。
 
 ### $\rm \S \, 14.6.2$ 磁盘：不要写满共享分区
 
@@ -298,7 +298,7 @@ du -sh ~/                 # 你的家目录占用多少
 du -sh /data/* | sort -hr | head   # 共享数据分区最大的几个目录
 ```
 
-[开发者命令行工具箱](../02-终端与工具/07-开发者命令行工具箱.md)中的方法在这里同样适用。数据集的解压缓存、临时训练日志、core dump 文件——这些很容易填满几百 GB。用完的临时文件及时清理。
+[开发者命令行工具箱](../02-终端与工具/07-开发者命令行工具箱.md)中的方法在这里同样适用。数据集的解压缓存、临时训练日志、core dump 文件，这些很容易填满几百 GB。用完的临时文件及时清理。
 
 ### $\rm \S \, 14.6.3$ 不要把 Token 写进命令行
 
@@ -330,7 +330,7 @@ chmod 600 ~/.secrets/env
 
 ## $\rm \S \, 14.7$ VS Code Remote：图形化的远程开发
 
-VS Code 的 **Remote - SSH** 扩展让你在本地 VS Code 中直接编辑远程服务器上的文件——终端也在远程，代码补全基于远程环境安装的库。不需要在服务器上安装 GUI，只需要 SSH 连接。
+VS Code 的 **Remote - SSH** 扩展让你在本地 VS Code 中直接编辑远程服务器上的文件，终端也在远程，代码补全基于远程环境安装的库。不需要在服务器上安装 GUI，只需要 SSH 连接。
 
 安装扩展后，按 `F1` → “Remote-SSH: Connect to Host” → 输入 `alice@server.example.com`。打开文件夹时选择远程路径。你的本地 VS Code 变成一个“窗口”，实际一切计算都在远程服务器上。
 
@@ -342,13 +342,13 @@ VS Code 的 **Remote - SSH** 扩展让你在本地 VS Code 中直接编辑远程
 
 如果你有一台能 SSH 登录的远程机器（云服务器、实验室服务器、甚至本地的虚拟机）：
 
-Windows 上建议在 WSL 里做这些实践——PowerShell 自带 `ssh`/`scp`/`ssh-keygen`，但没有 `ssh-copy-id` 和 `tmux`；涉及服务器端的 Python 命令统一写 `python3`（Ubuntu 20.04 起默认不再提供 `python` 这个命令）。
+Windows 上建议在 WSL 里做这些实践：PowerShell 自带 `ssh`/`scp`/`ssh-keygen`，但没有 `ssh-copy-id` 和 `tmux`；涉及服务器端的 Python 命令统一写 `python3`（Ubuntu 20.04 起默认不再提供 `python` 这个命令）。
 
 ### $\rm \S \, 14.8.1$ 实践一：密钥认证
 
 1. 生成密钥对（`ssh-keygen -t ed25519`）。预期输出：提示保存路径（默认 `~/.ssh/id_ed25519`）和 passphrase，结束后打印一个 fingerprint 与随机艺术图；`ls ~/.ssh` 能看到 `id_ed25519` 与 `id_ed25519.pub` 两个文件。
 2. 用 `ssh-copy-id alice@server` 把公钥放到远程服务器（PowerShell 里没有这条命令：在 WSL/Git Bash 里执行，或手动把 `id_ed25519.pub` 的内容追加到服务器的 `~/.ssh/authorized_keys`）。预期输出：打印 `Number of key(s) added: 1`。
-3. SSH 登录——不再需要密码。预期输出：`ssh alice@server` 直接进入服务器提示符，不再询问服务器的登录密码（若给私钥设了 passphrase，问的是本地私钥的 passphrase）。
+3. SSH 登录，不再需要密码。预期输出：`ssh alice@server` 直接进入服务器提示符，不再询问服务器的登录密码（若给私钥设了 passphrase，问的是本地私钥的 passphrase）。
 4. 查看 `~/.ssh/known_hosts` 的内容。预期输出：能看到服务器主机名/IP 与它的公钥条目。
 5. 清理：本实践不产生临时文件；若要撤销授权，从服务器的 `~/.ssh/authorized_keys` 中删掉那一行（删掉本地私钥就再也无法登录，确认不再需要时再做）。
 
@@ -359,16 +359,16 @@ Windows 上建议在 WSL 里做这些实践——PowerShell 自带 `ssh`/`scp`/`
 1. SSH 登录，`tmux new -s test`。预期输出：屏幕底部出现状态栏，显示会话名 `test`。
 2. 在 tmux 中运行 `python3 -c "import time; [print(i, flush=True) or time.sleep(1) for i in range(1000)]"`。预期输出：从 0 开始每秒打印一个数字。
 3. `Ctrl+B` `D` 断开。退出 SSH。预期输出：回到本地提示符；重新登录后 `tmux ls` 仍显示 `test` 会话。
-4. 重新 SSH 登录，`tmux attach -t test`——确认程序一直在运行。预期输出：看到的数字比离开时大得多，说明会话期间打印没有中断。
+4. 重新 SSH 登录，`tmux attach -t test`，确认程序一直在运行。预期输出：看到的数字比离开时大得多，说明会话期间打印没有中断。
 5. 清理：在会话里按 `Ctrl+C` 停掉程序，再 `tmux kill-session -t test`（之后 `tmux ls` 会提示没有服务器在运行）。
 
 ### $\rm \S \, 14.8.3$ 实践三：端口转发
 
 前置条件：远程服务器有 `python3`；本地 8888 端口没有被别的程序占用。
 
-1. 在远程服务器上运行 `python3 -m http.server 8888 --bind 127.0.0.1`。预期输出：打印 `Serving HTTP on 127.0.0.1 port 8888 ...`。（`--bind 127.0.0.1` 只监听本机；不加的话默认监听所有网卡，会把当前目录暴露给整个网络——隧道访问本机端口不受影响。）
+1. 在远程服务器上运行 `python3 -m http.server 8888 --bind 127.0.0.1`。预期输出：打印 `Serving HTTP on 127.0.0.1 port 8888 ...`。（`--bind 127.0.0.1` 只监听本机；不加的话默认监听所有网卡，会把当前目录暴露给整个网络，隧道访问本机端口不受影响。）
 2. 在本地运行 `ssh -L 8888:localhost:8888 alice@server`。预期输出：无，命令保持挂起说明隧道已建立（本地 8888 被别的程序占用时会报 `bind: Address already in use`）。
-3. 在本地浏览器中打开 `http://localhost:8888`——你看到的是远程服务器上的文件列表。成功标志：列出的是服务器当前目录的内容，而不是你本机的目录。
+3. 在本地浏览器中打开 `http://localhost:8888`，你看到的是远程服务器上的文件列表。成功标志：列出的是服务器当前目录的内容，而不是你本机的目录。
 4. 清理：本地按 Ctrl+C 关闭隧道；回到服务器终端按 Ctrl+C 停掉 `http.server`，确认目录不再暴露在外。
 
 ---
@@ -378,7 +378,7 @@ Windows 上建议在 WSL 里做这些实践——PowerShell 自带 `ssh`/`scp`/`
 - SSH 是加密的远程登录协议。密钥认证比密码更安全且更方便。
 - 私钥（`~/.ssh/id_ed25519`）绝不外传；公钥（`.pub`）放在服务器上的 `~/.ssh/authorized_keys`。
 - `scp`/`rsync` 传输文件。`rsync` 支持断点续传和增量同步。
-- tmux 创建持久会话——断开 SSH 后程序继续运行，重连后能看到输出。
+- tmux 创建持久会话：断开 SSH 后程序继续运行，重连后能看到输出。
 - 端口转发（`-L`/`-R`）把远程端口映射到本地，安全访问仅监听 localhost 的服务。
 - 共享服务器：先查 GPU/磁盘再占用，Token 不进命令行，不要 kill 别人的进程。
 
@@ -407,7 +407,7 @@ Windows 上建议在 WSL 里做这些实践——PowerShell 自带 `ssh`/`scp`/`
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
 ### $\rm \S \, 14.12.1$ 自测答案 · 关键概念回顾
-1. 提供加密通信、身份认证和远程执行命令——安全地登录远程机器并操作它；默认端口 22。
+1. 提供加密通信、身份认证和远程执行命令，安全地登录远程机器并操作它；默认端口 22。
 2. 私钥（~/.ssh/id_ed25519）留存在你的电脑上，绝不发送给任何人；公钥（.pub）放到服务器的 ~/.ssh/authorized_keys。`known_hosts` 记录你确认过的服务器指纹，防止中间人攻击；下次连接时如果指纹变了，SSH 会发出严重警告并拒绝连接。
 3. SSH 会话是一个终端：断开时 Shell 向附着于该终端的进程发送 SIGHUP（挂断信号），默认行为是终止进程。`Ctrl+B` `D` 断开会话（detach，会话和其中的程序继续运行）；`Ctrl+B` `C` 创建新窗口。
 4. 实际访问的是远程服务器上的 localhost:8888 服务（如 Jupyter），所有流量经过 SSH 加密隧道传输。
@@ -419,6 +419,6 @@ Windows 上建议在 WSL 里做这些实践——PowerShell 自带 `ssh`/`scp`/`
 
 ---
 
-SSH 让你能安全地操作任何远程机器——至此，从硬件、操作系统到系统管理与远程开发的主线已经完整。接下来镜头从“机器”转向“语言”：你在竞赛里最熟悉的 C++，在真实工程里要怎样组织代码、管理依赖、避免内存错误？下一章[从竞赛 C++ 到工程 C++](../06-编程语言/15-C++从竞赛到工程.md)进入编程语言篇。
+SSH 让你能安全地操作任何远程机器。至此，从硬件、操作系统到系统管理与远程开发的主线已经完整。接下来镜头从“机器”转向“语言”：你在竞赛里最熟悉的 C++，在真实工程里要怎样组织代码、管理依赖、避免内存错误？下一章[从竞赛 C++ 到工程 C++](../06-编程语言/15-C++从竞赛到工程.md)进入编程语言篇。
 
 > 你现在能：用 SSH 密钥登录远程服务器，用 scp/rsync 传输文件，用 ssh config 与 agent 简化连接，用 tmux 保住长任务，并能做端口转发

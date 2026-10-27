@@ -2,6 +2,7 @@
 
 /* ══════════════ 状态 ══════════════ */
 let chapters = [];            // /api/chapters 返回的章节列表
+let CHAPTERS_BASE = [];       // 构建期章节快照：文章覆盖层每次从它重新计算
 let currentPath = null;       // 当前章节 path（null = 在路线图页）
 let pendingSection = null;    // 搜索跳转：加载后要滚动到的章节标题
 let chapterGen = 0;           // 章节加载竞态守卫
@@ -21,8 +22,56 @@ const STATIC_ENOUGH = 30;    // 前两片扫完攒到这个数就认为够用；
 const STATIC_MAX_SHARDS = 99;  // 渐进扫描的上限（实际受 STATIC_SHARD_COUNT 约束，即扫完为止）
 
 const $ = id => document.getElementById(id);
-const TRACK_LABEL = { core: '核心', recommended: '建议', optional: '选读' };
-const TRACK_CLASS = { core: 'badge-core', recommended: 'badge-rec', optional: 'badge-opt' };
+
+/* ══════════════ 大类登记处（唯一来源） ══════════════
+   新增一个并列大类只改两处：① 这里加一条 BOOKS 记录；② 在 PHASES 里给它的每个
+   阶段写 book 键、并给首阶段写 dir 前缀（章节 phase 字段缺失时按路径兜底）。
+   顶栏按钮、书名、章节徽章、阶段归属、复习阶段编号全部由这两处派生——此前它们
+   散落在 6 个数组与 9 条 if 分支里，漏改一处就会静默把新阶段并进别的册
+   （2026-10-23 概率论「应用概率」上线时就是这样被 cache 里的旧逻辑并进 pb1 的）。 */
+const BOOKS = [
+  { key: 'cs',   label: '计算机速通',             trackLabel: '核心', trackClass: 'badge-core', desc: '离开 OJ 的核心主线：终端与系统、网络与 Git、前后端、Docker 与部署，终点是可部署的贯穿项目' },
+  { key: 'math', label: '数学基础',               trackLabel: '数学', trackClass: 'badge-math', desc: '四个部分按序：连续数学、概率论、随机微分方程、范畴论4CS，各部分独立编号、自带复习章' },
+  { key: 'dl',   label: '深度学习',               trackLabel: '分册', trackClass: 'badge-dl',   desc: '数学与记号、MLP 与反向传播、CNN 与训练技巧，生成模型四讲，RNN 与 Transformer' },
+  { key: 'ml',   label: '机器学习与凸优化',       trackLabel: 'ML',   trackClass: 'badge-ml',   desc: '损失函数与凸性、梯度下降、线性模型与对偶，走到泛化与神经网络' },
+  { key: 'dlf',  label: '深度学习框架',           trackLabel: '框架', trackClass: 'badge-dlf',  desc: '手写迷你深度学习框架对照 PyTorch：张量、计算图与自动微分、autograd 引擎、Module 系统、优化器、训练循环、数据管道、设备精度与分布式' },
+  { key: 'qc',   label: '量子力学',               trackLabel: '量子', trackClass: 'badge-qc',   desc: '从狄拉克记号与「要解决什么问题」出发的最小量子力学，收在量子计算的路口' },
+  { key: 'qai',  label: '交换代数·拓扑·同调速通', trackLabel: 'QAI',  trackClass: 'badge-qai',  desc: '交换代数、点集拓扑与同调代数，总装于 CSS 码、环面码与量子 AI 地图' },
+  { key: 'fla',  label: '形式语言与自动机',       trackLabel: '语言', trackClass: 'badge-fla',  desc: '正则与上下文无关、图灵机与不可判定、一阶逻辑、MSO 与自动机的重合、复杂度地图' },
+  { key: 'ct',   label: '计算理论',               trackLabel: '理论', trackClass: 'badge-ct',   desc: '可计算性与复杂性的机器：归约、P/NP 与 NPC、空间与随机化、交互证明、PCP 与电路下界' },
+  { key: 'gfx',  label: '计算机图形学',           trackLabel: '图形', trackClass: 'badge-gfx',  desc: '成像与渲染（光栅化、相机、光照、光线追踪）、计算几何、计算机视觉' },
+  { key: 'econ', label: '计算经济学',             trackLabel: '经济', trackClass: 'badge-econ', desc: '算法博弈论与机制设计：纳什均衡、VCG、无政府代价、稳定匹配与平台拍卖' },
+  { key: 'gt',   label: '博弈论',                 trackLabel: '博弈', trackClass: 'badge-gt',   desc: '博弈论本体：纳什与minimax、子博弈完美、重复与合作、贝叶斯与信号、演化、PPAD' },
+  { key: 'crypt', label: '密码学',               trackLabel: '密码', trackClass: 'badge-crypt', desc: '从完美保密到 TLS：对称与工作模式、哈希与 AEAD、DH/RSA/ECC、协议解剖与工程纪律' },
+  { key: 'cir',   label: '数字电路',             trackLabel: '电路', trackClass: 'badge-cir',  desc: '从沙子到处理器：MOSFET 开关、CMOS 门、组合逻辑与加法器、锁存器与触发器、时钟方法学、存储电路与数据通路总装' },
+  { key: 'db',    label: '数据库系统',           trackLabel: 'DB',  trackClass: 'badge-db',   desc: '从「数据放哪」到分布式：存储与 B+ 树、索引与执行计划、事务与 MVCC、复制与分片' },
+  { key: 'os',    label: '操作系统',             trackLabel: 'OS',  trackClass: 'badge-os',   desc: '进程线程与调度、虚拟内存与页面置换、并发原语与死锁、文件系统与 I/O 模型' },
+  { key: 'ca',    label: '计算机系统结构',       trackLabel: '结构', trackClass: 'badge-ca',  desc: '性能度量与 Amdahl、RISC-V 与流水线、乱序执行、缓存一致性与伪共享、SIMD、多核与 GPU、Roofline' },
+  { key: 'net',   label: '计算机网络',           trackLabel: '网络', trackClass: 'badge-net', desc: '分层模型、IP 与路由、TCP 可靠性与拥塞控制、DNS/HTTP 演进与 TLS' },
+];
+const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
+
+/* ══════════════ 学部（BOOKS 之上的归类层，2026-10-26 按学科划定） ══════════════
+   顶栏分隔线、首页学部分组与「规划中」行都由它派生；books 的键必须都在 BOOKS 里。
+   future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
+const DIVISIONS = [
+  { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math'],           future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf'], future: ['强化学习', '自然语言处理', '具身智能'] },
+  { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
+  { key: 'theory', label: '算法与理论',      books: ['fla', 'ct'],      future: ['算法与数据结构', '近似算法', '随机算法'] },
+  { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
+  { key: 'econ',   label: '经济学',          books: ['econ', 'gt'],     future: [] },
+  { key: 'crypt',  label: '密码学',          books: ['crypt'],          future: [] },
+  { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net'], future: [] },
+];
+const DIVISION_OF = {};
+for (const d of DIVISIONS) for (const b of d.books) DIVISION_OF[b] = d;
+// cs 的 track 分三档（core/recommended/optional）；每个并列大类一章一 track、与册同键
+const TRACK_LABEL = Object.assign({ core: '核心', recommended: '建议', optional: '选读' },
+  Object.fromEntries(BOOKS.filter(b => b.key !== 'cs').map(b => [b.key, b.trackLabel])));
+const TRACK_CLASS = Object.assign({ core: 'badge-core', recommended: 'badge-rec', optional: 'badge-opt' },
+  Object.fromEntries(BOOKS.filter(b => b.key !== 'cs').map(b => [b.key, b.trackClass])));
 
 /* ══════════════ 阶段定义 ══════════════
    curriculum.yml 中每章有 phase（1-6 / optional / capstone / appendix），
@@ -35,10 +84,145 @@ const PHASES = [
   { key: '4',   no: '四', title: '第四阶段：版本控制与网络', desc: 'Git/GitHub、依赖构建与 CI、HTTP 与 HTTPS',            range: [19, 24] },
   { key: '5',   no: '五', title: '第五阶段：应用开发',       desc: 'SQL 与数据库、前后端、Docker、部署与安全',           range: [25, 32] },
   { key: '6',   no: '六', title: '第六阶段：AI 工程',        desc: 'AI 工程与 Agent、多模态、GPU 与图形音频',            range: [33, 42] },
+  { key: 'dl1', no: '基', title: '深度学习 · 基础与训练',   desc: '数学与记号、MLP 与反向传播、CNN、优化器、训练技巧',   range: [1, 7] },
+  { key: 'dl2', no: '生', title: '深度学习 · 生成模型',     desc: '能量模型与采样、VAE、GAN、Flow 与扩散',               range: [8, 11] },
+  { key: 'dl3', no: '序', title: '深度学习 · 序列与全景',   desc: 'RNN 与 LSTM、注意力与 Transformer、结课全景',          range: [12, 14] },
+  { key: 'dlr', no: '复', title: '深度学习 · 复习总结',     desc: '闭卷自测与易混点对照',                                range: [15, 15] },
+  { key: 'qc1', no: '基', title: '量子力学 · 基础原理',     desc: '约定与记号、要解决的问题、态矢量与叠加、可观测量与算子', range: [1, 4] },
+  { key: 'qc2', no: '演', title: '量子力学 · 演化与测量',   desc: '幺正演化与薛定谔方程、Born 规则与坍缩、不确定原理',    range: [5, 7] },
+  { key: 'qc3', no: '纠', title: '量子力学 · 复合系统与前沿', desc: '纠缠、密度算子、不可克隆、边界与 QCS 路口',            range: [8, 11] },
+  { key: 'qr1', no: '复', title: '量子力学 · 复习总结',     desc: '闭卷自测与易混点对照',                                range: [12, 12] },
+  { key: 'cn1', no: '基', title: '连续数学 · 分析地基', desc: '实数完备性、连续与紧致、微分与 Taylor、级数与一致收敛',        range: [1, 4] },
+  { key: 'cn2', no: '维', title: '连续数学 · 多维与变换', desc: '多元微分与约束、向量分析与积分定理、傅里叶分析、复分析',      range: [5, 8] },
+  { key: 'cn3', no: '方', title: '连续数学 · 方程、变分与算子', desc: '常微分方程与动力系统、变分法与最优控制、渐近分析、泛函分析与广义函数', range: [9, 12] },
+  { key: 'cnr1', no: '复', title: '连续数学 · 复习总结', desc: '闭卷自测与易混点对照',                                        range: [13, 13] },
+  { key: 'cn4', no: '进', title: '连续数学 · 调和分析与泛函进阶', desc: '傅里叶变换的深化、极大函数与插值、三大定理与弱收敛、Sobolev 与弱解', range: [13, 16] },
+  { key: 'cnr2', no: '复', title: '连续数学 · 进阶复习总结', desc: '闭卷自测与易混点对照',                                    range: [14, 14] },
+  { key: 'pb1', no: '基', title: '概率论 · 公理与极限', desc: '概率的公理化、随机变量与分布、多元与条件期望、极限定理',      range: [1, 4] },
+  { key: 'pb2', no: '推', title: '概率论 · 统计推断', desc: '估计与似然、假设检验与置信区间、贝叶斯推断与后验计算',          range: [5, 7] },
+  { key: 'pb3', no: '图', title: '概率论 · 图模型', desc: '贝叶斯网络与条件独立、无向模型与精确推断、隐变量与近似推断',    range: [8, 10] },
+  { key: 'pb4', no: '过', title: '概率论 · 随机过程', desc: '马尔可夫链与 MCMC、泊松过程、鞅与集中不等式',                range: [11, 12] },
+  { key: 'pb5', no: '测', title: '概率论 · 测度与实分析', desc: 'σ-代数与 Lebesgue 积分、概率的严格化与实分析工具箱',      range: [13, 14] },
+  { key: 'pbr1', no: '复', title: '概率论 · 复习总结', desc: '闭卷自测与易混点对照',                                        range: [15, 15] },
+  { key: 'pb6', no: '信', title: '概率论 · 信息、界与工程', desc: '信息论：熵与信道、大偏差与概率方法、排队论与可靠性',            range: [15, 17] },
+  { key: 'pb7', no: '网', title: '概率论 · 网络、算法与决策', desc: '随机图与渗流、随机算法与随机数据结构、MDP 与强化学习、统计物理与蒙特卡洛', range: [18, 21] },
+  { key: 'pbr2', no: '复', title: '概率论 · 应用复习总结', desc: '闭卷自测与易混点对照',                                        range: [22, 22] },
+  { key: 'sd1', no: '随', title: '随机微分方程 · 布朗运动', desc: '从随机游走到布朗运动、性质、随机积分',                  range: [1, 3] },
+  { key: 'sd2', no: '方', title: '随机微分方程 · 公式与名方程', desc: 'Itô 公式、Euler–Maruyama、OU 与几何布朗运动',       range: [4, 7] },
+  { key: 'sd3', no: '泛', title: '随机微分方程 · 密度、ML 与数值', desc: 'Fokker–Planck、Langevin 与机器学习、收敛阶与稳定性', range: [8, 10] },
+  { key: 'sr1', no: '复', title: '随机微分方程 · 复习总结', desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'ct1', no: '语', title: '范畴论4CS · 语言', desc: '范畴、函子、自然变换',                                        range: [1, 3] },
+  { key: 'ct2', no: '性', title: '范畴论4CS · 万有性质', desc: '积与余积、指数对象与 Curry–Howard、单子',                  range: [4, 6] },
+  { key: 'ct3', no: '理', title: '范畴论4CS · 定理与应用', desc: 'Yoneda 引理、伴随函子、CS 应用地图、边界与下一层',       range: [7, 10] },
+  { key: 'cr1', no: '复', title: '范畴论4CS · 复习总结', desc: '闭卷自测与易混点对照',                                    range: [11, 11] },
+  { key: 'ml1', no: '凸', title: '机器学习与凸优化 · 凸优化基础', desc: '优化问题的共同形状、凸集与凸函数、梯度下降',      range: [1, 3] },
+  { key: 'ml2', no: '模', title: '机器学习与凸优化 · 线性模型与优化器', desc: '线性回归与正则化、逻辑回归、SGD 与优化器、对偶与 KKT', range: [4, 7] },
+  { key: 'ml3', no: '非', title: '机器学习与凸优化 · 从凸到非凸', desc: '支持向量机、泛化、神经网络',                      range: [8, 10] },
+  { key: 'mr1', no: '复', title: '机器学习与凸优化 · 复习总结', desc: '闭卷自测与易混点对照',                              range: [11, 11] },
+  { key: 'qa1', no: '环', title: '速通 · 交换代数', desc: '环、理想与商环、F₂ 多项式、特征 2 线性代数',                    range: [1, 3] },
+  { key: 'qa2', no: '扑', title: '速通 · 点集拓扑', desc: '开集与连续、商空间与环面、单纯复形',                            range: [4, 6] },
+  { key: 'qa3', no: '调', title: '速通 · 同调', desc: '同调与 Betti 数、正合列与链同伦、上同调与庞加莱对偶',                range: [7, 9] },
+  { key: 'qa4', no: '量', title: '速通 · 通向量子 AI', desc: 'CSS 码与环面码、拓扑数据分析与量子核',                        range: [10, 11] },
+  { key: 'qar1', no: '复', title: '速通 · 复习总结', desc: '闭卷自测与易混点对照',                                        range: [12, 12] },
+  { key: 'gp1', no: '像', title: '计算机图形学 · 成像与渲染', desc: '像素与图像、光栅化、变换与相机、光照与着色、光线追踪与路径追踪', range: [1, 5] },
+  { key: 'gp2', no: '几', title: '计算机图形学 · 计算几何', desc: '几何谓词与浮点精度、经典算法与空间加速结构',                  range: [6, 7] },
+  { key: 'gp3', no: '视', title: '计算机图形学 · 计算机视觉', desc: '图像即信号、特征与匹配、相机与三维视觉、视觉进入深度学习时代', range: [8, 11] },
+  { key: 'gr1', no: '复', title: '计算机图形学 · 复习总结', desc: '闭卷自测与易混点对照',                                      range: [12, 12] },
+  { key: 'fa1', no: '语', title: '形式语言与自动机 · 语言与自动机', desc: '语言与判定问题、正则的边界与最小化、上下文无关与下推', range: [1, 3] },
+  { key: 'fa2', no: '算', title: '形式语言与自动机 · 可计算性与逻辑', desc: '图灵机与通用计算、不可判定性与归约、一阶逻辑',      range: [4, 6] },
+  { key: 'fa3', no: '逻', title: '形式语言与自动机 · 逻辑×自动机与验证', desc: 'MSO 与 Büchi/Courcelle、模型检查与时序逻辑',    range: [7, 8] },
+  { key: 'fa4', no: '价', title: '形式语言与自动机 · 复杂度与地图', desc: '复杂度类与归约、可解性收束地图与书单',                range: [9, 10] },
+  { key: 'fr1', no: '复', title: '形式语言与自动机 · 复习总结', desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'ec1', no: '弈', title: '计算经济学 · 博弈与均衡', desc: '策略式博弈与纳什均衡、零和与极小极大的 LP 对偶',              range: [1, 2] },
+  { key: 'ec2', no: '机', title: '计算经济学 · 机制设计与投票', desc: '二价拍卖与 VCG、算法机制设计、投票的不可能定理',          range: [3, 5] },
+  { key: 'ec3', no: '价', title: '计算经济学 · 均衡、计算与匹配', desc: '无政府代价、均衡的计算与 PPAD、稳定匹配',              range: [6, 8] },
+  { key: 'ec4', no: '台', title: '计算经济学 · 平台与收束', desc: '预算约束拍卖与收入、收束地图与书单',                        range: [9, 10] },
+  { key: 'ecr1', no: '复', title: '计算经济学 · 复习总结', desc: '闭卷自测与易混点对照',                                      range: [11, 11] },
+  { key: 'cy1', no: '密', title: '密码学 · 保密与分组密码', desc: '完美保密与攻击模型、AES 与工作模式',                        range: [1, 2] },
+  { key: 'cy2', no: '证', title: '密码学 · 哈希与认证', desc: '哈希与生日攻击、MAC 与 AEAD、nonce 纪律',                      range: [3, 4] },
+  { key: 'cy3', no: '钥', title: '密码学 · 公钥革命', desc: 'Diffie–Hellman、RSA 与签名、椭圆曲线',                          range: [5, 7] },
+  { key: 'cy4', no: '协', title: '密码学 · 协议与工程', desc: 'TLS 1.3 解剖、零知识与秘密分享、工程纪律与收束',                range: [8, 10] },
+  { key: 'cyr1', no: '复', title: '密码学 · 复习总结', desc: '闭卷自测与易混点对照',                                          range: [11, 11] },
+  { key: 'db1',  no: '存', title: '数据库系统 · 存储与检索', desc: '从文件到 DBMS、页与 B+ 树、索引的艺术',                range: [1, 3] },
+  { key: 'db2',  no: '查', title: '数据库系统 · 查询与优化', desc: '关系代数与连接算法、代价估算与执行计划',                range: [4, 5] },
+  { key: 'db3',  no: '务', title: '数据库系统 · 事务',       desc: 'ACID 与崩溃恢复、锁与隔离级别、MVCC 与日志',            range: [6, 8] },
+  { key: 'db4',  no: '布', title: '数据库系统 · 分布式与收束', desc: '复制与分片的一致性权衡、选型与生产实践',              range: [9, 10] },
+  { key: 'dbr1', no: '复', title: '数据库系统 · 复习总结',   desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'os1',  no: '管', title: '操作系统 · 抽象与调度',   desc: '三大抽象、进程与线程、CPU 调度',                        range: [1, 3] },
+  { key: 'os2',  no: '页', title: '操作系统 · 虚拟内存',     desc: '页表与地址翻译、页面置换与局部性',                      range: [4, 5] },
+  { key: 'os3',  no: '锁', title: '操作系统 · 并发与文件',   desc: 'CAS 与 futex、死锁破解、inode 与崩溃一致性',            range: [6, 8] },
+  { key: 'os4',  no: '入', title: '操作系统 · I/O 与收束',   desc: '五种 I/O 模型与 epoll、性能定位地图',                    range: [9, 10] },
+  { key: 'os5',  no: '进', title: '操作系统 · 进阶专题',     desc: '启动与中断、信号与终端、容器与 cgroups、虚拟化',          range: [11, 14] },
+  { key: 'osr1', no: '复', title: '操作系统 · 复习总结',     desc: '闭卷自测与易混点对照',                                  range: [15, 15] },
+  { key: 'ne1',  no: '层', title: '计算机网络 · 分层与链路', desc: '封装与分层职责、以太网与交换机、IP 与路由',              range: [1, 3] },
+  { key: 'ne2',  no: '传', title: '计算机网络 · 传输',       desc: 'UDP 与 TCP、可靠性与重传、拥塞控制',                    range: [4, 6] },
+  { key: 'ne3',  no: '用', title: '计算机网络 · 连接与应用', desc: '握手挥手与时延、DNS 与 HTTP 演进',                      range: [7, 8] },
+  { key: 'ne4',  no: '安', title: '计算机网络 · 安全与收束', desc: 'TLS 的位置、排障工具箱与分层思维',                      range: [9, 10] },
+  { key: 'ner1', no: '复', title: '计算机网络 · 复习总结',   desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'th1',  no: '模', title: '计算理论 · 模型与归约',   desc: '从 OJ 机器到图灵机、归约的技艺与不可判定地图',            range: [1, 2] },
+  { key: 'th2',  no: '类', title: '计算理论 · 复杂性类与 NPC', desc: 'P/NP 图谱、Cook-Levin、Ladner 与细粒度复杂度',          range: [3, 5] },
+  { key: 'th3',  no: '机', title: '计算理论 · 空间、随机与交互', desc: 'PSPACE 与 TQBF、BPP、交互证明与 IP',                  range: [6, 8] },
+  { key: 'th4',  no: '界', title: '计算理论 · 难近似与下界', desc: 'PCP 定理、电路复杂性与收束地图',                        range: [9, 10] },
+  { key: 'thr1', no: '复', title: '计算理论 · 复习总结',     desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'gt1',  no: '静', title: '博弈论 · 静态博弈',       desc: '策略式博弈与纳什均衡、零和与线性规划',                    range: [1, 2] },
+  { key: 'gt2',  no: '动', title: '博弈论 · 动态、重复与信息', desc: '子博弈完美、重复博弈与合作的诞生、贝叶斯博弈与信号',      range: [3, 5] },
+  { key: 'gt3',  no: '群', title: '博弈论 · 演化、合作与计算', desc: 'ESS 与复制子、核心与 Shapley 值、PPAD 与相关均衡',       range: [6, 8] },
+  { key: 'gt4',  no: '市', title: '博弈论 · 应用与地图',   desc: '讨价还价与市场博弈、收束地图与书单',                      range: [9, 10] },
+  { key: 'gtr1', no: '复', title: '博弈论 · 复习总结',       desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'ca1',  no: '量', title: '系统结构 · 性能与 ISA',   desc: '延迟吞吐与 Amdahl、RISC-V 与指令集设计空间',              range: [1, 2] },
+  { key: 'ca2',  no: '流', title: '系统结构 · 流水线与存储', desc: '五级流水与冒险、乱序执行、缓存与局部性',                  range: [3, 5] },
+  { key: 'ca3',  no: '核', title: '系统结构 · 一致性与并行', desc: 'MESI 与伪共享、SIMD 与向量化、多核 SMT 与 GPU',          range: [6, 8] },
+  { key: 'ca4',  no: '专', title: '系统结构 · IO 与专用架构', desc: '磁盘 SSD 与 RAID、Roofline 模型与收束地图',            range: [9, 10] },
+  { key: 'car1', no: '复', title: '系统结构 · 复习总结',     desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'cir1', no: '器', title: '数字电路 · 器件与门',     desc: '从沙子到 MOSFET、CMOS 门电路',                          range: [1, 2] },
+  { key: 'cir2', no: '算', title: '数字电路 · 组合逻辑与运算', desc: '布尔代数与化简、加法器与进位链',                        range: [3, 4] },
+  { key: 'cir3', no: '序', title: '数字电路 · 时序与时钟',   desc: '锁存器与毛刺、触发器、同步设计规则',                    range: [5, 7] },
+  { key: 'cir4', no: '芯', title: '数字电路 · 存储、通路与芯片', desc: 'SRAM/DRAM、单周期数据通路总装、封装与总线',          range: [8, 10] },
+  { key: 'cirr1', no: '复', title: '数字电路 · 复习总结',    desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'num1', no: '误', title: '数值计算 · 误差与逼近',   desc: '浮点与舍入、数值微积分、插值与 Runge 现象',              range: [1, 3] },
+  { key: 'num2', no: '解', title: '数值计算 · 方程与迭代',   desc: 'LU 分解与条件数、牛顿法与不动点迭代',                    range: [4, 5] },
+  { key: 'numr1', no: '复', title: '数值计算 · 复习总结',    desc: '闭卷自测与易混点对照',                                  range: [6, 6] },
+  { key: 'df1',  no: '张', title: '深度学习框架 · 张量与计算图', desc: '迷你张量与广播、反向模式微分',                          range: [1, 2] },
+  { key: 'df2',  no: '引', title: '深度学习框架 · 引擎与模块', desc: '手写 autograd 引擎、Module 系统与层',                  range: [3, 4] },
+  { key: 'df3',  no: '练', title: '深度学习框架 · 优化与训练', desc: 'SGD/Momentum/Adam、端到端训练循环',                    range: [5, 6] },
+  { key: 'df4',  no: '系', title: '深度学习框架 · 工程与收束', desc: '数据管道、设备与精度、分布式与保存、收束地图',          range: [7, 10] },
+  { key: 'dfr1', no: '复', title: '深度学习框架 · 复习总结',  desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
   { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
   { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
   { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [47, 99] },
 ];
+
+/* 阶段 → 所属大类；目录前缀 → 该大类首阶段（章节 phase 缺失时的兜底）。
+   两表都由 BOOKS 的 key 构成，新增册时在这里补一行即可。 */
+const PHASE_BOOK = {
+  '1': 'cs', '2': 'cs', '3': 'cs', '4': 'cs', '5': 'cs', '6': 'cs', opt: 'cs', cap: 'cs', app: 'cs',
+  dl1: 'dl', dl2: 'dl', dl3: 'dl', dlr: 'dl',
+  qc1: 'qc', qc2: 'qc', qc3: 'qc', qr1: 'qc',
+  ml1: 'ml', ml2: 'ml', ml3: 'ml', mr1: 'ml',
+  sd1: 'math', sd2: 'math', sd3: 'math', sr1: 'math',
+  ct1: 'math', ct2: 'math', ct3: 'math', cr1: 'math',
+  qa1: 'qai', qa2: 'qai', qa3: 'qai', qa4: 'qai', qar1: 'qai',
+  pb1: 'math', pb2: 'math', pb3: 'math', pb4: 'math', pb5: 'math', pbr1: 'math',
+  pb6: 'math', pb7: 'math', pbr2: 'math',
+  cn1: 'math', cn2: 'math', cn3: 'math', cn4: 'math', cnr1: 'math', cnr2: 'math',
+  gp1: 'gfx', gp2: 'gfx', gp3: 'gfx', gr1: 'gfx',
+  fa1: 'fla', fa2: 'fla', fa3: 'fla', fa4: 'fla', fr1: 'fla',
+  ec1: 'econ', ec2: 'econ', ec3: 'econ', ec4: 'econ', ecr1: 'econ',
+  cy1: 'crypt', cy2: 'crypt', cy3: 'crypt', cy4: 'crypt', cyr1: 'crypt',
+  db1: 'db', db2: 'db', db3: 'db', db4: 'db', dbr1: 'db',
+  os1: 'os', os2: 'os', os3: 'os', os4: 'os', osr1: 'os',
+  ne1: 'net', ne2: 'net', ne3: 'net', ne4: 'net', ner1: 'net',
+  os5: 'os',
+  th1: 'ct', th2: 'ct', th3: 'ct', th4: 'ct', thr1: 'ct',
+  cir1: 'cir', cir2: 'cir', cir3: 'cir', cir4: 'cir', cirr1: 'cir',
+  num1: 'math', num2: 'math', numr1: 'math',
+  df1: 'dlf', df2: 'dlf', df3: 'dlf', df4: 'dlf', dfr1: 'dlf',
+  gt1: 'gt', gt2: 'gt', gt3: 'gt', gt4: 'gt', gtr1: 'gt',
+  ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
+};
+const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1' };
+const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
   // 服务端若提供 phase 字段，直接采用
@@ -47,7 +231,13 @@ function phaseOf(c) {
     if (p === 'optional') return 'opt';
     if (p === 'capstone') return 'cap';
     if (p === 'appendix') return 'app';
-    if (PHASES.some(ph => ph.key === p)) return p;
+    if (PHASE_KEYS.has(p)) return p;
+    // 未注册的 phase 绝不静默并入别的册：先在控制台报出来，再按目录前缀兜底
+    console.warn('[phases] 未注册的 phase「' + c.phase + '」(path=' + (c.path || '') + ')，按目录前缀兜底');
+  }
+  // 大类的编号也从 1 起、与计算机速通重合，故先按目录前缀分流
+  for (const pfx in PHASE_DIR) {
+    if ((c.path || '').indexOf(pfx) === 0) return PHASE_DIR[pfx];
   }
   // 否则按章节编号区间推导（名称形如 "Ch0 …" / "Ch14 …" / "附录A …"）
   const m = /^Ch(\d+)/.exec(c.name || '');
@@ -60,7 +250,10 @@ function phaseOf(c) {
     if (n <= 32) return '5';
     if (n <= 42) return '6';
     if (n <= 45) return 'opt';
-    return 'cap';
+    if (n <= 46) return 'cap';
+    // 兜底曾是 'dl1'（深度学习独苗年代）；编号异常大的章现在归附录，
+    // 配合上方控制台的未注册告警定位数据问题
+    return 'app';
   }
   return 'app';
 }
@@ -76,6 +269,143 @@ function groupByPhase(list) {
   return groups;
 }
 
+/* ══════════════ 大类与阶段（表在文件头部，此处只做派生） ══════════════ */
+function phaseBook(key) { return PHASE_BOOK[key] || 'cs'; }
+function bookOf(c) { return phaseBook(phaseOf(c)); }
+function activeBook() {
+  if (currentPath) {
+    const c = chapters.find(x => x.path === currentPath);
+    if (c) return bookOf(c);
+  }
+  try { const b = localStorage.getItem('reader-book') || 'cs'; return LEGACY_BOOK[b] || b; } catch (e) { return 'cs'; }
+}
+function setActiveBook(b) { try { localStorage.setItem('reader-book', b); } catch (e) { /* 忽略 */ } }
+
+/* ══════════════ 部分（大类内部的第二级，oi-wiki 式层级） ══════════════
+   只登记真正分部分的大类；未登记的大类侧栏与路线图维持单层阶段分组。
+   desc 沿用合并前各分册的一句话简介。2026-10-26 数学基础六部分。 */
+const BOOK_PARTS = {
+  math: [
+    { label: '连续数学',           desc: '分析地基、多维与变换、方程与变分，进阶篇补调和分析与泛函三大定理', phases: ['cn1', 'cn2', 'cn3', 'cnr1', 'cn4', 'cnr2'] },
+    { label: '概率论',             desc: '公理与极限定理、统计推断、图模型、随机过程、测度，外加应用概率七章', phases: ['pb1', 'pb2', 'pb3', 'pb4', 'pb5', 'pbr1', 'pb6', 'pb7', 'pbr2'] },
+    { label: '随机微分方程',       desc: '随机游走走出布朗运动，Itô 微积分与两大名方程，合流 Langevin 与机器学习', phases: ['sd1', 'sd2', 'sd3', 'sr1'] },
+    { label: '范畴论4CS',          desc: '范畴、函子与万有性质，Yoneda、伴随与单子，收在 CS 应用地图', phases: ['ct1', 'ct2', 'ct3', 'cr1'] },
+    { label: '数值计算',           desc: '浮点与舍入、数值微积分、插值、LU 与条件数、迭代法——连续数学落地成代码的纪律', phases: ['num1', 'num2', 'numr1'] },
+  ],
+};
+const PART_OF = {};
+for (const parts of Object.values(BOOK_PARTS)) {
+  for (const p of parts) for (const k of p.phases) PART_OF[k] = p;
+}
+function bookHasParts(b) { return Array.isArray(BOOK_PARTS[b]) && BOOK_PARTS[b].length > 0; }
+function partOfPhase(phKey) { return PART_OF[phKey] || null; }
+/* 分部分的大类里，阶段组标题去掉「连续数学 · 」这类前缀，避免与部分标题重复 */
+function phaseDisplayTitle(ph) {
+  if (partOfPhase(ph.key)) {
+    const seg = ph.title.split(' · ');
+    if (seg.length > 1) return seg.slice(1).join(' · ');
+  }
+  return ph.title;
+}
+
+/* ══════════════ 顶栏（首页 + 两个并列大类） ══════════════ */
+/* 学部在顶栏只占一个按钮，书收进悬停下拉——十六书平铺版（2026-10-26）在新增
+   三书后已到一行极限，学部菜单（2026-10-27）是顶栏的稳定形态：书增减只改
+   DIVISIONS/BOOKS，顶栏按钮数不变。 */
+const DIVISION_SHORT = { core: '核心', math: '数学', ai: 'AI', qcs: '量子', theory: '理论', gfx: '图形', econ: '经济', crypt: '密码', sys: '系统' };
+function renderTopnav() {
+  const nav = $('topnav');
+  if (!nav) return;
+  nav.innerHTML = '<button type="button" class="topnav-item" data-home="1" title="学习路线图">首页</button>' +
+    DIVISIONS.map(d => {
+      const books = d.books.map(k => BOOKS.find(b => b.key === k)).filter(Boolean);
+      if (!books.length) return '';
+      const items = books.map(b => {
+        const first = chapters.find(c => c.exists && bookOf(c) === b.key) || chapters.find(c => bookOf(c) === b.key);
+        return '<button type="button" class="nav-book" data-book="' + b.key + '"' +
+          (first ? ' data-path="' + escapeHtml(first.path) + '"' : '') +
+          ' title="' + b.label + '"><span class="badge ' + b.trackClass + '">' + b.trackLabel + '</span><span class="nb-name">' + b.label + '</span></button>';
+      }).join('');
+      return '<div class="nav-group" data-division="' + d.key + '">' +
+        '<button type="button" class="topnav-item" data-division="' + d.key + '" title="' + d.label + '" aria-haspopup="true" aria-expanded="false">' + (DIVISION_SHORT[d.key] || d.label) + '</button>' +
+        '<div class="nav-menu" hidden>' + items + '</div></div>';
+    }).join('');
+  updateTopnavActive();
+}
+
+function updateTopnavActive() {
+  const nav = $('topnav');
+  if (!nav) return;
+  const cur = currentPath ? activeBook() : null;
+  nav.querySelectorAll('.nav-group').forEach(g => {
+    const on = !!cur && DIVISION_OF[cur] && DIVISION_OF[cur].key === g.dataset.division;
+    g.querySelector('.topnav-item').classList.toggle('active', on);
+    g.querySelector('.topnav-item').setAttribute('aria-expanded', g.classList.contains('open') ? 'true' : 'false');
+  });
+  const home = nav.querySelector('[data-home]');
+  if (home) home.classList.toggle('active', !cur);
+}
+
+function closeAllNavMenus(except) {
+  document.querySelectorAll('.nav-group.open').forEach(g => {
+    if (g === except) return;
+    g.classList.remove('open');
+    g.querySelector('.nav-menu').hidden = true;
+    g.querySelector('.topnav-item').setAttribute('aria-expanded', 'false');
+  });
+}
+
+const topnavEl = $('topnav');
+if (topnavEl) {
+  topnavEl.addEventListener('click', event => {
+    const book = event.target.closest('.nav-book');
+    if (book) {
+      closeAllNavMenus();
+      if (book.dataset.path) {
+        setActiveBook(book.dataset.book);
+        window.location.hash = encodeURIComponent(book.dataset.path);
+      }
+      return;
+    }
+    const btn = event.target.closest('.topnav-item');
+    if (!btn) return;
+    if (btn.dataset.home) {
+      if (window.location.hash === '#roadmap') showRoadmap();
+      else window.location.hash = 'roadmap';
+      return;
+    }
+    if (btn.dataset.division) {
+      const group = btn.closest('.nav-group');
+      const opening = !group.classList.contains('open');
+      closeAllNavMenus();
+      if (opening) {
+        group.classList.add('open');
+        group.querySelector('.nav-menu').hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    }
+  });
+  // 桌面悬停开合；touch 设备没有 mouseenter 轰炸，靠上面的 click 分支
+  topnavEl.addEventListener('mouseover', event => {
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    const group = event.target.closest('.nav-group');
+    if (!group) return;
+    closeAllNavMenus(group);
+    group.classList.add('open');
+    group.querySelector('.nav-menu').hidden = false;
+    group.querySelector('.topnav-item').setAttribute('aria-expanded', 'true');
+  });
+  topnavEl.addEventListener('mouseleave', () => {
+    if (window.matchMedia('(hover: hover)').matches) closeAllNavMenus();
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('#topnav')) closeAllNavMenus();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeAllNavMenus();
+  });
+}
+
 // “已完成”= 文件存在且状态为 complete（提纲/缺失不计）
 const isComplete = c => c.exists && c.status === 'complete';
 
@@ -86,6 +416,12 @@ const isComplete = c => c.exists && c.status === 'complete';
 function phaseRangeText(ph, list) {
   if (ph.key === 'app') return '附录 A–K';
   if (ph.key === 'cap') return 'Ch46';
+  // 复习阶段一律读作「复习 R<序号>」：序号取 phase key 自身的编号
+  // （cnr1/pbr1/mr1/sr1/cr1/qar1→R1，cnr2/pbr2→R2，与各部分复习章文件名一致；
+  //   2026-10-26 数学六册并入一个大类后不能再按册内先后计数，那会把概率论 R1 数成 R3）
+  if (/r\d+$/.test(ph.key) && phaseBook(ph.key) !== 'cs') {
+    return '复习 R' + ph.key.match(/r(\d+)$/)[1];
+  }
   const numbers = list.filter(c => /^Ch\d+/.test(c.name))
     .map(c => +/^Ch(\d+)/.exec(c.name)[1])
     .sort((a, b) => a - b);
@@ -250,7 +586,9 @@ function mermaidReady() {
 }
 
 async function fetchText(url) {
-  const res = await fetch(url);
+  // no-cache＝强制再验证：章节被更新后读者刷新即可拿到新版，浏览器不会
+  // 按启发式缓存把旧正文多留几轮（静态服务器普遍不发 Cache-Control）
+  const res = await fetch(url, { cache: 'no-cache' });
   if (!res.ok) {
     let msg = 'HTTP ' + res.status;
     try { const j = await res.json(); if (j && j.error) msg = j.error; } catch (e) { /* 非 JSON 错误体 */ }
@@ -266,14 +604,18 @@ async function init() {
     const res = await fetch(STATIC_MODE ? './chapters.json' : '/api/chapters');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     chapters = await res.json();
+    CHAPTERS_BASE = chapters.map(chapter => Object.assign({}, chapter));
+    const serverMode = await detectServer();
+    if (serverMode) await loadArticleMeta();
     renderSidebar();
+    renderTopnav();
     renderRoadmap();
     updateChapterCount();
-    detectServer();
+    refreshProgressMarks();
 
     const fromHash = decodePathFromHash();
     // 账号页允许直接用链接进入；未登录时页面自己会给登录提示
-    if (fromHash === 'profile' || fromHash === 'settings') {
+    if (['profile', 'settings', 'feedback', 'users', 'articles'].includes(fromHash)) {
       await loadServerProgress();
       showAccountPage(fromHash);
       return;
@@ -335,7 +677,10 @@ function chapterBadges(c) {
 
 function renderSidebar() {
   const groups = groupByPhase(chapters);
-  $('chapter-groups').innerHTML = PHASES.map(ph => {
+  $('chapter-groups').dataset.book = activeBook();
+  const sbTitle = document.querySelector('.sidebar-section-title');
+  if (sbTitle) sbTitle.textContent = BOOK_LABEL[activeBook()];
+  const groupHtml = ph => {
     const list = groups.get(ph.key) || [];
     if (!list.length) return '';
     const done = list.filter(isComplete).length;
@@ -344,7 +689,7 @@ function renderSidebar() {
         <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 6l6 6-6 6"/>
         </svg>
-        <span class="group-title">${escapeHtml(ph.title)}</span>
+        <span class="group-title">${escapeHtml(phaseDisplayTitle(ph))}</span>
         <span class="group-count" title="已完成 / 全部">${done}/${list.length}</span>
       </button>
       <div class="group-body">
@@ -356,7 +701,31 @@ function renderSidebar() {
         }).join('')}
       </div>
     </div>`;
-  }).join('');
+  };
+  const phases = PHASES.filter(ph => phaseBook(ph.key) === activeBook() && (groups.get(ph.key) || []).length);
+  let html;
+  if (bookHasParts(activeBook())) {
+    // 两级折叠：部分头（默认展开）→ 阶段组（照旧默认折叠）
+    html = BOOK_PARTS[activeBook()].map(part => {
+      const keys = part.phases.filter(k => phases.some(ph => ph.key === k));
+      if (!keys.length) return '';
+      const chaptersInPart = keys.flatMap(k => groups.get(k) || []);
+      const done = chaptersInPart.filter(isComplete).length;
+      return `<div class="part-block" data-part="${escapeHtml(part.label)}">
+        <button type="button" class="part-head" aria-expanded="true" title="${escapeHtml(part.desc || '')}">
+          <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 6l6 6-6 6"/>
+          </svg>
+          <span class="part-title">${escapeHtml(part.label)}</span>
+          <span class="part-count" title="已完成 / 全部">${done}/${chaptersInPart.length}</span>
+        </button>
+        <div class="part-body">${keys.map(k => groupHtml(PHASES.find(p => p.key === k))).join('')}</div>
+      </div>`;
+    }).join('');
+  } else {
+    html = phases.map(groupHtml).join('');
+  }
+  $('chapter-groups').innerHTML = html;
   refreshProgressMarks();
 }
 
@@ -367,11 +736,36 @@ $('chapter-groups').addEventListener('click', e => {
     if (!item.disabled) loadChapter(item.dataset.path);
     return;
   }
+  const partHead = e.target.closest('.part-head');
+  if (partHead) {
+    const block = partHead.closest('.part-block');
+    const list = $('chapter-groups');
+    const listScroll = list.scrollTop;
+    const pageScroll = window.scrollY;
+    const collapsed = block.classList.toggle('collapsed');
+    partHead.setAttribute('aria-expanded', String(!collapsed));
+    list.scrollTop = listScroll;
+    window.requestAnimationFrame(() => {
+      list.scrollTop = listScroll;
+      if (Math.abs(window.scrollY - pageScroll) > 1) window.scrollTo(0, pageScroll);
+    });
+    return;
+  }
   const head = e.target.closest('.group-head');
   if (head) {
     const group = head.closest('.chapter-group');
+    const list = $('chapter-groups');
+    // 折叠会改变侧栏内容高度，浏览器可能为了保持焦点而滚动列表/页面，
+    // 表现为「顶栏和正文突然跳一下」。这里在切换前后锁住两个滚动位置。
+    const listScroll = list.scrollTop;
+    const pageScroll = window.scrollY;
     const collapsed = group.classList.toggle('collapsed');
     head.setAttribute('aria-expanded', String(!collapsed));
+    list.scrollTop = listScroll;
+    window.requestAnimationFrame(() => {
+      list.scrollTop = listScroll;
+      if (Math.abs(window.scrollY - pageScroll) > 1) window.scrollTo(0, pageScroll);
+    });
   }
 });
 
@@ -393,7 +787,28 @@ function switchSidebarPanel(panel) {
 $('filter-input').addEventListener('input', () => {
   const q = $('filter-input').value.trim().toLowerCase();
   let anyVisible = false;
+  document.querySelectorAll('.part-block').forEach(pb => {
+    let partVisible = 0;
+    pb.querySelectorAll('.chapter-group').forEach(g => {
+      let visible = 0;
+      g.querySelectorAll('.chapter-item').forEach(el => {
+        const show = !q || el.textContent.toLowerCase().includes(q);
+        el.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      g.style.display = visible ? '' : 'none';
+      if (visible) partVisible++;
+    });
+    pb.style.display = partVisible ? '' : 'none';
+    // 命中筛选的部分临时展开，否则折叠的部分把结果藏住
+    if (q && partVisible) {
+      pb.classList.remove('collapsed');
+      pb.querySelector('.part-head')?.setAttribute('aria-expanded', 'true');
+    }
+    if (partVisible) anyVisible = true;
+  });
   document.querySelectorAll('.chapter-group').forEach(g => {
+    if (g.closest('.part-block')) return; // 已随所属部分处理
     let visible = 0;
     g.querySelectorAll('.chapter-item').forEach(el => {
       const show = !q || el.textContent.toLowerCase().includes(q);
@@ -432,29 +847,38 @@ function buildToc() {
   });
   tocHeadings = list;
   const placeholder = $('toc-placeholder'), toc = $('toc-list');
+  const rail = $('toc-rail'), railList = $('toc-rail-list');
   if (!list.length) {
     placeholder.hidden = true;
     toc.hidden = false;
     toc.innerHTML = '<div class="toc-empty">本章没有二级 / 三级标题</div>';
+    if (rail) rail.hidden = true;
+    if (railList) railList.innerHTML = '';
     return;
   }
   placeholder.hidden = true;
   toc.hidden = false;
   const meta = chapters.find(c => c.path === currentPath);
+  const itemsHTML = list.map(t =>
+    `<button type="button" class="toc-item lv${t.level}" data-id="${t.id}">${escapeHtml(t.text)}</button>`
+  ).join('');
   toc.innerHTML =
-    (meta ? `<div class="toc-chapter">${escapeHtml(meta.name)}</div>` : '') +
-    list.map(t => `<button type="button" class="toc-item lv${t.level}" data-id="${t.id}">${escapeHtml(t.text)}</button>`).join('');
+    (meta ? `<div class="toc-chapter">${escapeHtml(meta.name)}</div>` : '') + itemsHTML;
+  if (railList) railList.innerHTML = itemsHTML;
+  if (rail) rail.hidden = false;
 }
 
-$('toc-list').addEventListener('click', e => {
-  const btn = e.target.closest('.toc-item');
+function handleTocClick(event) {
+  const btn = event.target.closest('.toc-item');
   if (!btn) return;
   const t = tocHeadings.find(h => h.id === btn.dataset.id);
   if (t) {
     t.el.scrollIntoView({ block: 'start' });
     flashSection(t.el);
   }
-});
+}
+$('toc-list').addEventListener('click', handleTocClick);
+$('toc-rail-list').addEventListener('click', handleTocClick);
 
 function updateTocSpy() {
   if (!tocHeadings.length || $('content').hidden) return;
@@ -486,6 +910,15 @@ async function loadChapter(path, opts) {
   if (currentPath !== path) resetAskForChapter();
 
   currentPath = path;
+  updateTerminalButton();
+  {
+    const cc = chapters.find(c => c.path === path);
+    if (cc) {
+      setActiveBook(bookOf(cc));
+      // 跨大类跳转（顶栏切换、分享链接）时侧栏要换书重渲；同类内跳转保持展开状态
+      if ($('chapter-groups').dataset.book !== bookOf(cc)) renderSidebar();
+    }
+  }
   rememberChapterPath(path);
   pendingSection = opts.section || null;
   REPORTED_PCT[path] = REPORTED_PCT[path] || pctOf(path);
@@ -514,7 +947,7 @@ async function loadChapter(path, opts) {
 window.addEventListener('hashchange', () => {
   const p = decodePathFromHash();
   if (!p || p === 'roadmap') { showRoadmap(); return; }
-  if (p === 'profile' || p === 'settings') { showAccountPage(p); return; }
+  if (p === 'profile' || p === 'settings' || p === 'feedback') { showAccountPage(p); return; }
   if (p !== currentPath) {
     const known = chapters.some(c => c.path === p);
     if (known) loadChapter(p);
@@ -524,40 +957,82 @@ window.addEventListener('hashchange', () => {
 /* ══════════════ 路线图 ══════════════ */
 function renderRoadmap() {
   const groups = groupByPhase(chapters);
-  $('phase-cards').innerHTML = PHASES.map(ph => {
+  let cardSeq = 0;   // 入场瀑布的全局顺序（CSS 侧封顶 12 档延迟）
+  // 阶段瓦片：紧凑网格的一格（编号＋短标题＋完成数＋迷你进度条），点击进该阶段第一章。
+  // 旧版每个阶段一整行大卡（含简介与全部章节 chip），十六书展开后首页长逾十屏——
+  // 紧凑化后书内阶段并列成行，章节明细交给侧栏与书内目录。
+  const phaseTile = ph => {
     const list = groups.get(ph.key) || [];
     if (!list.length) return '';
     const done = list.filter(isComplete).length;
     const pct = Math.round(done / list.length * 100);
-    return `<section class="phase-card">
-      <header class="phase-head">
-        <span class="phase-badge">${ph.no}</span>
-        <h2 class="phase-title">${escapeHtml(ph.title)}</h2>
-        <span class="phase-range">${escapeHtml(phaseRangeText(ph, list))}</span>
+    const first = list.find(c => c.exists);
+    return `<button type="button" class="phase-tile" data-path="${escapeHtml(first ? first.path : '')}"${first ? '' : ' disabled'} style="--i:${cardSeq++ % 12}" title="${escapeHtml(ph.title)}">
+      <span class="pt-top"><span class="phase-badge">${ph.no}</span><span class="pt-count">${done}/${list.length}</span></span>
+      <span class="pt-title">${escapeHtml(phaseDisplayTitle(ph))}</span>
+      <span class="pt-bar"><span class="pt-fill" style="width:${pct}%"></span></span>
+    </button>`;
+  };
+  // 首页结构＝学部 → 书卡（书头行＋书级进度＋阶段瓦片网格）。
+  // 学部头与「规划中」行来自 DIVISIONS——它是全站的选课地图。
+  const bookBlock = b => {
+    const bookPhases = PHASES.filter(ph => phaseBook(ph.key) === b.key);
+    const list = bookPhases.flatMap(ph => groups.get(ph.key) || []);
+    if (!list.length) return '';
+    const done = list.filter(isComplete).length;
+    const pct = Math.round(done / list.length * 100);
+    const first = list.find(c => c.exists);
+    let body = '';
+    if (bookHasParts(b.key)) {
+      // 分部分的大类：每个部分一个瓦片段（部分名＋完成数一行的薄头）
+      for (const part of BOOK_PARTS[b.key]) {
+        const keys = part.phases.filter(k => bookPhases.some(ph => ph.key === k));
+        const tiles = keys.map(k => phaseTile(PHASES.find(p => p.key === k))).join('');
+        if (!tiles) continue;
+        const chs = keys.flatMap(k => groups.get(k) || []);
+        const d = chs.filter(isComplete).length;
+        body += `<div class="tile-part"><div class="tp-head"><span class="tp-label">${escapeHtml(part.label)}</span><span class="tp-count">${d}/${chs.length} 章</span></div><div class="book-tiles">${tiles}</div></div>`;
+      }
+    } else {
+      body = `<div class="book-tiles">${bookPhases.map(phaseTile).join('')}</div>`;
+    }
+    return `<section class="book-section" style="--i:${cardSeq++ % 12}">
+      <header class="book-head">
+        <span class="badge ${b.trackClass}">${b.trackLabel}</span>
+        <h2 class="book-title">${escapeHtml(b.label)}</h2>
+        <span class="book-count">${done} / ${list.length} 章完成</span>
+        ${first ? `<button type="button" class="book-enter" data-book="${b.key}" data-path="${escapeHtml(first.path)}">进入 →</button>` : ''}
       </header>
-      <p class="phase-desc">${escapeHtml(ph.desc)}</p>
-      <div class="phase-progress">
-        <div class="progress-track" role="progressbar" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="${list.length}" aria-label="${escapeHtml(ph.title)} 进度">
-          <div class="progress-fill" style="width:${pct}%"></div>
-        </div>
-        <span class="progress-text"><b>${done}</b>/${list.length} 已完成</span>
+      <p class="book-desc">${escapeHtml(b.desc || '')}</p>
+      <div class="progress-track book-track" role="progressbar" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="${list.length}" aria-label="${escapeHtml(b.label)} 进度">
+        <div class="progress-fill" style="width:${pct}%"></div>
       </div>
-      <div class="phase-chapters">
-        ${list.map(c => {
-          const missing = !c.exists;
-          return `<button type="button" class="chapter-chip${missing ? ' missing' : ''}" data-path="${escapeHtml(c.path)}"${missing ? ' disabled' : ''} title="${escapeHtml(c.name)}">
-            <span class="cc-name">${escapeHtml(c.name)}</span>${chapterBadges(c)}
-          </button>`;
-        }).join('')}
-      </div>
+      ${body}
     </section>`;
+  };
+  $('phase-cards').innerHTML = DIVISIONS.map(d => {
+    const cards = d.books.map(k => bookBlock(BOOKS.find(b => b.key === k))).join('');
+    if (!cards) return '';
+    const future = d.future.length ? `<p class="division-future">规划中：${escapeHtml(d.future.join('、'))}</p>` : '';
+    return `<div class="division-block">
+      <h2 class="division-head">${escapeHtml(d.label)}</h2>
+      ${cards}${future}
+    </div>`;
   }).join('');
 }
 
-// 路线图点击加载章节（事件委托）
+// 路线图点击加载章节（事件委托）；书头卡的「进入」与顶栏书签同一条路径
 $('phase-cards').addEventListener('click', e => {
+  const enter = e.target.closest('.book-enter');
+  if (enter && enter.dataset.path) {
+    setActiveBook(enter.dataset.book);
+    window.location.hash = encodeURIComponent(enter.dataset.path);
+    return;
+  }
   const chip = e.target.closest('.chapter-chip');
-  if (chip && !chip.disabled) loadChapter(chip.dataset.path);
+  if (chip && !chip.disabled) { loadChapter(chip.dataset.path); return; }
+  const tile = e.target.closest('.phase-tile');
+  if (tile && !tile.disabled && tile.dataset.path) loadChapter(tile.dataset.path);
 });
 
 // 「继续上次的章节」：直接走 hash 路由，和点侧栏章节是同一条路径
@@ -571,6 +1046,7 @@ function showRoadmap() {
   if (currentPath) accumulateSeconds(currentPath);
   resetAskForChapter();
   currentPath = null;
+  updateTerminalButton();
   ACCOUNT_PAGE = null;
   pendingSection = null;
   $('loading').hidden = true;
@@ -581,13 +1057,20 @@ function showRoadmap() {
   $('resume-bar').hidden = true;
   RESUME_OFFER = null;
   $('chapter-nav').classList.remove('show');
+  // 首页 = 学习路线图：十四书的书头卡＋各自的阶段时间线
   $('roadmap').hidden = false;
   tocHeadings = [];
   $('toc-list').hidden = true;
   $('toc-placeholder').hidden = false;
+  $('toc-rail').hidden = true;
+  $('comments').hidden = true;
+  $('comments-list').innerHTML = '';
+  COMMENTS_PATH = null;
+  COMMENTS_GEN += 1;
   updateAskFab();
   setActiveChapter(null);
-  document.title = '速通笔记 — 学习路线图';
+  updateTopnavActive();
+  document.title = 'CS Wiki · 学习路线图';
   window.scrollTo(0, 0);
 }
 
@@ -751,16 +1234,74 @@ function renderMath(m) {
   }
 }
 
+/* ══════════════ 零依赖降级渲染 ══════════════
+   CDN（marked / KaTeX / highlight.js）不可达时，旧做法是 showError 后 return——
+   结果是整页只剩一条错误提示（实测：jsdelivr 在国内网络下常被阻断，正文与公式
+   全不渲染、侧栏却正常，很容易被误判成站点坏了）。这里内置一个极简渲染器：
+   标题、段落、编号/无序列表、引用、代码围栏、分隔线、强调、链接、行内代码；
+   公式与表格按源码显示。目标是「能读」，不追求排版，顶部另加一条降级提示条。 */
+function fallbackMarkdown(md) {
+  const inline = s => escapeHtml(s)
+    .replace(/`([^`\n]+)`/g, (m, c) => '<code>' + c + '</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+  // 标题里的编号壳（$\rm \S \, 1.3$ / $\rm Chapter \, 3$）在降级模式下没有 KaTeX，
+  // 直接换成可读的「§1.3」「第 3 章」，否则每个标题都以一段 LaTeX 开头
+  const cleanHeading = s => s
+    .replace(/\$\\rm\s*\\S\s*\\,\s*([\dA-Za-z.]+)\$/g, '§$1')
+    .replace(/\$\\rm\s*Chapter\s*\\,\s*([\dA-Za-z]+)\$/g, '第 $1 章');
+  const lines = String(md).replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let list = null, fence = false, buf = [];
+  const flushPara = () => { if (buf.length) { out.push('<p>' + inline(buf.join(' ')) + '</p>'); buf = []; } };
+  const closeList = () => { if (list) { out.push('</' + list + '>'); list = null; } };
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (/^```/.test(line.trim())) {
+      flushPara(); closeList();
+      fence = !fence;
+      out.push(fence ? '<pre><code>' : '</code></pre>');
+      continue;
+    }
+    if (fence) { out.push(escapeHtml(raw)); continue; }
+    const h = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (h) { flushPara(); closeList(); const n = h[1].length; out.push('<h' + n + '>' + inline(cleanHeading(h[2])) + '</h' + n + '>'); continue; }
+    if (!line.trim()) { flushPara(); closeList(); continue; }
+    if (/^>\s?/.test(line)) { flushPara(); closeList(); out.push('<blockquote>' + inline(line.replace(/^>\s?/, '')) + '</blockquote>'); continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { flushPara(); closeList(); out.push('<hr>'); continue; }
+    const ul = /^\s{0,3}[-*+]\s+(.*)$/.exec(line);
+    const ol = /^\s{0,3}\d+\.\s+(.*)$/.exec(line);
+    if (ul || ol) {
+      flushPara();
+      const want = ul ? 'ul' : 'ol';
+      if (list && list !== want) closeList();
+      if (!list) { list = want; out.push('<' + want + '>'); }
+      out.push('<li>' + inline(ul ? ul[1] : ol[1]) + '</li>');
+      continue;
+    }
+    if (/^\|/.test(line)) { flushPara(); closeList(); out.push('<pre><code>' + escapeHtml(line) + '</code></pre>'); continue; }
+    buf.push(line);
+  }
+  flushPara(); closeList();
+  if (fence) out.push('</code></pre>');
+  return out.join('\n');
+}
+
+function degradedNotice() {
+  return '<div class="degraded-notice">渲染组件未能从 CDN 加载（marked / KaTeX / highlight.js），' +
+         '已切换为内置降级排版：正文可读，数学公式与代码高亮按源码显示。' +
+         '网络恢复后刷新页面即可恢复完整排版。</div>';
+}
+
 /* ══════════════ 正文渲染 ══════════════ */
 function renderContent(md, path) {
-  if (!cdnReady()) {
-    showError('渲染组件未加载',
-      'marked / KaTeX / highlight.js 未能从 CDN 加载，请检查网络后刷新页面。', null);
-    return;
-  }
+  // CDN 组件缺失不再放弃渲染：走内置降级渲染器（旧实现在这里 showError 后 return，
+  // 于是 CDN 被阻断的网络下整页空白——见 fallbackMarkdown 的说明）
+  const degraded = !cdnReady();
 
   const meta = chapters.find(c => c.path === path) || {};
-  const html = renderMarkdown(md);
+  const html = (degraded ? degradedNotice() : '') + (degraded ? fallbackMarkdown(md) : renderMarkdown(md));
   const content = $('content');
   content.innerHTML = html;
 
@@ -788,7 +1329,8 @@ function renderContent(md, path) {
     w.appendChild(t);
   });
 
-  // 代码高亮 —— 即使没有标注语言也尝试自动检测
+  // 代码高亮 —— 即使没有标注语言也尝试自动检测（demo 块已先被替换成交互组件）
+  setupDemos(content);
   content.querySelectorAll('pre code').forEach(block => {
     try {
       const hasLang = block.className.includes('language-') && block.className !== 'language-';
@@ -810,10 +1352,14 @@ function renderContent(md, path) {
   // 本章目录（H2/H3）
   buildToc();
   setupSelfCheck();
+  setupAnswerFold();
   setupAskButtons();
+  setupGradeButtons();
+  loadComments(path);
 
-  // 侧边栏高亮当前章节（列表与路线图 chips）
+  // 侧边栏与顶栏高亮当前章节
   setActiveChapter(path);
+  updateTopnavActive();
 
   // 章节头部信息
   $('doc-head').hidden = false;
@@ -827,7 +1373,7 @@ function renderContent(md, path) {
 
   // 上一章 / 下一章
   updatePrevNext();
-  document.title = (meta.name || '') + ' — 速通笔记';
+  document.title = (meta.name || '') + ' — CS Wiki';
 
   showContent();
 
@@ -860,6 +1406,12 @@ function setActiveChapter(path) {
     if (group) {
       group.classList.remove('collapsed');
       group.querySelector('.group-head')?.setAttribute('aria-expanded', 'true');
+    }
+    // 章在部分层里：所属部分若被手动折叠过，这里一并展开，保证章可见
+    const block = active.closest('.part-block');
+    if (block) {
+      block.classList.remove('collapsed');
+      block.querySelector('.part-head')?.setAttribute('aria-expanded', 'true');
     }
     active.scrollIntoView({ block: 'nearest' });
   }
@@ -1032,15 +1584,21 @@ async function renderMermaid(container) {
 }
 
 /* ══════════════ 章节导航 / 滚动定位 ══════════════ */
-function updatePrevNext() {
+/* 相邻章节：按 chapters 的阅读顺序取上一/下一「存在」的章（可能跨册，与翻页按钮同源） */
+function chapterNeighbors() {
   const idx = chapters.findIndex(c => c.path === currentPath);
-  const nav = $('chapter-nav');
-  const prevBtn = $('prev-btn'), nextBtn = $('next-btn');
-  if (idx < 0) { nav.classList.remove('show'); return; }
-
+  if (idx < 0) return { prev: null, next: null };
   let prev = null, next = null;
   for (let i = idx - 1; i >= 0 && !prev; i--) if (chapters[i].exists) prev = chapters[i];
   for (let i = idx + 1; i < chapters.length && !next; i++) if (chapters[i].exists) next = chapters[i];
+  return { prev, next };
+}
+
+function updatePrevNext() {
+  const nav = $('chapter-nav');
+  const prevBtn = $('prev-btn'), nextBtn = $('next-btn');
+  const { prev, next } = chapterNeighbors();
+  if (!prev && !next) { nav.classList.remove('show'); return; }
 
   prevBtn.disabled = !prev;
   nextBtn.disabled = !next;
@@ -1440,6 +1998,11 @@ function showContent() {
 
 /* ══════════════ 移动端侧边栏 ══════════════ */
 function toggleSidebar() {
+  if (isDesktopSidebar()) {
+    // 桌面端：汉堡按钮只在侧栏收起时出现，点它就是展开
+    setSidebarCollapsed(false);
+    return;
+  }
   const open = $('sidebar').classList.toggle('open');
   $('overlay').classList.toggle('show', open);
   $('menu-toggle').setAttribute('aria-expanded', String(open));
@@ -1501,8 +2064,13 @@ let scrollThrottle = 0;
 window.addEventListener('scroll', () => {
   const doc = document.documentElement;
   const max = doc.scrollHeight - doc.clientHeight;
-  const pct = max > 0 ? (doc.scrollTop / max) * 100 : 0;
-  $('progress-bar').style.width = pct + '%';
+  // transform 驱动（GPU 合成，不触发重排）；非章节视图（路线图/账号页）收回
+  if (currentPath) {
+    const p = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
+    $('progress-bar').style.transform = 'scaleX(' + p.toFixed(4) + ')';
+  } else {
+    $('progress-bar').style.transform = 'scaleX(0)';
+  }
   updateTocSpy();
 
   const now = Date.now();
@@ -1554,7 +2122,9 @@ function cleanSearchText(input) {
 // 只改阅读器内的显示状态，不动正文文件；勾选结果按章节存 localStorage。
 function setupSelfCheck() {
   const content = $('content');
-  const items = content.querySelectorAll('blockquote ul li');
+  // 自检清单是编号列表（全书列表一律编号），选择器必须同时认 ol——
+  // 只匹配 ul 时这功能静默失效（用户视角就是「自检框点不了」）
+  const items = content.querySelectorAll('blockquote ul li, blockquote ol li');
   if (!items.length) return;
   const key = 'selfcheck:' + (currentPath || '');
   let saved = [];
@@ -1562,29 +2132,349 @@ function setupSelfCheck() {
   const set = new Set(Array.isArray(saved) ? saved : []);
 
   items.forEach((li, i) => {
-    const text = li.textContent.trim();
-    if (text.charAt(0) !== '□') return;          // 仅"□ 前置项"可勾选
+    // 只认「首个文本节点以 □ 开头」的项；勾选状态只替换那个标记字符，
+    // 不重建 li 的 innerHTML——否则 KaTeX 渲染结果与回读链接会被 textContent 拍平
+    const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
+    const firstText = walker.nextNode();
+    if (!firstText || !/^\s*□/.test(firstText.nodeValue)) return;
     li.classList.add('checkable');
     li.setAttribute('role', 'checkbox');
+    li.tabIndex = 0;
+    li.title = '点击勾选／取消（回车或空格同样有效）';
     const paint = on => {
-      li.textContent = (on ? '✓ ' : '□ ') + text.slice(1).trim();
+      firstText.nodeValue = firstText.nodeValue.replace(/^\s*[□✓]/, on ? '✓' : '□');
       li.classList.toggle('checked', on);
       li.setAttribute('aria-checked', String(on));
     };
     paint(set.has(i));
-    li.addEventListener('click', () => {
+    const toggle = e => {
+      if (e.target.closest('a')) return;   // 点回读链接时只跳转，不切换勾选
       const on = !set.has(i);
       if (on) set.add(i); else set.delete(i);
       paint(on);
       try { localStorage.setItem(key, JSON.stringify([...set])); } catch (e) { /* 存储不可用时忽略 */ }
       saveChecksToServer(currentPath, [...set]);
+    };
+    li.addEventListener('click', toggle);
+    li.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); }
     });
   });
 }
 
-/* ══════════════ 主题：深色 / 浅色 ══════════════ */
+/* ── 答案折叠：章末「本章自测答案」与复习章「答案与提示」默认收起 ──
+   教材合同要求闭卷作答，但正文里答案一直平铺可见；这里把该节包进折叠区。
+   H2 标题保留在 DOM 里（本章目录的锚点不动），折叠的是其后的答案本体，
+   遇到下一个 H2 或分隔线为止——桥接段与「你现在能」保持在折叠区外。 */
+function setupAnswerFold() {
+  const content = $('content');
+  [...content.querySelectorAll('h2')].forEach(h => {
+    if (h.closest('.answer-fold')) return;
+    // H2 标题里带 KaTeX 源码前缀（章号公式在最前），匹配只认标题结尾这几个字
+    if (!/(本章自测答案|答案与提示)\s*$/.test((h.textContent || '').trim())) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'answer-fold';
+    h.replaceWith(wrap);
+    wrap.appendChild(h);
+    const body = document.createElement('div');
+    body.className = 'answer-body';
+    body.hidden = true;
+    let node = wrap.nextSibling;
+    while (node) {
+      if (node.nodeType === 1 && (node.tagName === 'H2' || node.tagName === 'HR')) break;
+      const next = node.nextSibling;
+      body.appendChild(node);
+      node = next;
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'answer-toggle';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<span class="af-caret" aria-hidden="true">▸</span><span class="af-label">展开答案</span><span class="af-note">先闭卷作答，再核对</span>';
+    wrap.appendChild(btn);
+    wrap.appendChild(body);
+    btn.addEventListener('click', () => {
+      const open = !body.hidden;
+      body.hidden = open;
+      wrap.classList.toggle('open', !open);
+      btn.setAttribute('aria-expanded', String(!open));
+      btn.querySelector('.af-caret').textContent = open ? '▸' : '▾';
+      btn.querySelector('.af-label').textContent = open ? '展开答案' : '收起答案';
+    });
+  });
+}
+
+/* ── 参数演示：章节里的 ```demo-<name> 代码块会被替换成交互组件 ──
+   组件三守则（与可视化纪律一致）：步进/拖拽/自动共用一条幂等 render；
+   数据层动画线性（步进是逐格揭示，不做假插值）；中文标签走 DOM、数字
+   tabular-nums。块体是 JSON 配置，组件逻辑全部住在本文件里（CSP 禁内联）。 */
+const DEMO_BUILDERS = {};
+
+function demoShell(host, cfg, fallbackTitle) {
+  host.innerHTML = `<div class="demo-head"><span class="demo-tag">互动</span><span class="demo-title">${escapeHtml(cfg.title || fallbackTitle)}</span></div><div class="demo-body"></div>` +
+    (cfg.hint ? `<div class="demo-hint">${escapeHtml(cfg.hint)}</div>` : '');
+  return host.querySelector('.demo-body');
+}
+
+/* gamma：黑与白按比例混合，直接平均 sRGB 与线性平均并排 */
+DEMO_BUILDERS.gamma = function (host, cfg) {
+  const body = demoShell(host, cfg, '拖动混合比例：直接平均 vs 线性平均');
+  const s2l = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const l2s = v => Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+  body.innerHTML = `
+    <div class="demo-swatches">
+      <figure class="demo-swatch"><div class="sw" data-sw="direct"></div><figcaption>直接平均 sRGB<span class="demo-val" data-val="direct"></span></figcaption></figure>
+      <figure class="demo-swatch"><div class="sw" data-sw="linear"></div><figcaption>线性平均再转回<span class="demo-val" data-val="linear"></span></figcaption></figure>
+    </div>
+    <div class="demo-slider-row">
+      <label>白占比例 <b class="demo-val" data-val="t"></b></label>
+      <input type="range" min="0" max="100" value="50" aria-label="白色所占混合比例">
+    </div>`;
+  const slider = body.querySelector('input');
+  const swD = body.querySelector('[data-sw="direct"]'), swL = body.querySelector('[data-sw="linear"]');
+  const vD = body.querySelector('[data-val="direct"]'), vL = body.querySelector('[data-val="linear"]'), vT = body.querySelector('[data-val="t"]');
+  const render = () => {
+    const t = slider.value / 100;
+    const d = Math.round(255 * t), l = l2s(t);
+    swD.style.background = swL.style.background = '';
+    swD.style.background = `rgb(${d},${d},${d})`;
+    swL.style.background = `rgb(${l},${l},${l})`;
+    vD.textContent = d; vL.textContent = l; vT.textContent = slider.value + '%';
+  };
+  slider.addEventListener('input', render);
+  render();
+};
+
+/* bresenham：方格纸逐步走，判号与抬 y 一格一格揭示（不做假插值） */
+DEMO_BUILDERS.bresenham = function (host, cfg) {
+  const dx = cfg.dx || 5, dy = cfg.dy || 3;
+  const body = demoShell(host, cfg, 'Bresenham 逐步走');
+  const trace = [];
+  let y = 0, d = 2 * dy - dx;
+  for (let x = 0; x <= dx; x++) {
+    const up = d > 0;
+    trace.push({ x, y, d, up });
+    if (up) { y += 1; d += 2 * (dy - dx); } else { d += 2 * dy; }
+  }
+  body.innerHTML = `
+    <div class="demo-bres">
+      <div class="bres-grid" style="--cols:${dx + 1}" role="img" aria-label="Bresenham 步进网格"></div>
+      <div class="bres-side">
+        <div class="bres-read">x = <b class="demo-val" data-bres="x"></b>　y = <b class="demo-val" data-bres="y"></b></div>
+        <div class="bres-read">决策量 d = <b class="demo-val" data-bres="d"></b></div>
+        <div class="bres-read" data-bres="verdict"></div>
+        <div class="demo-ctrl">
+          <button type="button" data-act="prev" aria-label="上一步">⟵ 上一步</button>
+          <button type="button" data-act="next" aria-label="下一步">下一步 ⟶</button>
+          <button type="button" data-act="auto" aria-label="自动播放">▶ 自动</button>
+          <button type="button" data-act="reset" aria-label="重置">↺</button>
+        </div>
+        <div class="bres-step demo-val" data-bres="step"></div>
+      </div>
+    </div>`;
+  const grid = body.querySelector('.bres-grid');
+  for (let ry = dy; ry >= 0; ry--)
+    for (let rx = 0; rx <= dx; rx++) {
+      const cell = document.createElement('span');
+      cell.className = 'bres-cell';
+      cell.dataset.x = rx; cell.dataset.y = ry;
+      grid.appendChild(cell);
+    }
+  const cells = {};
+  grid.querySelectorAll('.bres-cell').forEach(c => { cells[c.dataset.x + ',' + c.dataset.y] = c; });
+  const el = k => body.querySelector(`[data-bres="${k}"]`);
+  const total = trace.length;
+  let step = 0, timer = null;
+  const render = () => {
+    Object.values(cells).forEach(c => { c.className = 'bres-cell'; });
+    for (let i = 0; i < Math.min(step, total); i++) {
+      const t = trace[i];
+      cells[t.x + ',' + t.y].classList.add('filled');
+    }
+    if (step < total) {
+      const t = trace[step];
+      cells[t.x + ',' + t.y].classList.add('current');
+      el('x').textContent = t.x; el('y').textContent = t.y; el('d').textContent = t.d;
+      el('verdict').textContent = t.up ? 'd > 0：中点在直线下方，抬 y' : 'd ≤ 0：y 不动，d 加 2·dy';
+    } else {
+      el('x').textContent = dx; el('y').textContent = dy; el('d').textContent = '—';
+      el('verdict').textContent = '线段到头，填格完成';
+    }
+    el('step').textContent = `第 ${Math.min(step, total)} / ${total} 步（每步一次符号判断）`;
+    body.querySelector('[data-act="auto"]').textContent = timer ? '⏸ 暂停' : '▶ 自动';
+  };
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  body.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!act) return;
+    if (act === 'prev') { stop(); step = Math.max(0, step - 1); }
+    if (act === 'next') { stop(); step = Math.min(total, step + 1); }
+    if (act === 'reset') { stop(); step = 0; }
+    if (act === 'auto') {
+      if (timer) stop();
+      else timer = setInterval(() => {
+        if (step >= total) { stop(); render(); return; }
+        step += 1; render();
+      }, 700);
+    }
+    render();
+  });
+  render();
+};
+
+/* depth：对数滑块拖视距，看 NDC 深度如何把精度堆给近处 */
+DEMO_BUILDERS.depth = function (host, cfg) {
+  const near = cfg.near || 0.1, far = cfg.far || 100;
+  const body = demoShell(host, cfg, '拖动视距：NDC 深度的非线性');
+  const k = (far + near) / (far - near), m = 2 * far * near / (far - near);
+  const ndc = d => k - m / d;   // 看向 -z、视距 d>0：Z_ndc = k − m/d（与 §3.3 表同一公式）
+  body.innerHTML = `
+    <div class="demo-slider-row">
+      <label>视距 d = <b class="demo-val" data-d></b>（滑块是对数刻度）</label>
+      <input type="range" min="0" max="1000" value="500" aria-label="相机空间距离，对数刻度">
+    </div>
+    <div class="depth-bar">
+      <span class="depth-end">near：−1</span>
+      <div class="depth-track"><div class="depth-marker" data-marker></div></div>
+      <span class="depth-end">far：+1</span>
+    </div>
+    <div class="depth-read">NDC z = <b class="demo-val" data-ndc></b>　·　比它远 1% 的墙，NDC 只差 <b class="demo-val" data-gap></b>——这就是远处 z-fighting 的来源</div>`;
+  const slider = body.querySelector('input');
+  const marker = body.querySelector('[data-marker]');
+  const outN = body.querySelector('[data-ndc]'), outG = body.querySelector('[data-gap]'), outD = body.querySelector('[data-d]');
+  const render = () => {
+    const d = near * Math.pow(far / near, slider.value / 1000);
+    const z = ndc(d);
+    outD.textContent = d >= 1 ? d.toFixed(1) : d.toFixed(2);
+    outN.textContent = z.toFixed(4);
+    outG.textContent = Math.abs(ndc(d * 1.01) - z).toFixed(5);
+    marker.style.left = ((z + 1) / 2 * 100).toFixed(2) + '%';
+  };
+  slider.addEventListener('input', render);
+  render();
+};
+
+/* dh：拖双方私钥，看共享秘密由交换律必然一致 */
+DEMO_BUILDERS.dh = function (host, cfg) {
+  const p = cfg.p || 23, g = cfg.g || 5;
+  const body = demoShell(host, cfg, '拖动双方私钥：共享秘密必然一致');
+  body.innerHTML = `
+    <div class="dh-grid">
+      <div class="dh-side"><h4>Alice</h4>
+        <input type="range" min="2" max="21" value="6" data-a aria-label="Alice 的私钥 a">
+        <div class="dh-line">a = <b class="demo-val" data-av></b>　A = g<sup>a</sup> mod p = <b class="demo-val" data-A></b></div>
+      </div>
+      <div class="dh-mid">
+        <div class="dh-line">公开：p = ${p}，g = ${g}</div>
+        <div class="dh-secret">共享秘密 g<sup>ab</sup> mod p = <b class="demo-val" data-S></b></div>
+        <div class="dh-line">Alice 算 B<sup>a</sup>，Bob 算 A<sup>b</sup>——交换律保证相等</div>
+      </div>
+      <div class="dh-side"><h4>Bob</h4>
+        <input type="range" min="2" max="21" value="15" data-b aria-label="Bob 的私钥 b">
+        <div class="dh-line">b = <b class="demo-val" data-bv></b>　B = g<sup>b</sup> mod p = <b class="demo-val" data-B></b></div>
+      </div>
+    </div>`;
+  const a = body.querySelector('[data-a]'), b = body.querySelector('[data-b]');
+  const render = () => {
+    const av = +a.value, bv = +b.value;
+    const A = Math.pow(g, av) % p, B = Math.pow(g, bv) % p;
+    body.querySelector('[data-av]').textContent = av;
+    body.querySelector('[data-bv]').textContent = bv;
+    body.querySelector('[data-A]').textContent = A;
+    body.querySelector('[data-B]').textContent = B;
+    body.querySelector('[data-S]').textContent = Math.pow(B, av) % p;
+  };
+  a.addEventListener('input', render);
+  b.addEventListener('input', render);
+  render();
+};
+
+/* pigou：拖下路流量比例，看 L(x) 在均衡处高于最优（Okabe-Ito 两色） */
+DEMO_BUILDERS.pigou = function (host, cfg) {
+  const body = demoShell(host, cfg, '拖动下路流量比例：社会成本 L(x) 的曲线');
+  body.innerHTML = `
+    <div class="pigou-wrap">
+      <canvas data-cv height="190"></canvas>
+      <div class="pigou-read">下路比例 x = <b class="demo-val" data-x></b>　平均代价 L(x) = <b class="demo-val" data-L></b></div>
+      <div class="demo-slider-row"><input type="range" min="0" max="100" value="100" aria-label="下路流量比例"></div>
+    </div>`;
+  const cv = body.querySelector('canvas'), ctx = cv.getContext('2d');
+  const slider = body.querySelector('input');
+  const L = x => x * x + (1 - x);          // 与 §6.2 同一公式
+  const Y0 = 0.70, Y1 = 1.05;              // 纵轴裁剪聚焦差异（位置编码允许；披露于图注）
+  let W = 480;
+  const X = f => 44 + f * (W - 60);
+  const Y = v => 158 - (v - Y0) / (Y1 - Y0) * 138;
+  const render = () => {
+    const x = slider.value / 100;
+    ctx.clearRect(0, 0, W, 190);
+    ctx.font = '11px system-ui';
+    ctx.fillStyle = '#94a3b8';
+    ctx.strokeStyle = 'rgba(148,163,184,0.3)';
+    ctx.lineWidth = 1;
+    [0.75, 1.0].forEach(v => {             // 只画水平网格线（读的是 y）
+      ctx.beginPath(); ctx.moveTo(44, Y(v)); ctx.lineTo(W - 16, Y(v)); ctx.stroke();
+      ctx.fillText(v.toFixed(2), 10, Y(v) + 4);
+    });
+    [0, 0.5, 1].forEach(f => ctx.fillText(f.toFixed(1), X(f) - 7, 182));
+    ctx.strokeStyle = '#56b4e9'; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let i = 0; i <= 100; i++) {
+      const f = i / 100, px = X(f), py = Y(L(f));
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#e69f00'; ctx.beginPath(); ctx.arc(X(1), Y(1), 5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#56b4e9'; ctx.beginPath(); ctx.arc(X(0.5), Y(0.75), 5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#94a3b8'; ctx.fillText('均衡', X(1) - 20, Y(1) - 10); ctx.fillText('最优', X(0.5) - 10, Y(0.75) - 10);
+    ctx.fillStyle = '#f87171'; ctx.beginPath(); ctx.arc(X(x), Y(L(x)), 6, 0, 7); ctx.fill();
+    body.querySelector('[data-x]').textContent = x.toFixed(2);
+    body.querySelector('[data-L]').textContent = L(x).toFixed(4);
+  };
+  const fit = () => {
+    W = cv.clientWidth || 480;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = 190 * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    render();
+  };
+  slider.addEventListener('input', render);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(cv);
+  fit();
+};
+
+function setupDemos(content) {
+  content.querySelectorAll('pre code[class*="language-demo-"]').forEach(codeEl => {
+    const m = /language-demo-([\w-]+)/.exec(codeEl.className);
+    const builder = m && DEMO_BUILDERS[m[1]];
+    const pre = codeEl.closest('pre');
+    if (!builder || !pre) return;
+    let cfg = {};
+    try { cfg = JSON.parse(codeEl.textContent) || {}; } catch (e) { cfg = {}; }
+    const host = document.createElement('div');
+    host.className = 'demo-widget';
+    pre.replaceWith(host);
+    builder(host, cfg);
+  });
+}
+
+/* ══════════════ 主题与阅读设置 ══════════════ */
+const THEMES = ['dark', 'light', 'sepia'];
+const ACCENTS = ['brass', 'indigo', 'jade', 'violet', 'rose', 'moss'];
+const READER_PREFS = { font: 'm', measure: 'standard', accent: 'brass' };
+
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+  const value = THEMES.includes(theme) ? theme : 'dark';
+  document.documentElement.setAttribute('data-theme', value);
+  // 让原生控件（滚动条、输入框）跟随主题明暗
+  document.documentElement.style.colorScheme = value === 'dark' ? 'dark' : 'light';
+}
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'dark';
+}
+function setTheme(theme) {
+  applyTheme(theme);
+  try { localStorage.setItem('reader-theme', currentTheme()); } catch (e) { /* 忽略 */ }
+  paintReadingSettings();
 }
 function initTheme() {
   let saved = null;
@@ -1593,15 +2483,194 @@ function initTheme() {
     && window.matchMedia('(prefers-color-scheme: light)').matches;
   applyTheme(saved || (prefersLight ? 'light' : 'dark'));
 }
+
+function paintReadingSettings() {
+  document.querySelectorAll('[data-font-choice]').forEach(b => {
+    b.classList.toggle('on', b.dataset.fontChoice === READER_PREFS.font);
+  });
+  document.querySelectorAll('[data-measure-choice]').forEach(b => {
+    b.classList.toggle('on', b.dataset.measureChoice === READER_PREFS.measure);
+  });
+  document.querySelectorAll('[data-theme-choice]').forEach(b => {
+    b.classList.toggle('on', b.dataset.themeChoice === currentTheme());
+  });
+  document.querySelectorAll('[data-accent-choice]').forEach(b => {
+    b.classList.toggle('on', b.dataset.accentChoice === READER_PREFS.accent);
+  });
+  const btn = $('reader-settings');
+  if (btn) btn.setAttribute('aria-expanded', $('reading-popover').hidden ? 'false' : 'true');
+}
+
+function applyReaderPrefs() {
+  document.documentElement.setAttribute('data-font', READER_PREFS.font);
+  document.documentElement.setAttribute('data-measure', READER_PREFS.measure);
+  if (ACCENTS.includes(READER_PREFS.accent)) {
+    document.documentElement.setAttribute('data-accent', READER_PREFS.accent);
+  }
+  paintReadingSettings();
+}
+function saveReaderPrefs() {
+  try { localStorage.setItem('reader-prefs', JSON.stringify(READER_PREFS)); } catch (e) { /* 忽略 */ }
+  applyReaderPrefs();
+}
+function initReaderPrefs() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('reader-prefs') || 'null'); } catch (e) { saved = null; }
+  if (saved && typeof saved === 'object') {
+    if (['s', 'm', 'l', 'xl'].includes(saved.font)) READER_PREFS.font = saved.font;
+    if (['narrow', 'standard', 'wide', 'xwide'].includes(saved.measure)) READER_PREFS.measure = saved.measure;
+    if (saved.accent && ACCENTS.includes(saved.accent)) READER_PREFS.accent = saved.accent;
+  }
+  applyReaderPrefs();
+}
+
+initTheme();
+initReaderPrefs();
+
+/* 侧栏折叠：桌面端点侧栏里的箭头直接收起；移动端仍走抽屉 */
+const SIDEBAR_KEY = 'reader-sidebar-collapsed';
+let SIDEBAR_COLLAPSED = false;
+function isDesktopSidebar() {
+  return window.matchMedia('(min-width: 861px)').matches;
+}
+function applySidebarCollapsed() {
+  const collapsed = SIDEBAR_COLLAPSED && isDesktopSidebar();
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  const btn = $('sidebar-collapse');
+  if (btn) {
+    const label = collapsed ? '展开目录' : '收起目录';
+    btn.setAttribute('aria-expanded', String(!collapsed));
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
+}
+function setSidebarCollapsed(value) {
+  SIDEBAR_COLLAPSED = !!value;
+  try { localStorage.setItem(SIDEBAR_KEY, SIDEBAR_COLLAPSED ? '1' : '0'); } catch (e) { /* 忽略 */ }
+  applySidebarCollapsed();
+}
+try { SIDEBAR_COLLAPSED = localStorage.getItem(SIDEBAR_KEY) === '1'; } catch (e) { /* 忽略 */ }
+applySidebarCollapsed();
+const sidebarCollapseBtn = $('sidebar-collapse');
+if (sidebarCollapseBtn) {
+  sidebarCollapseBtn.addEventListener('click', () => setSidebarCollapsed(!SIDEBAR_COLLAPSED));
+}
+window.addEventListener('resize', applySidebarCollapsed);
+
 const themeToggle = $('theme-toggle');
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {
-    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    applyTheme(next);
-    try { localStorage.setItem('reader-theme', next); } catch (e) { /* 忽略 */ }
+    const i = THEMES.indexOf(currentTheme());
+    setTheme(THEMES[(i + 1) % THEMES.length]);
   });
 }
-initTheme();
+
+/* 阅读设置浮层：点按钮打开，点外部 / Esc 关闭 */
+const readerSettingsBtn = $('reader-settings');
+const readingPopover = $('reading-popover');
+if (readerSettingsBtn && readingPopover) {
+  readerSettingsBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    readingPopover.hidden = !readingPopover.hidden;
+    if (!readingPopover.hidden) closeAccountMenu();
+    paintReadingSettings();
+  });
+  readingPopover.addEventListener('click', event => event.stopPropagation());
+  document.addEventListener('click', () => {
+    if (!readingPopover.hidden) {
+      readingPopover.hidden = true;
+      paintReadingSettings();
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !readingPopover.hidden) {
+      readingPopover.hidden = true;
+      paintReadingSettings();
+      readerSettingsBtn.focus();
+    }
+  });
+  readingPopover.querySelectorAll('[data-font-choice]').forEach(b => {
+    b.addEventListener('click', () => {
+      READER_PREFS.font = b.dataset.fontChoice;
+      saveReaderPrefs();
+    });
+  });
+  readingPopover.querySelectorAll('[data-measure-choice]').forEach(b => {
+    b.addEventListener('click', () => {
+      READER_PREFS.measure = b.dataset.measureChoice;
+      saveReaderPrefs();
+    });
+  });
+  readingPopover.querySelectorAll('[data-theme-choice]').forEach(b => {
+    b.addEventListener('click', () => setTheme(b.dataset.themeChoice));
+  });
+  readingPopover.querySelectorAll('[data-accent-choice]').forEach(b => {
+    b.addEventListener('click', () => {
+      READER_PREFS.accent = b.dataset.accentChoice;
+      saveReaderPrefs();
+    });
+  });
+}
+
+/* ══════════════ 在线终端（服务器版功能） ══════════════
+   pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
+   ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
+   /terminal/，入口永远隐藏（body.no-server）。 */
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net']);
+// 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
+const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
+const terminalOpenBtn = $('terminal-open');
+const terminalDock = $('terminal-dock');
+const terminalFrame = $('terminal-frame');
+
+function terminalBookEnabled() {
+  return SERVER_MODE && currentPath && TERMINAL_BOOKS.has(activeBook());
+}
+function updateTerminalButton() {
+  if (terminalOpenBtn) terminalOpenBtn.hidden = !terminalBookEnabled();
+}
+function openTerminalDock() {
+  if (!terminalDock || !terminalFrame) return;
+  if (terminalFrame.getAttribute('src') === 'about:blank') terminalFrame.src = 'terminal/';
+  clearTimeout(terminalCloseTimer);
+  terminalDock.classList.remove('closing');
+  terminalDock.hidden = false;
+  if (terminalOpenBtn) terminalOpenBtn.setAttribute('aria-expanded', 'true');
+}
+let terminalCloseTimer = 0;
+function closeTerminalDock() {
+  if (!terminalDock || terminalDock.hidden || terminalDock.classList.contains('closing')) return;
+  // 出场动画跑完再真正隐藏（比入场快，符合「出场比入场快」的惯例）
+  terminalDock.classList.add('closing');
+  if (terminalOpenBtn) terminalOpenBtn.setAttribute('aria-expanded', 'false');
+  terminalCloseTimer = setTimeout(() => {
+    terminalDock.classList.remove('closing');
+    terminalDock.hidden = true;
+  }, 200);
+}
+function toggleTerminalDock() {
+  if (terminalDock && !terminalDock.hidden) { closeTerminalDock(); return; }
+  if (!ACCOUNT) { openAuth('login'); return; }
+  openTerminalDock();
+}
+if (terminalOpenBtn) terminalOpenBtn.addEventListener('click', toggleTerminalDock);
+const terminalCloseBtn = $('terminal-close');
+if (terminalCloseBtn) terminalCloseBtn.addEventListener('click', closeTerminalDock);
+const terminalPopoutBtn = $('terminal-popout');
+if (terminalPopoutBtn) terminalPopoutBtn.addEventListener('click', () => {
+  window.open('terminal/', '_blank', 'noopener');
+});
+const terminalResizeBtn = $('terminal-resize');
+if (terminalResizeBtn) terminalResizeBtn.addEventListener('click', () => {
+  const big = document.body.classList.toggle('terminal-big');
+  terminalResizeBtn.textContent = big ? '还原' : '放大';
+});
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === '`' && terminalOpenBtn && !terminalOpenBtn.hidden) {
+    e.preventDefault();
+    toggleTerminalDock();
+  }
+});
 
 /* ══════════════ 账号 · 进度 · 问 AI（服务器版功能） ══════════════ */
 // 仅当页面同源存在 api/health 时启用；GitHub Pages 静态版探测失败，
@@ -1614,6 +2683,19 @@ let AUTH_MODE = 'login';     // login | register | password
 let ASK_SECTION = null;      // {id, title} —— 仅用于「下一条提问」的上下文
 let ASK_BUSY = false;
 let ASK_OPEN = false;        // 聊天窗口是否可见（关闭时不切章也要保留对话视图）
+let ASK_CLOSE_TIMER = null;  // 退场动画计时器（关闭先播动画，播完再 hidden）
+let ASK_MODE = 'chat';       // chat | explain | example | summary | quiz
+let ASK_QUOTE = '';          // 划词引用 / 选中文本
+let ASK_ABORT = null;        // 当前流式请求的 AbortController
+let ASK_SUPPRESS_HISTORY = false;  // 「新对话」后不要立刻把旧记录拉回来
+let ASK_LOG_GEN = 0;         // 对话区版本号：防止历史请求晚到后覆盖新提问
+const ASK_MODES = {
+  chat:    { label: '自由提问', placeholder: '就当前小节提问，例如：为什么这里说 300 个周期而不是 300 条指令？' },
+  explain: { label: '解释这段', placeholder: '想让我解释哪段？可以先在正文里划词，再打开这里。' },
+  example: { label: '举个例子', placeholder: '想让我用例子说明哪个概念？' },
+  summary: { label: '本节小结', placeholder: '可以直接发送，或补充你想强调的重点。' },
+  quiz:    { label: '自测 3 题', placeholder: '可以直接发送，或指定难度与考点。' },
+};
 const ASK_HISTORY_CACHE = {}; // {path: [{question, answer, created_at}]}，本次会话内的对话缓存
 const CHECK_SAVE_DELAY = 700;
 const checkTimers = new Map();
@@ -1705,14 +2787,39 @@ async function detectServer() {
   const chip = $('account-chip');
   if (chip) chip.hidden = !SERVER_MODE;
   updateAskFab();
+  updateTerminalButton();   // 探测晚于首章加载完成时补刷终端入口
   if (!SERVER_MODE) {
     // 静态版也把本地阅读进度读回来，否则 ✓ 与进度条不显示
     await loadServerProgress();
     refreshProgressMarks();
     if (currentPath) updateResumeBar();
-    return;
+    return false;
   }
   await refreshAccount();
+  return true;
+}
+
+async function loadArticleMeta() {
+  // 管理员在后台改的标题/分类/状态/阶段/隐藏，作为构建产物之上的覆盖层。
+  try {
+    const data = await api('/article-meta');
+    const overrides = new Map(((data && data.items) || []).map(item => [item.path, item]));
+    const base = CHAPTERS_BASE.length ? CHAPTERS_BASE : chapters;
+    chapters = base
+      .filter(chapter => !(overrides.get(chapter.path) || {}).hidden)
+      .map(chapter => {
+        const overlay = overrides.get(chapter.path);
+        if (!overlay) return chapter;
+        return Object.assign({}, chapter, {
+          name: overlay.title || chapter.name,
+          track: overlay.track || chapter.track,
+          status: overlay.status || chapter.status,
+          phase: overlay.phase || chapter.phase,
+        });
+      });
+  } catch (e) {
+    // 覆盖层读取失败时保持构建期 chapters.json 的数据
+  }
 }
 
 /* —— 账号状态 —— */
@@ -1764,11 +2871,13 @@ function renderAccount() {
     name.textContent = '登录';
     initial.textContent = '登';
     if (badge) badge.hidden = true;
-    $('account-menu').hidden = true;
+    closeAccountMenu();
   }
   // 供样式判断是否显示「收藏 / 问 AI」这类需要账号的控件
   document.body.classList.toggle('has-account', !!ACCOUNT);
   updateMyProgress();
+  renderAccountPageTabs();
+  renderCommentsComposer();
   // 登录状态变化会影响星标可点击性，重新上色一次
   if (currentPath && $('content').querySelector('.h-mark')) applyBookmarkMarks();
 }
@@ -1780,7 +2889,7 @@ function openAuth(mode) {
   $('auth-modal').hidden = false;
   $('auth-tabs').hidden = isPwd;
   $('auth-title').textContent = isPwd ? '修改密码'
-    : (AUTH_MODE === 'register' ? '注册速通笔记' : '登录速通笔记');
+    : (AUTH_MODE === 'register' ? '注册 CS Wiki' : '登录 CS Wiki');
   $('auth-user-wrap').hidden = isPwd;
   $('auth-old-wrap').hidden = !isPwd;
   $('auth-pass2-wrap').hidden = AUTH_MODE === 'login';
@@ -2041,8 +3150,12 @@ function saveChecksToServer(path, checks) {
 function updateAskFab() {
   const fab = $('ask-fab');
   if (!fab) return;
-  // 窗口打开时隐藏悬浮按钮，避免叠在一起
-  fab.hidden = !(SERVER_MODE && !!currentPath) || ASK_OPEN;
+  // 悬浮按钮常驻：打开时滑到抽屉左缘、变成「收起」开关——同一个按钮负责开也负责关
+  fab.hidden = !(SERVER_MODE && !!currentPath);
+  fab.classList.toggle('open', ASK_OPEN);
+  fab.textContent = ASK_OPEN ? '收起' : '问 AI';
+  fab.title = ASK_OPEN ? '收起问答（Esc）' : '就当前小节问 AI';
+  fab.setAttribute('aria-expanded', ASK_OPEN ? 'true' : 'false');
 }
 function setupAskButtons() {
   $('content').querySelectorAll('h2, h3').forEach(h => {
@@ -2064,6 +3177,109 @@ function setupAskButtons() {
   });
   setupBookmarkButtons();
   updateAskFab();
+}
+
+/* —— 习题批改（苏格拉底式）：章末习题列表项内嵌作答面板，AI 批改不直接给答案 ——
+   只在服务器版启用（静态版 no-server 一并隐藏按钮）；与「问 AI」共用同一额度池。 */
+const GRADE_SECTION_RE = /应用与辨析|交错练习|闭卷回忆|本章自测|思考题|习题/;
+
+function setupGradeButtons() {
+  if (!SERVER_MODE) return;
+  const content = $('content');
+  content.querySelectorAll('h2').forEach(h => {
+    if (!h.id || h.dataset.gradeReady) return;
+    // h2 的 textContent 含挂在上面的「问 AI」按钮，只取文本节点
+    const label = Array.from(h.childNodes)
+      .filter(n => n.nodeType === 3).map(n => n.textContent).join('');
+    if (!GRADE_SECTION_RE.test(label)) return;
+    h.dataset.gradeReady = '1';
+    let node = h.nextElementSibling;
+    while (node && !/^(H1|H2)$/.test(node.tagName)) {
+      if (node.tagName === 'OL') {
+        node.querySelectorAll(':scope > li').forEach(li => {
+          if (li.querySelector('.grade-btn')) return;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'grade-btn';
+          btn.textContent = 'AI 批改';
+          btn.title = '写下你的作答，AI 判对错并引导你补全';
+          btn.addEventListener('click', ev => {
+            ev.preventDefault();
+            toggleGradePanel(li, label.replace(/\s+/g, ' ').trim());
+          });
+          li.appendChild(btn);
+        });
+      }
+      node = node.nextElementSibling;
+    }
+  });
+}
+
+function toggleGradePanel(li, headingTitle) {
+  let panel = li.querySelector(':scope > .grade-panel');
+  if (panel) {
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) panel.querySelector('textarea').focus();
+    return;
+  }
+  panel = document.createElement('div');
+  panel.className = 'grade-panel';
+  panel.innerHTML =
+    '<textarea class="grade-input" aria-label="习题作答"' +
+    ' placeholder="把你的作答写在这里。批改是苏格拉底式的：AI 先判定对错，再引导你自己补全，不会直接发参考答案。"></textarea>' +
+    '<div class="grade-actions"><button type="button" class="grade-submit">提交批改</button>' +
+    '<span class="grade-status"></span></div>' +
+    '<div class="grade-feedback" hidden></div>';
+  li.appendChild(panel);
+  panel.querySelector('.grade-submit').addEventListener('click', () => {
+    submitGrade(li, panel, headingTitle);
+  });
+  panel.querySelector('textarea').focus();
+}
+
+async function submitGrade(li, panel, headingTitle) {
+  const ta = panel.querySelector('textarea');
+  const statusEl = panel.querySelector('.grade-status');
+  const fbEl = panel.querySelector('.grade-feedback');
+  const submit = panel.querySelector('.grade-submit');
+  const answer = ta.value.trim();
+  if (!answer) { statusEl.textContent = '先写点什么再提交'; ta.focus(); return; }
+  if (!ACCOUNT) { openAuth('login'); return; }
+  // 习题原文：克隆后摘掉面板/按钮与 KaTeX 的 mathml 副本，避免公式重复与自引用
+  const clone = li.cloneNode(true);
+  clone.querySelectorAll('.grade-panel, .grade-btn, .katex-mathml').forEach(el => el.remove());
+  const question = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+  submit.disabled = true; ta.disabled = true;
+  statusEl.textContent = '批改中…';
+  fbEl.hidden = true; fbEl.innerHTML = '';
+  try {
+    const data = await api('/grade', {
+      method: 'POST',
+      body: { path: currentPath, question, answer, section_title: headingTitle },
+    });
+    applyAskQuota(data);
+    fbEl.innerHTML = answerHtml(data.answer);
+    fbEl.hidden = false;
+    highlightAnswer(fbEl);
+    statusEl.textContent = '';
+    submit.textContent = '再改一版';
+  } catch (err) {
+    const status = err && err.status;
+    if (status === 401) {
+      ACCOUNT = null;
+      renderAccount();
+      openAuth('login');
+    } else {
+      statusEl.textContent = (err && err.message) || '批改失败，请稍后重试';
+    }
+    if (status === 429 && err.data) {
+      applyAskQuota(err.data);
+      statusEl.textContent = ((err && err.message) || '今日免费额度已用尽') +
+        '　在「设置」里填写自己的 API Key 即可不限次数。';
+    }
+  } finally {
+    submit.disabled = false; ta.disabled = false;
+  }
 }
 function currentSectionAnchor() {
   if (!tocHeadings.length) return null;
@@ -2286,13 +3502,43 @@ function setupBookmarkButtons() {
   });
 }
 
+/* —— 提问模式与引用 —— */
+function setAskMode(mode) {
+  ASK_MODE = ASK_MODES[mode] ? mode : 'chat';
+  const meta = ASK_MODES[ASK_MODE];
+  const input = $('ask-input');
+  if (input) input.placeholder = meta.placeholder;
+  document.querySelectorAll('#ask-quick button').forEach(b => {
+    b.classList.toggle('on', b.dataset.mode === ASK_MODE);
+  });
+}
+
+function setAskQuote(text) {
+  ASK_QUOTE = String(text || '').trim().slice(0, 1500);
+  const box = $('ask-quote');
+  const body = $('ask-quote-text');
+  if (!box || !body) return;
+  box.hidden = !ASK_QUOTE;
+  body.textContent = ASK_QUOTE;
+}
+
 function openAsk(opts) {
   opts = opts || {};
   if (!SERVER_MODE) { toast('问答功能需要在服务器版使用'); return; }
   if (!currentPath) { toast('请先打开一章再提问'); return; }
   const firstOpen = !ASK_OPEN;
   ASK_OPEN = true;
-  $('ask-panel').hidden = false;
+  const panel = $('ask-panel');
+  if (ASK_CLOSE_TIMER) { clearTimeout(ASK_CLOSE_TIMER); ASK_CLOSE_TIMER = null; }
+  panel.classList.remove('closing');
+  if (panel.hidden) {
+    panel.hidden = false;
+    // 退出动画可能刚播到一半就被打断，强制重放入场动画
+    panel.style.animation = 'none';
+    void panel.offsetWidth;
+    panel.style.animation = '';
+  }
+  $('ask-kicker').textContent = BOOK_LABEL[activeBook()] + ' · 助教';
   $('ask-title').textContent = currentChapterName();
   hideAskAlert();
   updateAskQuota();
@@ -2308,9 +3554,14 @@ function openAsk(opts) {
   }
   if (!ASK_SECTION) { ASK_SECTION = { id: '', title: currentChapterName() }; renderAskSectionHint(); }
 
+  if (opts.mode) setAskMode(opts.mode);
+  if (opts.quote !== undefined) setAskQuote(opts.quote);
+  if (opts.prefill !== undefined) $('ask-input').value = opts.prefill;
+
   $('ask-send').disabled = false;
   if (!ACCOUNT) {
-    renderAskNotice('登录后即可提问。<br><button type="button" class="btn primary" id="ask-login-btn">登录 / 注册</button>');
+    renderAskNotice('登录后即可提问。AI 会结合当前小节回答，也可以先在正文里划词再问。' +
+      '<br><button type="button" class="btn primary" id="ask-login-btn">登录 / 注册</button>');
     $('ask-send').disabled = true;
     $('ask-input').disabled = true;
     const b = $('ask-login-btn');
@@ -2318,21 +3569,37 @@ function openAsk(opts) {
     return;
   }
   $('ask-input').disabled = false;
-  // 同一章重复打开不再拉取历史，保留屏幕上的对话
-  if (firstOpen) loadAskHistory();
+  if (firstOpen && !ASK_SUPPRESS_HISTORY) loadAskHistory();
   if (opts.focus) setTimeout(() => $('ask-input').focus(), 60);
 }
 
 function closeAsk() {
+  if (!ASK_OPEN) return;
   ASK_OPEN = false;
-  $('ask-panel').hidden = true;
   hideAskAlert();
   updateAskFab();
+  const panel = $('ask-panel');
+  if (panel.hidden) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    panel.hidden = true;
+    return;
+  }
+  // 先播退场动画再真正隐藏，避免抽屉「瞬间消失」
+  panel.classList.add('closing');
+  ASK_CLOSE_TIMER = setTimeout(() => {
+    ASK_CLOSE_TIMER = null;
+    panel.classList.remove('closing');
+    panel.hidden = true;
+  }, 180);
 }
 // 切章时清空对话视图；下次打开会拉取新章的记录
 function resetAskForChapter() {
   if (ASK_OPEN) closeAsk();
   ASK_SECTION = null;
+  ASK_SUPPRESS_HISTORY = false;
+  ASK_LOG_GEN += 1;
+  setAskQuote('');
+  setAskMode('chat');
   $('ask-log').innerHTML = '';
   updateAskFab();
 }
@@ -2344,55 +3611,167 @@ function showAskAlert(html) {
   el.innerHTML = html;
   el.hidden = false;
 }
-function renderAskNotice(html) { $('ask-log').innerHTML = '<div class="qa-empty">' + html + '</div>'; }
-
-// 气泡对话：用户右对齐、AI 左对齐；内容一律 escapeHtml，长文本可换行
-function bubbleHTML(role, text, extra) {
-  return '<div class="bubble ' + role + '">' + escapeHtml(text) + (extra || '') + '</div>';
+function renderAskNotice(html) {
+  ASK_LOG_GEN += 1;
+  $('ask-log').innerHTML = '<div class="qa-empty">' + html + '</div>';
 }
+
+function fmtAskTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+    ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+/* —— 渲染 —— */
+function answerHtml(text) {
+  const src = String(text || '');
+  try {
+    if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+      return renderMarkdown(src);
+    }
+  } catch (e) { /* 落到纯文本 */ }
+  return escapeHtml(src).replace(/\n/g, '<br>');
+}
+function renderAnswerMarkdown(text) {
+  return '<div class="answer-md">' + answerHtml(text) + '</div>';
+}
+
+function highlightAnswer(el) {
+  if (!el || typeof hljs === 'undefined') return;
+  el.querySelectorAll('pre code').forEach(block => {
+    try { hljs.highlightElement(block); } catch (e) { /* 忽略 */ }
+  });
+}
+
+function userBubbleHTML(text, quote) {
+  return '<div class="bubble me">' + escapeHtml(text) +
+    (quote ? '<div class="bubble-quote">' + escapeHtml(quote) + '</div>' : '') + '</div>';
+}
+
+function aiBubbleHTML(text, meta) {
+  meta = meta || {};
+  const q = escapeHtml(meta.q || '');
+  const mode = escapeHtml(meta.mode || 'chat');
+  const quote = escapeHtml(meta.quote || '');
+  return '<div class="bubble ai" data-q="' + q + '" data-mode="' + mode + '" data-quote="' + quote + '">' +
+    renderAnswerMarkdown(text || '') +
+    '<div class="bubble-actions">' +
+      '<button type="button" data-act="copy">复制</button>' +
+      (text && meta.q ? '<button type="button" data-act="regen">重答</button>' : '') +
+    '</div></div>';
+}
+
 function renderAskLog(items, pendingQ) {
+  ASK_LOG_GEN += 1;
   const log = $('ask-log');
   let html = '';
   if (!items.length && !pendingQ) {
-    html += '<div class="qa-empty">就当前文章提问，AI 会结合你所在小节的正文回答；本节没讲到的，它会明确说“本节没有讲到”。</div>';
+    html += '<div class="qa-empty">就当前文章提问，AI 会结合你所在小节的正文回答；本节没讲到的，它会明确说“本节没有讲到”。' +
+      '<br>也可以先在正文里划词，点「解释」或「问 AI」。</div>';
   }
   items.forEach(it => {
-    html += bubbleHTML('me', it.question);
-    html += bubbleHTML('ai', it.answer);
-    if (it.created_at) html += '<div class="bubble-time">' + escapeHtml(it.created_at) + '</div>';
+    html += userBubbleHTML(it.question || '');
+    html += aiBubbleHTML(it.answer || '', { q: it.question || '', mode: 'chat' });
+    if (it.created_at) html += '<div class="bubble-time">' + escapeHtml(fmtAskTime(it.created_at)) + '</div>';
   });
   if (pendingQ) {
-    html += bubbleHTML('me', pendingQ);
-    html += '<div class="bubble ai bubble-pending">正在思考…</div>';
+    html += userBubbleHTML(pendingQ);
+    html += '<div class="bubble ai bubble-pending"><div class="answer-md"></div></div>';
   }
   log.innerHTML = html;
+  log.querySelectorAll('.bubble.ai:not(.bubble-pending)').forEach(highlightAnswer);
   log.scrollTop = log.scrollHeight;
 }
-function appendBubble(role, text, extra) {
+
+function appendUserBubble(text, quote) {
+  ASK_LOG_GEN += 1;
   const log = $('ask-log');
-  log.insertAdjacentHTML('beforeend', bubbleHTML(role, text, extra));
+  log.insertAdjacentHTML('beforeend', userBubbleHTML(text, quote));
   log.scrollTop = log.scrollHeight;
 }
+
+function appendPendingBubble(meta) {
+  ASK_LOG_GEN += 1;
+  const log = $('ask-log');
+  log.insertAdjacentHTML('beforeend',
+    '<div class="bubble ai bubble-pending" data-q="' + escapeHtml(meta.q || '') +
+    '" data-mode="' + escapeHtml(meta.mode || 'chat') +
+    '" data-quote="' + escapeHtml(meta.quote || '') + '"><div class="answer-md"></div>' +
+    '<div class="bubble-actions"><button type="button" data-act="copy">复制</button></div></div>');
+  const el = log.lastElementChild;
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+
+function appendErrorBubble(message, withLogin) {
+  ASK_LOG_GEN += 1;
+  const log = $('ask-log');
+  log.insertAdjacentHTML('beforeend',
+    '<div class="bubble err">' + escapeHtml(message) +
+    (withLogin ? '<br><button type="button" class="btn primary" id="ask-login-btn">登录</button>' : '') +
+    '</div>');
+  const b = $('ask-login-btn');
+  if (b) b.addEventListener('click', () => openAuth('login'));
+  log.scrollTop = log.scrollHeight;
+}
+
 async function loadAskHistory() {
   if (!currentPath || !ACCOUNT) return;
+  const gen = ASK_LOG_GEN;
   try {
     // 按文章拉全部记录，不再按 section_title 过滤（否则切小节就看不到别的节）
     const d = await api('/ask/history?path=' + encodeURIComponent(currentPath) + '&limit=50');
+    // 请求期间用户已经发了新问题（或点了新对话）：不要用旧历史覆盖对话区
+    if (gen !== ASK_LOG_GEN || ASK_BUSY) return;
     const items = ((d && d.items) || []).slice().reverse();   // 接口按时间倒序，反转成正序
     renderAskLog(items);
   } catch (e) {
+    if (gen !== ASK_LOG_GEN || ASK_BUSY) return;
     renderAskLog([]);
     showAskAlert('加载历史对话失败：' + escapeHtml(e.message || '未知错误'));
   }
 }
-function updateAskQuota() { const el = $('ask-quota'); if (el) el.innerHTML = ACCOUNT ? quotaHTML() : ''; }
+function updateAskQuota() { const el = $('ask-quota'); if (el) el.innerHTML = ACCOUNT ? quotaHTML() : '登录后可使用'; }
+
+function applyAskQuota(data) {
+  if (!ACCOUNT || !data) return;
+  ACCOUNT.quota = ACCOUNT.quota || { used: 0, limit: 0 };
+  if (typeof data.used === 'number') ACCOUNT.quota.used = data.used;
+  if (typeof data.limit === 'number') ACCOUNT.quota.limit = data.limit;
+  updateAskQuota();
+}
+
+/* —— 发送（流式） —— */
+const ASK_DEFAULT_QUESTIONS = {
+  explain: '请解释本节的核心概念。',
+  example: '请用一个具体例子说明本节概念。',
+  summary: '请总结本小节。',
+  quiz: '请出 3 道自测题。',
+};
+const ASK_EXPLAIN_SELECTION = '请解释我选中的这段内容。';
 
 async function submitAsk(event) {
   event.preventDefault();
   if (ASK_BUSY || !SERVER_MODE || !currentPath) return;
-  const q = $('ask-input').value.trim();
-  if (!q) return;
+  let q = $('ask-input').value.trim();
+  if (!q) q = (ASK_MODE === 'explain' && ASK_QUOTE)
+    ? ASK_EXPLAIN_SELECTION
+    : (ASK_DEFAULT_QUESTIONS[ASK_MODE] || '');
+  if (!q) {
+    if (!ACCOUNT) { openAuth('login'); return; }
+    $('ask-input').focus();
+    return;
+  }
   if (!ACCOUNT) { openAuth('login'); return; }
+  await runAsk(q, { mode: ASK_MODE, quote: ASK_QUOTE });
+}
+
+async function runAsk(q, opts) {
+  opts = opts || {};
+  if (ASK_BUSY) return;
   // 上下文在发送这一刻取：用户中途滚动到别的小节，下一条就用新的
   // 上下文始终以"发送这一刻的滚动位置"为准，不依赖打开面板时的小节；
   // 取不到小节（例如章节没有 h2/h3）时退回本章第一个小节，仍可提问。
@@ -2400,57 +3779,328 @@ async function submitAsk(event) {
   const t = anchorId ? tocHeadings.find(x => x.id === anchorId) : null;
   ASK_SECTION = t ? { id: t.id, title: t.text } : { id: '', title: currentChapterName() };
 
+  const mode = opts.mode || 'chat';
+  const quote = String(opts.quote || '').slice(0, 1500);
 
   ASK_BUSY = true;
   $('ask-send').disabled = true;
+  $('ask-stop').hidden = false;
   hideAskAlert();
-  appendBubble('me', q);
-  appendBubble('ai', '正在思考…', '');
-  const pendingEl = $('ask-log').lastElementChild;
-  if (pendingEl) pendingEl.classList.add('bubble-pending');
+  if (!opts.skipUser) appendUserBubble(q, quote);
+  const aiEl = appendPendingBubble({ q, mode, quote });
   $('ask-input').value = '';
+  autoGrowAskInput();
+
+  const ctrl = new AbortController();
+  ASK_ABORT = ctrl;
+  let answer = '';
+  let renderTimer = null;
+  let pendingRender = false;
+
+  const paint = final => {
+    const target = aiEl.querySelector('.answer-md');
+    if (target) target.innerHTML = answerHtml(answer);
+    if (answer) aiEl.classList.remove('bubble-pending');
+    if (final) {
+      aiEl.classList.remove('bubble-pending');
+      highlightAnswer(aiEl);
+      // 补上“重答”按钮（流式开始时内容为空，所以初始没有）
+      const actions = aiEl.querySelector('.bubble-actions');
+      if (actions && !actions.querySelector('[data-act="regen"]')) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.act = 'regen';
+        btn.textContent = '重答';
+        actions.appendChild(btn);
+      }
+    }
+    const log = $('ask-log');
+    if (log && (final || log.scrollHeight - log.scrollTop - log.clientHeight < 160)) {
+      log.scrollTop = log.scrollHeight;
+    }
+  };
+  const schedulePaint = () => {
+    if (renderTimer || pendingRender) return;
+    pendingRender = true;
+    renderTimer = setTimeout(() => {
+      renderTimer = null;
+      pendingRender = false;
+      paint(false);
+    }, 90);
+  };
 
   try {
-    const d = await api('/ask', { method: 'POST', body: {
-      path: currentPath, section_id: ASK_SECTION.id, section_title: ASK_SECTION.title, question: q } });
-    if (ACCOUNT.quota && d) {
-      if (typeof d.used === 'number') ACCOUNT.quota.used = d.used;
-      if (typeof d.limit === 'number') ACCOUNT.quota.limit = d.limit;
+    const res = await fetch(API_BASE + '/ask/stream', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: currentPath,
+        section_id: ASK_SECTION.id,
+        section_title: ASK_SECTION.title,
+        question: q,
+        mode,
+        selection: quote,
+      }),
+      signal: ctrl.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch (e) { /* 非 JSON */ }
+      const err = new Error((data && data.error) || ('HTTP ' + res.status));
+      err.status = res.status;
+      err.data = data;
+      throw err;
     }
-    if (pendingEl) pendingEl.remove();
-    appendBubble('ai', (d && d.answer) || '（没有返回内容）');
-    updateAskQuota();
+
+    if (!res.body || typeof res.body.getReader !== 'function') {
+      // 极老浏览器：退回一次性响应
+      const data = await res.json();
+      answer = (data && data.answer) || '';
+      applyAskQuota(data);
+      paint(true);
+    } else {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const step = await reader.read();
+        if (step.done) break;
+        buf += decoder.decode(step.value, { stream: true });
+        let cut;
+        while ((cut = buf.indexOf('\n\n')) >= 0) {
+          const frame = buf.slice(0, cut);
+          buf = buf.slice(cut + 2);
+          frame.split('\n').forEach(line => {
+            if (!line.startsWith('data:')) return;
+            const raw = line.slice(5).trim();
+            if (!raw) return;
+            let obj = null;
+            try { obj = JSON.parse(raw); } catch (e) { return; }
+            if (obj.delta) {
+              answer += obj.delta;
+              schedulePaint();
+            }
+            if (obj.error) {
+              const err = new Error(obj.error);
+              err.status = 503;
+              throw err;
+            }
+            if (obj.done) applyAskQuota(obj);
+          });
+        }
+      }
+      paint(true);
+    }
+
+    if (!answer) throw new Error('没有返回内容');
     // 同步进内存历史，切回本章时无需重新请求也能看到
     (ASK_HISTORY_CACHE[currentPath] = ASK_HISTORY_CACHE[currentPath] || [])
-      .push({ question: q, answer: (d && d.answer) || '', created_at: '' });
+      .push({ question: q, answer, created_at: '' });
+    ASK_SUPPRESS_HISTORY = false;
   } catch (err) {
-    if (pendingEl) pendingEl.remove();
-    const status = err && err.status;
-    if (status === 401) {
-      ACCOUNT = null;
-      renderAccount();
-      appendBubble('err', '登录状态已失效，请重新登录。', '<br><button type="button" class="btn primary" id="ask-login-btn">登录</button>');
-      const b = $('ask-login-btn');
-      if (b) b.addEventListener('click', () => openAuth('login'));
-      $('ask-input').disabled = true;
-      $('ask-send').disabled = true;
-    } else {
-      appendBubble('err', (err && err.message) || '提问失败，请稍后重试');
-      if (status === 429) {
-        if (err.data) {
-          if (typeof err.data.used === 'number' && ACCOUNT && ACCOUNT.quota) ACCOUNT.quota.used = err.data.used;
-          if (typeof err.data.limit === 'number' && ACCOUNT && ACCOUNT.quota) ACCOUNT.quota.limit = err.data.limit;
-        }
+    if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
+    if (err && err.name === 'AbortError') {
+      paint(true);
+      if (!answer) aiEl.remove();
+      toast('已停止生成');
+    } else if (answer) {
+      // 已经收到一部分内容：保留它，错误单独提示
+      paint(true);
+      showAskAlert(escapeHtml((err && err.message) || '回答中断，请重试'));
+      if (err && err.status === 429) {
+        applyAskQuota(err.data);
         showAskAlert(escapeHtml((err && err.message) || '今日免费额度已用尽') +
           '　在「设置」里填写自己的 API Key 即可不限次数。');
-        updateAskQuota();
+      }
+    } else {
+      aiEl.remove();
+      const status = err && err.status;
+      if (status === 401) {
+        ACCOUNT = null;
+        renderAccount();
+        appendErrorBubble('登录状态已失效，请重新登录。', true);
+        $('ask-input').disabled = true;
+        $('ask-send').disabled = true;
+      } else {
+        appendErrorBubble((err && err.message) || '提问失败，请稍后重试', false);
+        if (status === 429) {
+          applyAskQuota(err.data);
+          showAskAlert(escapeHtml((err && err.message) || '今日免费额度已用尽') +
+            '　在「设置」里填写自己的 API Key 即可不限次数。');
+        }
       }
     }
   } finally {
     ASK_BUSY = false;
+    ASK_ABORT = null;
+    $('ask-stop').hidden = true;
     if (ACCOUNT) $('ask-send').disabled = false;
   }
 }
+
+/* —— AI 抽屉的交互 —— */
+function autoGrowAskInput() {
+  const el = $('ask-input');
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+
+const askInputEl = $('ask-input');
+if (askInputEl) {
+  askInputEl.addEventListener('input', autoGrowAskInput);
+  askInputEl.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      $('ask-form').requestSubmit();
+    }
+  });
+}
+const askStopBtn = $('ask-stop');
+if (askStopBtn) {
+  askStopBtn.addEventListener('click', () => {
+    if (ASK_ABORT) ASK_ABORT.abort();
+  });
+}
+const askQuick = $('ask-quick');
+if (askQuick) {
+  askQuick.addEventListener('click', event => {
+    const btn = event.target.closest('button[data-mode]');
+    if (!btn) return;
+    setAskMode(btn.dataset.mode);
+    const def = (ASK_MODE === 'explain' && ASK_QUOTE)
+      ? ASK_EXPLAIN_SELECTION
+      : ASK_DEFAULT_QUESTIONS[ASK_MODE];
+    if (def) $('ask-input').value = def;
+    $('ask-input').focus();
+  });
+}
+const askQuoteX = $('ask-quote-x');
+if (askQuoteX) askQuoteX.addEventListener('click', () => setAskQuote(''));
+
+const askNewBtn = $('ask-new');
+if (askNewBtn) {
+  askNewBtn.addEventListener('click', () => {
+    if (ASK_ABORT) ASK_ABORT.abort();
+    $('ask-log').innerHTML = '';
+    ASK_SUPPRESS_HISTORY = true;
+    setAskQuote('');
+    setAskMode('chat');
+    renderAskNotice('新对话已开始。AI 仍会以当前小节为上下文。');
+    $('ask-input').focus();
+  });
+}
+
+const askQuotaLink = $('ask-quota-link');
+if (askQuotaLink) {
+  askQuotaLink.addEventListener('click', () => {
+    if (ACCOUNT) gotoAccountPage('settings');
+    else openAuth('login');
+  });
+}
+
+const askLogEl = $('ask-log');
+if (askLogEl) {
+  askLogEl.addEventListener('click', event => {
+    const btn = event.target.closest('[data-act]');
+    if (!btn) return;
+    const bubble = btn.closest('.bubble.ai');
+    if (!bubble) return;
+    if (btn.dataset.act === 'copy') {
+      const text = (bubble.querySelector('.answer-md') || {}).innerText || '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => toast('已复制'), () => toast('复制失败'));
+      } else {
+        toast('当前浏览器不支持复制');
+      }
+      return;
+    }
+    if (btn.dataset.act === 'regen') {
+      const q = bubble.dataset.q;
+      if (!q) return;
+      const mode = bubble.dataset.mode || 'chat';
+      const quote = bubble.dataset.quote || '';
+      bubble.remove();
+      runAsk(q, { mode, quote, skipUser: true });
+    }
+  });
+}
+
+/* —— 划词提问：选中正文后浮出「解释 / 问 AI」 —— */
+let selAiEl = null;
+let selAiTimer = null;
+
+function hideSelectionAI() {
+  if (selAiEl) selAiEl.hidden = true;
+}
+
+function selectedTextInContent() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return '';
+  const content = $('content');
+  if (!content) return '';
+  const anchor = sel.anchorNode;
+  const focus = sel.focusNode;
+  if (!anchor || !focus || !content.contains(anchor) || !content.contains(focus)) return '';
+  const text = sel.toString().trim();
+  return text.length >= 6 && text.length <= 1500 ? text : '';
+}
+
+function showSelectionAI() {
+  const text = selectedTextInContent();
+  if (!text) { hideSelectionAI(); return; }
+  if (!selAiEl) {
+    selAiEl = document.createElement('div');
+    selAiEl.className = 'sel-ai';
+    selAiEl.id = 'sel-ai';
+    selAiEl.innerHTML = '<button type="button" data-sel="explain">解释</button>' +
+                        '<button type="button" data-sel="ask">问 AI</button>';
+    document.body.appendChild(selAiEl);
+    selAiEl.addEventListener('mousedown', event => event.preventDefault());
+    selAiEl.addEventListener('click', event => {
+      const btn = event.target.closest('button[data-sel]');
+      if (!btn) return;
+      const quote = selectedTextInContent();
+      if (!quote) return;
+      hideSelectionAI();
+      if (btn.dataset.sel === 'explain') {
+        openAsk({ mode: 'explain', quote, prefill: ASK_EXPLAIN_SELECTION, focus: true });
+      } else {
+        openAsk({ mode: 'chat', quote, focus: true });
+      }
+    });
+  }
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
+  if (!rect || (!rect.width && !rect.height)) { hideSelectionAI(); return; }
+  selAiEl.hidden = false;
+  const width = selAiEl.offsetWidth || 140;
+  let left = rect.left + rect.width / 2 - width / 2;
+  left = Math.max(8, Math.min(window.innerWidth - width - 8, left));
+  let top = rect.top - (selAiEl.offsetHeight || 36) - 8;
+  if (top < 8) top = rect.bottom + 8;
+  selAiEl.style.left = left + 'px';
+  selAiEl.style.top = Math.max(8, top) + 'px';
+}
+
+document.addEventListener('mouseup', () => {
+  clearTimeout(selAiTimer);
+  selAiTimer = setTimeout(showSelectionAI, 30);
+});
+document.addEventListener('keyup', event => {
+  if (event.key === 'Escape') { hideSelectionAI(); return; }
+  clearTimeout(selAiTimer);
+  selAiTimer = setTimeout(showSelectionAI, 60);
+});
+document.addEventListener('mousedown', event => {
+  if (selAiEl && !selAiEl.contains(event.target)) hideSelectionAI();
+});
+window.addEventListener('scroll', hideSelectionAI, { passive: true });
+window.addEventListener('resize', hideSelectionAI);
 
 /* —— 我的主页 —— */
 function fmtDuration(seconds) {
@@ -2470,9 +4120,13 @@ function chapterNameOf(path) {
    与「路线图」「章节正文」并列的第三种视图，由 #profile / #settings 两个 hash
    路由切换。做成整页而非弹窗，是因为这里有进度概览、收藏清单、额度说明这些
    需要纵深的正文级内容；只有登录/注册这种短事务仍用弹窗。 */
-let ACCOUNT_PAGE = null;      // 'profile' | 'settings'，当前显示的账号页
+let ACCOUNT_PAGE = null;      // profile | settings | feedback | users | articles
 
 function renderAccountPageTabs() {
+  ['feedback-tab', 'users-tab', 'articles-tab'].forEach(id => {
+    const tab = $(id);
+    if (tab) tab.hidden = !isAdmin();
+  });
   $('account-page-tabs').querySelectorAll('.page-tab').forEach(btn => {
     const on = btn.dataset.page === ACCOUNT_PAGE;
     btn.classList.toggle('active', on);
@@ -2488,8 +4142,10 @@ function gotoAccountPage(kind) {
 }
 
 function showAccountPage(kind) {
-  ACCOUNT_PAGE = kind === 'settings' ? 'settings' : 'profile';
-  $('account-menu').hidden = true;
+  const allowed = ['settings', 'feedback', 'users', 'articles'].includes(kind) ? kind : 'profile';
+  const adminOnly = ['feedback', 'users', 'articles'].includes(allowed);
+  ACCOUNT_PAGE = (adminOnly && !isAdmin()) ? 'profile' : allowed;
+  closeAccountMenu();
   $('search-results').hidden = true;
   // 正文相关视图全部让位；不重置 currentPath，这样点侧栏章节能立刻回到原章
   $('loading').hidden = true;
@@ -2498,15 +4154,31 @@ function showAccountPage(kind) {
   $('content').hidden = true;
   $('doc-head').hidden = true;
   $('chapter-nav').classList.remove('show');
+  $('toc-rail').hidden = true;
+  $('comments').hidden = true;
   $('account-page').hidden = false;
   renderAccountPageTabs();
   const isSettings = ACCOUNT_PAGE === 'settings';
-  $('account-page-title').textContent = isSettings ? '设置' : '我的主页';
+  const isFeedback = ACCOUNT_PAGE === 'feedback';
+  const isUsers = ACCOUNT_PAGE === 'users';
+  const isArticles = ACCOUNT_PAGE === 'articles';
+  const title = isSettings ? '设置'
+    : (isFeedback ? '反馈管理' : (isUsers ? '用户管理' : (isArticles ? '文章管理' : '我的主页')));
+  $('account-page-title').textContent = title;
   $('account-page-sub').textContent = isSettings
     ? '配置你自己的 DeepSeek API Key（提问不再受每日限额）、联系邮箱与账号安全。'
-    : '阅读进度、收藏的小节与提问记录都保存在账号里，换一台设备登录即可继续。';
-  document.title = (isSettings ? '设置' : '我的主页') + ' — 速通笔记';
+    : (isFeedback
+      ? '查看读者提交的问题与建议；处理完的条目可以标记为已解决。'
+      : (isUsers
+        ? '查看账号、调整角色、重置密码或删除用户。固定管理员 admin 与当前账号受保护。'
+        : (isArticles
+          ? '调整章节的显示标题、分类、状态、阶段与是否隐藏；只影响站点显示，不改 Markdown 正文。'
+          : '阅读进度、收藏的小节与提问记录都保存在账号里，换一台设备登录即可继续。')));
+  document.title = title + ' — CS Wiki';
   if (isSettings) { renderSettingsBody(); loadSettings(); }
+  else if (isFeedback) loadFeedbackAdmin();
+  else if (isUsers) loadAdminUsers();
+  else if (isArticles) loadAdminArticles();
   else loadProfile();
   window.scrollTo(0, 0);
 }
@@ -2531,6 +4203,797 @@ function pageLoginPromptHTML() {
     '<div class="form-actions"><button type="button" class="btn primary" id="page-login-btn">登录 / 注册</button></div></div>';
 }
 
+/* ══════════════ 反馈：Markdown / LaTeX 编辑器 ══════════════
+   工具栏动作与选区处理移植自 acm-training-oj 的
+   frontend/src/components/markdown-editor/toolbar-actions.ts。 */
+let FEEDBACK_BUSY = false;
+let FEEDBACK_PREVIEW_TIMER = null;
+
+function renderUserMarkdown(text) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = answerHtml(String(text || ''));
+  // 不加载外部图片：反馈里嵌图会把管理员 IP 暴露给第三方图床
+  wrap.querySelectorAll('img').forEach(img => img.remove());
+  return wrap.innerHTML;
+}
+
+function setFeedbackMsg(text, kind) {
+  const el = $('feedback-msg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = kind || '';
+}
+
+function updateFeedbackCount() {
+  const input = $('feedback-input');
+  const count = $('feedback-count');
+  if (input && count) count.textContent = input.value.length + ' / 8000';
+}
+
+function renderFeedbackPreviewNow() {
+  const input = $('feedback-input');
+  const preview = $('feedback-preview');
+  if (!input || !preview) return;
+  preview.innerHTML = input.value.trim()
+    ? renderUserMarkdown(input.value)
+    : '<div class="fe-empty">预览会显示在这里</div>';
+}
+
+function scheduleFeedbackPreview() {
+  clearTimeout(FEEDBACK_PREVIEW_TIMER);
+  FEEDBACK_PREVIEW_TIMER = setTimeout(renderFeedbackPreviewNow, 180);
+}
+
+function onFeedbackInput() {
+  updateFeedbackCount();
+  if (!$('feedback-preview').hidden) scheduleFeedbackPreview();
+}
+
+function setFeedbackPreview(on) {
+  const body = $('feedback-body');
+  const preview = $('feedback-preview');
+  const btn = $('feedback-preview-toggle');
+  if (!body || !preview || !btn) return;
+  body.classList.toggle('split', on);
+  preview.hidden = !on;
+  btn.setAttribute('aria-pressed', String(on));
+  btn.textContent = on ? '编辑' : '预览';
+  if (on) renderFeedbackPreviewNow();
+}
+
+function openFeedback() {
+  if (!SERVER_MODE) { toast('反馈功能需要在服务器版使用'); return; }
+  if (!ACCOUNT) { toast('登录后可以提交反馈'); openAuth('login'); return; }
+  $('feedback-modal').hidden = false;
+  setFeedbackMsg('');
+  updateFeedbackCount();
+  setFeedbackPreview(false);
+  renderFeedbackPreviewNow();
+  setTimeout(() => $('feedback-input').focus(), 60);
+}
+
+function closeFeedback() {
+  $('feedback-modal').hidden = true;
+}
+
+async function submitFeedback() {
+  if (FEEDBACK_BUSY) return;
+  const input = $('feedback-input');
+  const content = input.value.trim();
+  if (content.length < 10) {
+    setFeedbackMsg('至少写 10 个字。', 'err');
+    input.focus();
+    return;
+  }
+  if (!ACCOUNT) { openAuth('login'); return; }
+  FEEDBACK_BUSY = true;
+  const btn = $('feedback-submit');
+  btn.disabled = true;
+  setFeedbackMsg('提交中…', '');
+  try {
+    await api('/feedback', {
+      method: 'POST',
+      body: {
+        content,
+        contact: $('feedback-contact').value.trim(),
+        path: currentPath || '',
+      },
+    });
+    setFeedbackMsg('已提交，谢谢你的反馈。', 'ok');
+    input.value = '';
+    $('feedback-contact').value = '';
+    updateFeedbackCount();
+    renderFeedbackPreviewNow();
+    setTimeout(closeFeedback, 1200);
+  } catch (err) {
+    if (err && err.status === 401) {
+      ACCOUNT = null;
+      renderAccount();
+      openAuth('login');
+    }
+    setFeedbackMsg((err && err.message) || '提交失败，请稍后重试', 'err');
+  } finally {
+    FEEDBACK_BUSY = false;
+    btn.disabled = false;
+  }
+}
+
+/* —— 选区工具（对应 OJ toolbar-actions.ts 的四个 helper） —— */
+function feExpandLineRange(value, start, end) {
+  const lineStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+  const nextBreak = value.indexOf('\n', end);
+  return { start: lineStart, end: nextBreak === -1 ? value.length : nextBreak };
+}
+
+function feSurroundInline(value, start, end, prefix, suffix, placeholder) {
+  const hasSelection = start !== end;
+  const base = hasSelection ? value.slice(start, end) : placeholder;
+  return {
+    nextValue: prefix + base + suffix,
+    replaceStart: start,
+    replaceEnd: end,
+    selectionStart: prefix.length,
+    selectionEnd: hasSelection ? prefix.length + base.length : prefix.length + placeholder.length,
+  };
+}
+
+function fePrefixLines(value, start, end, prefix) {
+  const hasSelection = start !== end;
+  const range = feExpandLineRange(value, start, end);
+  const block = value.slice(range.start, range.end);
+  const nextValue = block.split('\n').map(line => prefix + line).join('\n');
+  const caret = hasSelection
+    ? nextValue.length
+    : Math.min(nextValue.length, prefix.length + block.length);
+  return {
+    nextValue,
+    replaceStart: range.start,
+    replaceEnd: range.end,
+    selectionStart: caret,
+    selectionEnd: caret,
+  };
+}
+
+function feSurroundBlock(value, start, end, prefix, suffix, placeholder) {
+  const hasSelection = start !== end;
+  const range = feExpandLineRange(value, start, end);
+  const block = value.slice(range.start, range.end);
+  const reuseLine = !hasSelection && block.trim().length > 0;
+  const base = hasSelection || reuseLine ? block : placeholder;
+  const insertPlaceholder = !hasSelection && !reuseLine;
+  const contentEnd = prefix.length + base.length;
+  return {
+    nextValue: prefix + base + suffix,
+    replaceStart: range.start,
+    replaceEnd: range.end,
+    selectionStart: insertPlaceholder ? prefix.length : contentEnd,
+    selectionEnd: contentEnd,
+  };
+}
+
+const FEEDBACK_ACTIONS = {
+  'h1': ctx => fePrefixLines(ctx.value, ctx.start, ctx.end, '# '),
+  'h2': ctx => fePrefixLines(ctx.value, ctx.start, ctx.end, '## '),
+  'bold': ctx => feSurroundInline(ctx.value, ctx.start, ctx.end, '**', '**', 'text'),
+  'italic': ctx => feSurroundInline(ctx.value, ctx.start, ctx.end, '*', '*', 'text'),
+  'quote': ctx => fePrefixLines(ctx.value, ctx.start, ctx.end, '> '),
+  'list': ctx => fePrefixLines(ctx.value, ctx.start, ctx.end, '- '),
+  'code': ctx => feSurroundBlock(ctx.value, ctx.start, ctx.end, '```text\n', '\n```', 'content'),
+  'link': ctx => feSurroundInline(ctx.value, ctx.start, ctx.end, '[', '](https://example.com)', 'link text'),
+  'math-inline': ctx => feSurroundInline(ctx.value, ctx.start, ctx.end, '$', '$', 'x'),
+  'math-block': ctx => feSurroundBlock(ctx.value, ctx.start, ctx.end, '$$\n', '\n$$', 'x'),
+};
+
+const FEEDBACK_FORMULAS = {
+  frac: { text: String.raw`\frac{a}{b}`, block: false },
+  sqrt: { text: String.raw`\sqrt{x}`, block: false },
+  sum: { text: String.raw`\sum_{i=1}^{n}`, block: false },
+  int: { text: String.raw`\int_{a}^{b}`, block: false },
+  aligned: {
+    text: '\\begin{aligned}\n  a &= b \\\\\n  c &= d\n\\end{aligned}',
+    block: true,
+  },
+  alpha: { text: String.raw`\alpha`, block: false },
+  theta: { text: String.raw`\theta`, block: false },
+  le: { text: String.raw`\le`, block: false },
+  ge: { text: String.raw`\ge`, block: false },
+  to: { text: String.raw`\to`, block: false },
+  infty: { text: String.raw`\infty`, block: false },
+};
+
+function feApplyAction(id) {
+  const input = $('feedback-input');
+  const fn = FEEDBACK_ACTIONS[id];
+  if (!input || !fn) return;
+  const value = input.value;
+  const result = fn({ value, start: input.selectionStart, end: input.selectionEnd });
+  const before = value.slice(0, result.replaceStart);
+  const after = value.slice(result.replaceEnd);
+  input.value = before + result.nextValue + after;
+  const start = before.length + result.selectionStart;
+  const end = before.length + result.selectionEnd;
+  input.focus();
+  input.setSelectionRange(start, end);
+  onFeedbackInput();
+}
+
+function feInsertText(text) {
+  const input = $('feedback-input');
+  if (!input) return;
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  const value = input.value;
+  input.value = value.slice(0, start) + text + value.slice(end);
+  const caret = start + text.length;
+  input.focus();
+  input.setSelectionRange(caret, caret);
+  onFeedbackInput();
+}
+
+/* —— 反馈事件绑定 —— */
+const feedbackOpenBtn = $('feedback-open');
+if (feedbackOpenBtn) feedbackOpenBtn.addEventListener('click', openFeedback);
+const feedbackLinkBtn = $('feedback-link');
+if (feedbackLinkBtn) feedbackLinkBtn.addEventListener('click', openFeedback);
+const feedbackCloseBtn = $('feedback-close');
+if (feedbackCloseBtn) feedbackCloseBtn.addEventListener('click', closeFeedback);
+const feedbackModalEl = $('feedback-modal');
+if (feedbackModalEl) {
+  feedbackModalEl.addEventListener('click', event => {
+    if (event.target === feedbackModalEl) closeFeedback();
+  });
+}
+const feedbackInputEl = $('feedback-input');
+if (feedbackInputEl) {
+  feedbackInputEl.addEventListener('input', onFeedbackInput);
+  feedbackInputEl.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      submitFeedback();
+      return;
+    }
+    if (event.ctrlKey || event.metaKey) {
+      const key = event.key.toLowerCase();
+      if (key === 'b' || key === 'i' || key === 'e') {
+        event.preventDefault();
+        feApplyAction(key === 'b' ? 'bold' : (key === 'i' ? 'italic' : 'math-inline'));
+        return;
+      }
+    }
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      feInsertText('  ');
+      return;
+    }
+    if (event.key === 'Escape') closeFeedback();
+  });
+}
+const feedbackPreviewToggle = $('feedback-preview-toggle');
+if (feedbackPreviewToggle) {
+  feedbackPreviewToggle.addEventListener('click', () => {
+    setFeedbackPreview(!$('feedback-body').classList.contains('split'));
+  });
+}
+const feedbackSubmitBtn = $('feedback-submit');
+if (feedbackSubmitBtn) feedbackSubmitBtn.addEventListener('click', submitFeedback);
+const feedbackFormula = $('feedback-formula');
+if (feedbackFormula) {
+  feedbackFormula.addEventListener('change', event => {
+    const item = FEEDBACK_FORMULAS[event.target.value];
+    if (item) {
+      feInsertText(item.block
+        ? '$$\n' + item.text + '\n$$'
+        : '$' + item.text + '$');
+    }
+    event.target.value = '';
+  });
+}
+document.querySelectorAll('#feedback-toolbar [data-fe-action]').forEach(btn => {
+  btn.addEventListener('mousedown', event => event.preventDefault());
+  btn.addEventListener('click', () => feApplyAction(btn.dataset.feAction));
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !$('feedback-modal').hidden) closeFeedback();
+});
+
+/* —— 管理员反馈列表 —— */
+async function loadFeedbackAdmin() {
+  const body = $('account-page-body');
+  if (!SERVER_MODE || !ACCOUNT || !isAdmin()) {
+    body.innerHTML = pageLoginPromptHTML();
+    bindPageLogin();
+    return;
+  }
+  body.innerHTML = pageLoadingHTML('正在加载反馈…');
+  try {
+    const data = await api('/feedback?limit=200');
+    renderFeedbackAdminItems((data && data.items) || []);
+  } catch (err) {
+    body.innerHTML = pageErrorHTML((err && err.message) || '加载失败', 'fb-retry');
+    const retry = $('fb-retry');
+    if (retry) retry.addEventListener('click', loadFeedbackAdmin);
+  }
+}
+
+function renderFeedbackAdminItems(items) {
+  const body = $('account-page-body');
+  if (!items.length) {
+    body.innerHTML = '<div class="page-card"><div class="empty-note">还没有收到反馈。</div></div>';
+    return;
+  }
+  const pending = items.filter(item => item.status !== 'resolved').length;
+  let html = '<div class="page-card"><div class="card-sub">共 ' + items.length +
+    ' 条反馈，待处理 <b>' + pending + '</b> 条。</div></div>';
+  items.forEach(item => {
+    const resolved = item.status === 'resolved';
+    const id = parseInt(item.id, 10) || 0;
+    html += '<div class="feedback-item" data-id="' + id + '">' +
+      '<div class="fi-head">' +
+        '<span class="fi-user">' + escapeHtml(item.username || '未知用户') + '</span>' +
+        '<span class="fi-status ' + (resolved ? 'resolved' : 'open') + '">' +
+          (resolved ? '已处理' : '待处理') + '</span>' +
+        '<span class="fi-time">' + escapeHtml(fmtAskTime(item.created_at)) + '</span>' +
+      '</div>' +
+      '<div class="fi-meta">' +
+        (item.path ? '章节：' + escapeHtml(item.path) : '未关联章节') +
+        (item.contact ? ' · 联系：' + escapeHtml(item.contact) : '') +
+      '</div>' +
+      '<div class="fi-body">' + renderUserMarkdown(item.content) + '</div>' +
+      '<div class="fi-actions">' +
+        '<button type="button" data-fb-toggle="' + (resolved ? 'open' : 'resolved') + '">' +
+          (resolved ? '重新打开' : '标记已处理') + '</button>' +
+      '</div></div>';
+  });
+  body.innerHTML = html;
+}
+
+const accountPageBodyEl = $('account-page-body');
+if (accountPageBodyEl) {
+  accountPageBodyEl.addEventListener('click', async event => {
+    const btn = event.target.closest('[data-fb-toggle]');
+    if (!btn) return;
+    const card = btn.closest('.feedback-item');
+    const id = card ? parseInt(card.dataset.id, 10) : 0;
+    if (!id) return;
+    btn.disabled = true;
+    try {
+      await api('/feedback/status', {
+        method: 'POST',
+        body: { id, status: btn.dataset.fbToggle },
+      });
+      await loadFeedbackAdmin();
+    } catch (err) {
+      toast((err && err.message) || '操作失败');
+      btn.disabled = false;
+    }
+  });
+}
+
+/* ══════════════ 章节评论 ══════════════ */
+let COMMENTS_GEN = 0;
+let COMMENTS_PATH = null;
+let COMMENT_BUSY = false;
+
+function renderCommentsComposer() {
+  const logged = !!ACCOUNT;
+  const login = $('comments-login');
+  const form = $('comment-form');
+  if (login) login.hidden = logged;
+  if (form) form.hidden = !logged;
+}
+
+function setCommentMsg(text, kind) {
+  const el = $('comment-msg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = kind || '';
+}
+
+function renderComments(items, count) {
+  const list = $('comments-list');
+  const countEl = $('comment-count');
+  if (countEl) countEl.textContent = count ? '(' + count + ')' : '';
+  if (!items.length) {
+    list.innerHTML = '<div class="comment-empty">还没有评论，来写第一条吧。</div>';
+    return;
+  }
+  list.innerHTML = items.map(item => {
+    const name = item.username || '未知用户';
+    const initial = String(name).charAt(0).toUpperCase();
+    const deleteBtn = item.can_delete
+      ? '<button type="button" class="comment-delete" data-comment-delete="' +
+        Number(item.id) + '">删除</button>'
+      : '';
+    return '<article class="comment-item" data-id="' + Number(item.id) + '">' +
+      '<div class="comment-head">' +
+        '<span class="comment-avatar">' + escapeHtml(initial) + '</span>' +
+        '<span class="comment-user">' + escapeHtml(name) + '</span>' +
+        '<span class="comment-time">' + escapeHtml(fmtAskTime(item.created_at)) + '</span>' +
+        deleteBtn +
+      '</div>' +
+      '<div class="comment-body">' + renderUserMarkdown(item.content) + '</div>' +
+    '</article>';
+  }).join('');
+}
+
+async function loadComments(path) {
+  if (!SERVER_MODE || !path) { $('comments').hidden = true; return; }
+  COMMENTS_PATH = path;
+  const gen = ++COMMENTS_GEN;
+  const section = $('comments');
+  const list = $('comments-list');
+  section.hidden = false;
+  renderCommentsComposer();
+  list.innerHTML = '<div class="comment-empty">正在加载评论…</div>';
+  try {
+    const data = await api('/comments?path=' + encodeURIComponent(path) + '&limit=200');
+    if (gen !== COMMENTS_GEN || path !== currentPath) return;
+    renderComments((data && data.items) || [], (data && data.count) || 0);
+  } catch (err) {
+    if (gen !== COMMENTS_GEN || path !== currentPath) return;
+    list.innerHTML = '<div class="comment-empty">评论加载失败：' +
+      escapeHtml((err && err.message) || '未知错误') + '</div>';
+  }
+}
+
+async function submitComment(event) {
+  event.preventDefault();
+  if (COMMENT_BUSY || !currentPath) return;
+  const input = $('comment-input');
+  const content = input.value.trim();
+  if (!content) {
+    setCommentMsg('评论不能为空。', 'err');
+    input.focus();
+    return;
+  }
+  if (!ACCOUNT) { openAuth('login'); return; }
+  COMMENT_BUSY = true;
+  const btn = $('comment-submit');
+  btn.disabled = true;
+  setCommentMsg('发表中…', '');
+  try {
+    await api('/comments', { method: 'POST', body: { path: currentPath, content } });
+    input.value = '';
+    setCommentMsg('已发表。', 'ok');
+    await loadComments(currentPath);
+  } catch (err) {
+    if (err && err.status === 401) {
+      ACCOUNT = null;
+      renderAccount();
+      openAuth('login');
+    }
+    setCommentMsg((err && err.message) || '发表失败，请稍后重试', 'err');
+  } finally {
+    COMMENT_BUSY = false;
+    btn.disabled = false;
+  }
+}
+
+async function deleteComment(id) {
+  if (!id || !ACCOUNT) return;
+  if (!window.confirm('删除这条评论？')) return;
+  try {
+    await api('/comments/delete', { method: 'POST', body: { id } });
+    if (currentPath) await loadComments(currentPath);
+  } catch (err) {
+    setCommentMsg((err && err.message) || '删除失败', 'err');
+  }
+}
+
+const commentFormEl = $('comment-form');
+if (commentFormEl) commentFormEl.addEventListener('submit', submitComment);
+const commentInputEl = $('comment-input');
+if (commentInputEl) {
+  commentInputEl.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      commentFormEl.requestSubmit();
+    }
+  });
+}
+const commentsLoginBtn = $('comments-login-btn');
+if (commentsLoginBtn) commentsLoginBtn.addEventListener('click', () => openAuth('login'));
+const commentsRefreshBtn = $('comments-refresh');
+if (commentsRefreshBtn) {
+  commentsRefreshBtn.addEventListener('click', () => {
+    if (currentPath) loadComments(currentPath);
+  });
+}
+const commentsListEl = $('comments-list');
+if (commentsListEl) {
+  commentsListEl.addEventListener('click', event => {
+    const btn = event.target.closest('[data-comment-delete]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.commentDelete, 10);
+    if (id) deleteComment(id);
+  });
+}
+
+/* ══════════════ 管理员：用户管理 ══════════════ */
+function adminUserRoleLabel(role) {
+  return role === 'admin' ? '管理员' : '普通用户';
+}
+
+async function loadAdminUsers() {
+  const body = $('account-page-body');
+  if (!SERVER_MODE || !ACCOUNT || !isAdmin()) {
+    body.innerHTML = pageLoginPromptHTML();
+    bindPageLogin();
+    return;
+  }
+  body.innerHTML = pageLoadingHTML('正在加载用户…');
+  try {
+    const data = await api('/admin/users');
+    renderAdminUsers((data && data.items) || []);
+  } catch (err) {
+    body.innerHTML = pageErrorHTML((err && err.message) || '加载失败', 'users-retry');
+    const retry = $('users-retry');
+    if (retry) retry.addEventListener('click', loadAdminUsers);
+  }
+}
+
+function renderAdminUsers(items) {
+  const body = $('account-page-body');
+  if (!items.length) {
+    body.innerHTML = '<div class="page-card"><div class="empty-note">没有用户。</div></div>';
+    return;
+  }
+  const admins = items.filter(item => item.role === 'admin').length;
+  let html = '<div class="page-card"><div class="card-sub">共 ' + items.length +
+    ' 个用户，' + admins + ' 个管理员。固定管理员 admin 与当前账号受保护。</div></div>';
+  items.forEach(item => {
+    const id = parseInt(item.id, 10) || 0;
+    const locked = item.protected || item.is_self;
+    // 额度：null=跟随全局；-1=不限；其他=管理员定制值。终端默认开。
+    const qo = (item.quota_override === null || item.quota_override === undefined) ? null : parseInt(item.quota_override, 10);
+    const quotaText = qo === null ? '全局默认' : (qo === -1 ? '不限' : qo + '（定制）');
+    const termOn = !!item.terminal_enabled;
+    const lastLogin = item.last_login ? fmtAskTime(item.last_login) : '从未登录';
+    const roleOptions = ['user', 'admin'].map(role =>
+      '<option value="' + role + '"' + (item.role === role ? ' selected' : '') + '>' +
+      adminUserRoleLabel(role) + '</option>').join('');
+    html += '<div class="admin-user-item" data-id="' + id + '">' +
+      '<div class="au-head">' +
+        '<span class="au-name">' + escapeHtml(item.username || '未知用户') + '</span>' +
+        '<span class="au-role ' + (item.role === 'admin' ? 'is-admin' : '') + '">' +
+          adminUserRoleLabel(item.role) + '</span>' +
+        (item.is_self ? '<span class="au-badge">当前账号</span>' : '') +
+        (item.protected ? '<span class="au-badge">固定管理员</span>' : '') +
+      '</div>' +
+      '<div class="au-meta">注册：' + escapeHtml(fmtAskTime(item.created_at)) +
+        ' · 上次登录：' + escapeHtml(lastLogin) +
+        (item.email_masked ? ' · 邮箱：' + escapeHtml(item.email_masked) : '') +
+        ' · 每日额度：' + quotaText +
+      '</div>' +
+      '<div class="au-stats">读完 ' + (item.read_chapters || 0) + ' 章 · 问 AI ' +
+        (item.asked || 0) + ' 次 · 评论 ' + (item.comments || 0) + ' 条 · 反馈 ' +
+        (item.feedback || 0) + ' 条</div>' +
+      '<div class="au-actions">' +
+        '<select data-user-role' + (locked ? ' disabled' : '') + '>' + roleOptions + '</select>' +
+        '<button type="button" data-user-role-save' + (locked ? ' disabled' : '') + '>保存角色</button>' +
+        '<input type="number" data-user-quota min="-1" max="10000" step="1"' +
+          ' value="' + (qo === null ? '' : qo) + '" placeholder="全局"' +
+          ' title="每日免费额度：留空=跟随全局，-1=不限，0–10000=具体次数">' +
+        '<button type="button" data-user-quota-save>存额度</button>' +
+        '<button type="button" data-user-terminal data-enabled="' + (termOn ? 1 : 0) + '"' +
+          ' title="控制该用户能否使用站内在线终端">' + (termOn ? '停用终端' : '开通终端') + '</button>' +
+        '<button type="button" data-user-password' +
+          (item.is_self ? ' disabled title="请用账号菜单里的修改密码"' : '') + '>重置密码</button>' +
+        '<button type="button" class="danger" data-user-delete' +
+          (locked ? ' disabled' : '') + '>删除用户</button>' +
+      '</div>' +
+    '</div>';
+  });
+  body.innerHTML = html;
+}
+
+async function saveAdminUserRole(btn) {
+  const item = btn.closest('.admin-user-item');
+  const id = item ? parseInt(item.dataset.id, 10) : 0;
+  const select = item ? item.querySelector('[data-user-role]') : null;
+  if (!id || !select) return;
+  btn.disabled = true;
+  try {
+    await api('/admin/users/role', { method: 'POST', body: { user_id: id, role: select.value } });
+    toast('角色已更新');
+    await loadAdminUsers();
+  } catch (err) {
+    toast((err && err.message) || '更新失败');
+    btn.disabled = false;
+  }
+}
+
+async function saveAdminUserQuota(btn) {
+  const item = btn.closest('.admin-user-item');
+  const id = item ? parseInt(item.dataset.id, 10) : 0;
+  const input = item ? item.querySelector('[data-user-quota]') : null;
+  if (!id || !input) return;
+  const raw = input.value.trim();
+  const limit = raw === '' ? null : parseInt(raw, 10);
+  if (limit !== null && (isNaN(limit) || limit < -1 || limit > 10000)) {
+    toast('额度范围：留空恢复全局，-1 不限，0–10000 具体次数');
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await api('/admin/users/quota', { method: 'POST', body: { user_id: id, limit } });
+    toast(limit === null ? '已恢复全局额度' : '每日额度已更新为 ' + (limit === -1 ? '不限' : limit));
+    await loadAdminUsers();
+  } catch (err) {
+    toast((err && err.message) || '更新失败');
+    btn.disabled = false;
+  }
+}
+
+async function toggleAdminUserTerminal(btn) {
+  const item = btn.closest('.admin-user-item');
+  const id = item ? parseInt(item.dataset.id, 10) : 0;
+  if (!id) return;
+  const enable = btn.dataset.enabled !== '1';
+  btn.disabled = true;
+  try {
+    await api('/admin/users/terminal', { method: 'POST', body: { user_id: id, enabled: enable } });
+    toast(enable ? '已开通在线终端' : '已停用在线终端');
+    await loadAdminUsers();
+  } catch (err) {
+    toast((err && err.message) || '更新失败');
+    btn.disabled = false;
+  }
+}
+
+async function resetAdminUserPassword(btn) {
+  const item = btn.closest('.admin-user-item');
+  const id = item ? parseInt(item.dataset.id, 10) : 0;
+  const name = item ? item.querySelector('.au-name').textContent : '';
+  if (!id) return;
+  const password = window.prompt('为 ' + name + ' 设置新密码（至少 8 位）：');
+  if (!password) return;
+  try {
+    await api('/admin/users/password', { method: 'POST', body: { user_id: id, password } });
+    toast('密码已重置，该用户需要重新登录');
+  } catch (err) {
+    toast((err && err.message) || '重置失败');
+  }
+}
+
+async function deleteAdminUser(btn) {
+  const item = btn.closest('.admin-user-item');
+  const id = item ? parseInt(item.dataset.id, 10) : 0;
+  const name = item ? item.querySelector('.au-name').textContent : '';
+  if (!id) return;
+  if (!window.confirm('删除用户 ' + name + ' 及其全部进度、评论、反馈数据？')) return;
+  btn.disabled = true;
+  try {
+    await api('/admin/users/delete', { method: 'POST', body: { user_id: id } });
+    toast('用户已删除');
+    await loadAdminUsers();
+  } catch (err) {
+    toast((err && err.message) || '删除失败');
+    btn.disabled = false;
+  }
+}
+
+/* ══════════════ 管理员：文章管理 ══════════════ */
+const ARTICLE_TRACK_OPTIONS = [
+  ['', '自动'], ['core', '核心'], ['recommended', '建议'], ['optional', '选读'],
+];
+const ARTICLE_STATUS_OPTIONS = [
+  ['', '自动'], ['complete', '完成'], ['outline', '提纲'],
+];
+const ARTICLE_PHASE_OPTIONS = [
+  ['', '自动'], ['1', '第一阶段'], ['2', '第二阶段'], ['3', '第三阶段'],
+  ['4', '第四阶段'], ['5', '第五阶段'], ['6', '第六阶段'],
+  ['optional', '选读分支'], ['capstone', '最终实践'], ['appendix', '附录'],
+];
+
+function adminOptions(options, selected) {
+  return options.map(([value, label]) =>
+    '<option value="' + escapeHtml(value) + '"' +
+    (String(selected) === value ? ' selected' : '') + '>' +
+    escapeHtml(label) + '</option>').join('');
+}
+
+async function loadAdminArticles() {
+  const body = $('account-page-body');
+  if (!SERVER_MODE || !ACCOUNT || !isAdmin()) {
+    body.innerHTML = pageLoginPromptHTML();
+    bindPageLogin();
+    return;
+  }
+  body.innerHTML = pageLoadingHTML('正在加载文章…');
+  try {
+    const data = await api('/admin/articles');
+    renderAdminArticles((data && data.items) || []);
+  } catch (err) {
+    body.innerHTML = pageErrorHTML((err && err.message) || '加载失败', 'articles-retry');
+    const retry = $('articles-retry');
+    if (retry) retry.addEventListener('click', loadAdminArticles);
+  }
+}
+
+function renderAdminArticles(items) {
+  const body = $('account-page-body');
+  if (!items.length) {
+    body.innerHTML = '<div class="page-card"><div class="empty-note">没有文章。</div></div>';
+    return;
+  }
+  const hidden = items.filter(item => item.hidden).length;
+  let html = '<div class="page-card"><div class="card-sub">共 ' + items.length +
+    ' 篇，隐藏 ' + hidden + ' 篇。修改只影响站点显示，不改 Markdown 正文。</div></div>';
+  items.forEach(item => {
+    const path = item.path || '';
+    html += '<div class="admin-article-item" data-path="' + escapeHtml(path) + '">' +
+      '<div class="aa-head"><b>' + escapeHtml(item.name || path) + '</b>' +
+        '<span class="aa-path">' + escapeHtml(path) + '</span></div>' +
+      '<div class="aa-fields">' +
+        '<label>标题<input type="text" data-field="title" maxlength="160" value="' +
+          escapeHtml(item.title || '') + '" placeholder="留空则用原章节名"></label>' +
+        '<label>分类<select data-field="track">' +
+          adminOptions(ARTICLE_TRACK_OPTIONS, item.track || '') + '</select></label>' +
+        '<label>状态<select data-field="status">' +
+          adminOptions(ARTICLE_STATUS_OPTIONS, item.status || '') + '</select></label>' +
+        '<label>阶段<select data-field="phase">' +
+          adminOptions(ARTICLE_PHASE_OPTIONS, item.phase || '') + '</select></label>' +
+        '<label class="aa-hidden"><input type="checkbox" data-field="hidden"' +
+          (item.hidden ? ' checked' : '') + '> 隐藏</label>' +
+        '<button type="button" data-article-save>保存</button>' +
+        '<button type="button" data-article-open>查看</button>' +
+      '</div>' +
+      '<div class="aa-msg" role="status"></div>' +
+    '</div>';
+  });
+  body.innerHTML = html;
+}
+
+async function saveAdminArticle(btn) {
+  const item = btn.closest('.admin-article-item');
+  if (!item) return;
+  const path = item.dataset.path;
+  const title = item.querySelector('[data-field="title"]').value.trim();
+  const track = item.querySelector('[data-field="track"]').value;
+  const status = item.querySelector('[data-field="status"]').value;
+  const phase = item.querySelector('[data-field="phase"]').value;
+  const hidden = item.querySelector('[data-field="hidden"]').checked;
+  const msg = item.querySelector('.aa-msg');
+  btn.disabled = true;
+  if (msg) { msg.textContent = '保存中…'; msg.className = 'aa-msg'; }
+  try {
+    await api('/admin/articles/update', {
+      method: 'POST',
+      body: { path, title, track, status, phase, hidden },
+    });
+    if (msg) { msg.textContent = '已保存'; msg.className = 'aa-msg ok'; }
+    toast('文章设置已保存');
+  } catch (err) {
+    if (msg) { msg.textContent = (err && err.message) || '保存失败'; msg.className = 'aa-msg err'; }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+const accountPageBody = $('account-page-body');
+if (accountPageBody) {
+  accountPageBody.addEventListener('click', event => {
+    const roleBtn = event.target.closest('[data-user-role-save]');
+    if (roleBtn) { saveAdminUserRole(roleBtn); return; }
+    const pwdBtn = event.target.closest('[data-user-password]');
+    if (pwdBtn) { resetAdminUserPassword(pwdBtn); return; }
+    const delBtn = event.target.closest('[data-user-delete]');
+    if (delBtn) { deleteAdminUser(delBtn); return; }
+    const quotaBtn = event.target.closest('[data-user-quota-save]');
+    if (quotaBtn) { saveAdminUserQuota(quotaBtn); return; }
+    const termBtn = event.target.closest('[data-user-terminal]');
+    if (termBtn) { toggleAdminUserTerminal(termBtn); return; }
+    const saveBtn = event.target.closest('[data-article-save]');
+    if (saveBtn) { saveAdminArticle(saveBtn); return; }
+    const openBtn = event.target.closest('[data-article-open]');
+    if (openBtn) {
+      const item = openBtn.closest('.admin-article-item');
+      if (item && item.dataset.path) window.location.hash = encodeURIComponent(item.dataset.path);
+    }
+  });
+}
+
 async function loadProfile() {
   const body = $('account-page-body');
   if (!SERVER_MODE || !ACCOUNT) {
@@ -2544,6 +5007,7 @@ async function loadProfile() {
     if (ACCOUNT_PAGE !== 'profile') return;   // 加载期间用户已切走
     body.innerHTML = renderProfile(d);
     bindProfileEvents();
+    animateStatNumbers();
   } catch (e) {
     if (ACCOUNT_PAGE !== 'profile') return;
     body.innerHTML = pageErrorHTML((e && e.message) || '网络错误', 'profile-retry');
@@ -2595,6 +5059,31 @@ function renderProfile(d) {
       </button>`).join('')
     : '<div class="empty-note">还没有提问记录。读正文时点标题旁的「问 AI」就能提问。</div>';
 
+  // 分册进度：按当前章节表把已读路径归到各大类（read_paths 覆盖全部已读章）
+  const readSet = new Set(d.read_paths || []);
+  const bookStats = (typeof BOOKS !== 'undefined' && typeof bookOf === 'function' && chapters.length)
+    ? BOOKS.map(b => {
+        const chs = chapters.filter(c => bookOf(c) === b.key);
+        const read = chs.filter(c => readSet.has(c.path)).length;
+        return { label: b.label, read, total: chs.length };
+      }).filter(s => s.total > 0)
+    : [];
+  const bookHTML = bookStats.map(s => {
+    const pct = s.total ? Math.round(s.read / s.total * 100) : 0;
+    return '<div class="bk-row">' +
+      '<span class="bk-name">' + escapeHtml(s.label) + '</span>' +
+      '<span class="bk-bar"><span class="bk-fill" style="width:' + pct + '%"></span></span>' +
+      '<span class="bk-num">' + s.read + ' / ' + s.total + '</span>' +
+    '</div>';
+  }).join('');
+
+  // 免费额度：limit=-1 不限（管理员/绑定 Key）；custom=管理员单独定制过
+  const q = d.quota || {};
+  const quotaText = d.has_key
+    ? '已绑定专属 API Key，提问不限次'
+    : ('今日免费额度 ' + (q.used || 0) + ' / ' + (q.limit === -1 ? '不限' : (q.limit || 0)) +
+       (q.custom ? '（管理员定制）' : ''));
+
   return `
     <div class="page-card">
       <div class="profile-head">
@@ -2607,13 +5096,23 @@ function renderProfile(d) {
           <div class="profile-sub">注册于 <b>${escapeHtml(d.member_since || '未知')}</b> · 邮箱：${email}</div>
         </div>
       </div>
-      <div class="stat-grid">
-        <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.read_chapters || 0))}</div><div class="stat-cap">已读章数</div></div>
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-cell"><div class="stat-num" data-count="${stats.read_chapters || 0}">${escapeHtml(String(stats.read_chapters || 0))}</div><div class="stat-cap">已读章数</div></div>
         <div class="stat-cell"><div class="stat-num" style="font-size:.86rem">${escapeHtml(fmtDuration(stats.read_seconds))}</div><div class="stat-cap">累计阅读</div></div>
-        <div class="stat-cell"><div class="stat-num">${escapeHtml(String(d.bookmark_count || 0))}</div><div class="stat-cap">收藏小节</div></div>
-        <div class="stat-cell"><div class="stat-num">${escapeHtml(String(stats.asked || 0))}</div><div class="stat-cap">提问次数</div></div>
+        <div class="stat-cell"><div class="stat-num" data-count="${stats.streak_days || 0}">${escapeHtml(String(stats.streak_days || 0))}</div><div class="stat-cap">连续学习 · 天</div></div>
+        <div class="stat-cell"><div class="stat-num" data-count="${stats.asked || 0}">${escapeHtml(String(stats.asked || 0))}</div><div class="stat-cap">提问次数</div></div>
+        <div class="stat-cell"><div class="stat-num" data-count="${stats.graded || 0}">${escapeHtml(String(stats.graded || 0))}</div><div class="stat-cap">习题批改</div></div>
+        <div class="stat-cell"><div class="stat-num" data-count="${d.bookmark_count || 0}">${escapeHtml(String(d.bookmark_count || 0))}</div><div class="stat-cap">收藏小节</div></div>
       </div>
+      <p class="card-sub" style="margin-top:.7rem">${quotaText}</p>
     </div>
+
+    ${bookStats.length ? `
+    <div class="page-card">
+      <h2>分册进度</h2>
+      <p class="card-sub">每个大类里已读完的章节占比（章末检查表全勾即计为已读）。</p>
+      <div class="bk-list">${bookHTML}</div>
+    </div>` : ''}
 
     <div class="page-card">
       <h2>继续阅读</h2>
@@ -2632,6 +5131,27 @@ function renderProfile(d) {
       <div class="browse-list">${askHTML}</div>
     </div>
   `;
+}
+
+function animateStatNumbers() {
+  // 数字从 0 滚到目标值：给统计一点「正在计算」的实体感；尊重减少动态设置
+  const reduced = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) return;
+  document.querySelectorAll('#account-page-body .stat-num[data-count]').forEach(el => {
+    const target = parseInt(el.dataset.count, 10) || 0;
+    if (target <= 0) return;
+    const dur = 700;
+    const t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - k, 3);
+      el.textContent = String(Math.round(target * eased));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    el.textContent = '0';
+    requestAnimationFrame(step);
+  });
 }
 
 function bindProfileEvents() {
@@ -2799,21 +5319,56 @@ async function saveEmail() {
 }
 
 /* —— 事件绑定 —— */
+function closeAccountMenu() {
+  const menu = $('account-menu');
+  if (menu) menu.hidden = true;
+  const chip = $('account-chip');
+  if (chip) chip.setAttribute('aria-expanded', 'false');
+}
+
 $('account-chip').addEventListener('click', () => {
   if (!ACCOUNT) { openAuth('login'); return; }
   const m = $('account-menu');
   m.hidden = !m.hidden;
+  $('account-chip').setAttribute('aria-expanded', String(!m.hidden));
+  if (!m.hidden) {
+    // 两个下拉菜单互斥，避免同时盖在顶栏下方
+    $('reading-popover').hidden = true;
+    paintReadingSettings();
+  }
 });
 document.addEventListener('click', e => {
   const menu = $('account-menu');
   if (menu && !menu.hidden && !e.target.closest('#account-menu') && !e.target.closest('#account-chip')) {
-    menu.hidden = true;
+    closeAccountMenu();
   }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAccountMenu();
+});
+
+/* 键盘翻章：←/→ 上一章、下一章（与页面底部的翻页按钮走同一个 neighbor 逻辑）。
+   输入类元素里不拦截，抽屉/登录框打开时不抢键，也不与浏览器/系统的组合键冲突。 */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
+  const askPanel = $('ask-panel'), authModal = $('auth-modal');
+  if ((askPanel && !askPanel.hidden) || (authModal && !authModal.hidden)) return;
+  const termDock = $('terminal-dock');
+  if (termDock && !termDock.hidden) return;
+  if (!currentPath) return;
+  const { prev, next } = chapterNeighbors();
+  const target = e.key === 'ArrowLeft' ? prev : next;
+  if (!target) return;
+  e.preventDefault();
+  loadChapter(target.path);
 });
 
 async function logoutAccount() {
   try { await api('/auth/logout', { method: 'POST' }); } catch (e) { /* 忽略 */ }
-  $('account-menu').hidden = true;
+  closeAccountMenu();
   ACCOUNT = null;
   await loadServerProgress();   // 回落到本地进度，未登录也能看到 ✓
   renderAccount();
@@ -2829,7 +5384,7 @@ async function logoutAccount() {
 }
 
 $('menu-logout').addEventListener('click', logoutAccount);
-$('menu-password').addEventListener('click', () => { $('account-menu').hidden = true; openAuth('password'); });
+$('menu-password').addEventListener('click', () => { closeAccountMenu(); openAuth('password'); });
 $('menu-profile').addEventListener('click', () => gotoAccountPage('profile'));
 $('menu-settings').addEventListener('click', () => gotoAccountPage('settings'));
 // 「更换 Key」是动态按钮：已保存 key 时先展开输入框，再让用户提交。
@@ -2852,12 +5407,25 @@ $('auth-modal').addEventListener('click', e => { if (e.target.id === 'auth-modal
 document.querySelectorAll('.auth-tab').forEach(t => t.addEventListener('click', () => openAuth(t.dataset.tab)));
 $('auth-form').addEventListener('submit', submitAuth);
 $('ask-close').addEventListener('click', closeAsk);
-$('ask-fab').addEventListener('click', () => openAsk({ focus: true }));
+$('ask-fab').addEventListener('click', () => {
+  if (ASK_OPEN) closeAsk();
+  else openAsk({ focus: true });
+});
 $('ask-form').addEventListener('submit', submitAsk);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!$('ask-panel').hidden) closeAsk();
   else if (!$('auth-modal').hidden) closeAuth();
+});
+// 点击抽屉外部收起。各「问 AI」入口（悬浮按钮、标题旁按钮、划词浮层）与登录框在白名单里，
+// 避免「点开的那一下同时也算外部点击」和打断登录流程。
+document.addEventListener('click', e => {
+  if (!ASK_OPEN) return;
+  const t = e.target;
+  if (!t || !t.closest) return;
+  if (t.closest('#ask-panel') || t.closest('#ask-fab') || t.closest('.h-ask') ||
+      t.closest('.sel-ai') || t.closest('.reading-popover') || t.closest('#auth-modal')) return;
+  closeAsk();
 });
 
 /* ══════════════ 启动 ══════════════ */

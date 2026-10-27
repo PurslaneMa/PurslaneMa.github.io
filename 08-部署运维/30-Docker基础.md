@@ -1,6 +1,6 @@
 # $\rm Chapter \, 30$ Docker：让环境跟着代码走
 
-> 你给队友发了论文管理器的源码。他克隆下来后 `pip install` 报错——他系统里的 Python 是 3.9，你的代码用到了 3.12 的语法。他的 PostgreSQL 是 14，你的 SQL 用到了 16 才支持的语法。你在[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)中学过虚拟环境可以隔离 Python 版本和包——但数据库呢？系统库呢？操作系统呢？**Docker** 把整个用户态环境（包括操作系统用户空间、运行时、依赖、你的代码）打包成一个标准化的镜像，在任何人的机器上以完全相同的方式运行。
+> 你给队友发了论文管理器的源码。他克隆下来后 `pip install` 报错，他系统里的 Python 是 3.9，你的代码用到了 3.12 的语法。他的 PostgreSQL 是 14，你的 SQL 用到了 16 才支持的语法。你在[软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md)中学过虚拟环境可以隔离 Python 版本和包，但数据库呢？系统库呢？操作系统呢？**Docker** 把整个用户态环境（包括操作系统用户空间、运行时、依赖、你的代码）打包成一个标准化的镜像，在任何人的机器上以完全相同的方式运行。
 
 > **开始前自检**：本章假设你已经会：
 >
@@ -10,17 +10,17 @@
 
 ## $\rm \S \, 30.1$ Docker 的核心思想：把环境“装箱”
 
-这个镜像可以在任何装有 Docker 的机器上以完全相同的方式运行——不需要重装 Python、不需要配数据库、不需要手动处理动态库冲突。
+这个镜像可以在任何装有 Docker 的机器上以完全相同的方式运行：不需要重装 Python、不需要配数据库、不需要手动处理动态库冲突。
 
-> **类比**：你的 C++ 程序编译出来是一个 `.exe` 文件，拿到任何装有匹配动态库的机器上就能运行。Docker 镜像相当于连动态库和操作系统用户空间也打包进来——“可执行文件 + 它的整个世界”。你不用再关心目标机器装了哪个版本的 Python、Postgres 是什么版本、系统里有没有 `libopenblas.so`——这些都在镜像里。
+> **类比**：你的 C++ 程序编译出来是一个 `.exe` 文件，拿到任何装有匹配动态库的机器上就能运行。Docker 镜像相当于连动态库和操作系统用户空间也打包进来，即“可执行文件 + 它的整个世界”。你不用再关心目标机器装了哪个版本的 Python、Postgres 是什么版本、系统里有没有 `libopenblas.so`，这些都在镜像里。
 
 ### $\rm \S \, 30.1.1$ Docker 不是什么
 
 理解了 Docker 是什么后，先澄清三个常见误解：
 
-- **不是虚拟机**：虚拟机（VM）是一台完整的虚拟电脑——有自己的内核、驱动、init 系统。Docker 容器和宿主机**共享同一个操作系统内核**，容器只是一个隔离的用户空间。所以启动容器只需秒级（不需要启动 OS），内存开销极小（不需要加载内核）。
+- **不是虚拟机**：虚拟机（VM）是一台完整的虚拟电脑，有自己的内核、驱动、init 系统。Docker 容器和宿主机**共享同一个操作系统内核**，容器只是一个隔离的用户空间。所以启动容器只需秒级（不需要启动 OS），内存开销极小（不需要加载内核）。
 - **不是云平台**：Docker 在你的本地机器上运行。你可以把 Docker 镜像部署到任何云上，但 Docker 本身不是云。
-- **不是万能药**：“在我电脑上用 Docker 能跑”不代表“在服务器上一定没问题”——如果容器内部硬编码了 `localhost`、依赖了特定内核版本、或者端口和宿主机冲突，问题依然存在。
+- **不是万能药**：“在我电脑上用 Docker 能跑”不代表“在服务器上一定没问题”，如果容器内部硬编码了 `localhost`、依赖了特定内核版本、或者端口和宿主机冲突，问题依然存在。
 
 ## $\rm \S \, 30.2$ 镜像与容器：类与实例
 
@@ -31,16 +31,16 @@ graph LR
     C -->|"docker commit"| B
 ```
 
-- **镜像**（image）是只读的模板——包含文件系统、依赖、你的代码。像[从竞赛 C++ 到工程 C++](../06-编程语言/15-C++从竞赛到工程.md)中类的定义。
-- **容器**（container）是镜像的运行实例——在镜像之上加了一层可写层。像类的实例（对象）。
+- **镜像**（image）是只读的模板，包含文件系统、依赖、你的代码。像[从竞赛 C++ 到工程 C++](../06-编程语言/15-C++从竞赛到工程.md)中类的定义。
+- **容器**（container）是镜像的运行实例，在镜像之上加了一层可写层。像类的实例（对象）。
 
 同一个镜像可以同时启动多个容器，就像 `std::vector<int>` 可以创建多个实例。每个容器有自己的文件系统可写层，修改不会影响镜像或其他容器。
 
-> 如果删除一个容器（`docker rm`），容器可写层上所有修改都会丢失。需要持久化的数据（数据库、文件）要存放在容器的可写层之外，通常用**数据卷**（volume）——卷独立于容器生命周期（绑定挂载宿主目录是另一种方式，两者对比见 §30.9）。
+> 如果删除一个容器（`docker rm`），容器可写层上所有修改都会丢失。需要持久化的数据（数据库、文件）要存放在容器的可写层之外，通常用**数据卷**（volume），卷独立于容器生命周期（绑定挂载宿主目录是另一种方式，两者对比见 §30.9）。
 
 ### $\rm \S \, 30.2.1$ 镜像分层：为什么镜像能共享、又为什么删不掉东西
 
-上面说“容器在镜像之上加了一层可写层”——这句话里的“层”不是比喻，而是文件系统的实际结构。**每条会改变文件系统的 Dockerfile 指令产生一个只读层**，镜像就是这些层按顺序叠起来的集合：
+上面说“容器在镜像之上加了一层可写层”。这句话里的“层”不是比喻，而是文件系统的实际结构。**每条会改变文件系统的 Dockerfile 指令产生一个只读层**，镜像就是这些层按顺序叠起来的集合：
 
 ```text
 容器可写层（可读写，容器一删就没了）
@@ -55,7 +55,7 @@ graph LR
 
 分层的两个直接后果：
 
-**一是层可以被复用。** `python:3.12-slim` 这层的内容对所有基于它的镜像只有一份，磁盘上不会为每个镜像复制一遍；`docker pull` 时输出里那些 `Pull complete` 的层 ID，如果本地已有就显示 `Already exists`——它是按层下载的，不是按镜像整体下载。同一个 Dockerfile 第二次构建时命中缓存（§30.4 提到的 “Using cache”），也是同一套机制。
+**一是层可以被复用。** `python:3.12-slim` 这层的内容对所有基于它的镜像只有一份，磁盘上不会为每个镜像复制一遍；`docker pull` 时输出里那些 `Pull complete` 的层 ID，如果本地已有就显示 `Already exists`，它是按层下载的，不是按镜像整体下载。同一个 Dockerfile 第二次构建时命中缓存（§30.4 提到的 “Using cache”），也是同一套机制。
 
 **二是删除文件不会让镜像变小。** 在某一层执行 `RUN rm -rf /tmp/bigfile`，产生的效果是在**新层里记一条“这个路径已删除”的标记**，下面那层里的原始文件仍然完整存在、仍占空间。因为层是只读的，没人能回去修改历史层。用 `docker history <image>` 能看到每一层的大小，`RUN` 那一层看起来很小（只有删除标记），而引入大文件的那一层照样很大。
 
@@ -68,7 +68,7 @@ docker history paper-api
 
 要让镜像**真正变**小，得让那个大文件从不进入任何层：
 
-1. **同一条 `RUN` 里下载并删掉**：`RUN curl -o /tmp/x.tar.gz ... && tar ... && rm /tmp/x.tar.gz` ——临时文件在同一层内创建又删除，不会留在历史层里（这正是 `pip install --no-cache-dir` 的原理：不把 pip 的下载缓存留在层里）。
+1. **同一条 `RUN` 里下载并删掉**：`RUN curl -o /tmp/x.tar.gz ... && tar ... && rm /tmp/x.tar.gz`，临时文件在同一层内创建又删除，不会留在历史层里（这正是 `pip install --no-cache-dir` 的原理：不把 pip 的下载缓存留在层里）。
 2. **多阶段构建**：把编译工具链和大文件留在 builder 阶段，只把最终产物复制到运行镜像（§30.8 详述）。
 3. **`--squash`**（`docker build --squash`）：把构建结果压成一层。它是实验性选项且会丢掉层缓存带来的复用能力，日常工程中不如前两种常用。
 
@@ -92,7 +92,7 @@ which python           # /usr/local/bin/python
 exit                   # 退出并停止容器
 ```
 
-这个容器里的 Python 和你的宿主系统的 Python **完全隔离**——文件系统、PATH、包、用户都是容器自己的。
+这个容器里的 Python 和你的宿主系统的 Python **完全隔离**：文件系统、PATH、包、用户都是容器自己的。
 
 ### $\rm \S \, 30.3.1$ 核心命令
 
@@ -118,7 +118,7 @@ docker run -p 8000:8000 paper-api
 # 访问 localhost:8000 → 转发到容器内 8000 端口
 ```
 
-回顾[域名、HTTPS、代理与排障](../04-网络/24-域名HTTPS代理与排障.md)中的反向代理概念——Docker 的端口映射在效果上类似一层简化的反向代理（准确说它工作在四层：只按端口转发，不解析 HTTP 内容）。
+回顾[域名、HTTPS、代理与排障](../04-网络/24-域名HTTPS代理与排障.md)中的反向代理概念，Docker 的端口映射在效果上类似一层简化的反向代理（准确说它工作在四层：只按端口转发，不解析 HTTP 内容）。
 
 ### $\rm \S \, 30.3.3$ PID 1 与信号：为什么 `docker stop` 有时要等 10 秒
 
@@ -126,7 +126,7 @@ docker run -p 8000:8000 paper-api
 
 容器里的第一个进程（你通过 `CMD` 或 `docker run` 启动的那个）在容器内看到的 PID 是 **1**。Linux 内核把 PID 1 当作特殊进程：**它不施加默认的信号动作**。普通进程收到没有注册处理函数的 `SIGTERM`，内核默认把它终止；PID 1 收到未处理的 `SIGTERM` 时，信号被静默丢弃，进程继续运行。
 
-这个设计的本意是保护 init 系统（systemd、sysvinit）：关机流程由它自己决定，不能因为一个默认动作就死掉。但它同样作用于容器里的应用——于是出现这样的现象：
+这个设计的本意是保护 init 系统（systemd、sysvinit）：关机流程由它自己决定，不能因为一个默认动作就死掉。但它同样作用于容器里的应用，于是出现这样的现象：
 
 ```bash
 docker stop <container>
@@ -134,7 +134,7 @@ docker stop <container>
 # docker stop -t 1 <container>  # 可把等待时间改成 1 秒
 ```
 
-`docker stop` 的实际行为是：向容器内 PID 1 发 `SIGTERM`，等待默认 $10$ 秒的宽限期；如果进程还在，就补一个 `SIGKILL`（不可捕获，立即杀死）。如果应用没处理 `SIGTERM`，那 $10$ 秒就是纯粹的空等——**本该用来关闭连接池、写完未落盘的日志、把正在处理的请求做完的“优雅退出”时间，会被白白烧掉**，最后进程还是被强制杀掉，第 13 章讲的 graceful shutdown 在容器里等于没生效。
+`docker stop` 的实际行为是：向容器内 PID 1 发 `SIGTERM`，等待默认 $10$ 秒的宽限期；如果进程还在，就补一个 `SIGKILL`（不可捕获，立即杀死）。如果应用没处理 `SIGTERM`，那 $10$ 秒就是纯粹的空等，**本该用来关闭连接池、写完未落盘的日志、把正在处理的请求做完的“优雅退出”时间，会被白白烧掉**，最后进程还是被强制杀掉，第 13 章讲的 graceful shutdown 在容器里等于没生效。
 
 三种修法，从最推荐到最应急：
 
@@ -183,7 +183,7 @@ docker exec <container> ps -o pid,ppid,comm -p 1
 
 把第 1 步和第 4 步的结果对比，就能明白“优雅退出为什么有时形同虚设”；把第 3 步加进去，可以看清 `--init` 补上的正是“信号转发”这一环。
 
-> **经验规则**：写完 Dockerfile 后用 `docker stop` 计时一次。如果每次都要 10 秒，说明应用没有收到或没有处理 SIGTERM——这是排查“上线后请求被硬断、数据没来得及落盘”的第一条线索。想缩短宽限期可以用 `docker stop -t 3`，但那只是把强制杀死提前，不是修复。
+> **经验规则**：写完 Dockerfile 后用 `docker stop` 计时一次。如果每次都要 10 秒，说明应用没有收到或没有处理 SIGTERM，这是排查“上线后请求被硬断、数据没来得及落盘”的第一条线索。想缩短宽限期可以用 `docker stop -t 3`，但那只是把强制杀死提前，不是修复。
 
 ---
 
@@ -210,9 +210,9 @@ CMD ["python", "app.py"]
 
 - **FROM**：以哪个镜像为基础。`python:3.12-slim` 包含了 Python 3.12 和 pip，但不含编译器。
 - **WORKDIR**：后续命令在哪个目录中执行。`/app` 如果不存在会自动创建。
-- **COPY**：把宿主机的文件复制到镜像中。**先COPY依赖列表→RUN安装→再COPY源码**——如果 `requirements.txt` 没变，Docker 缓存 `RUN pip install` 的结果，避免每次构建都重新下载所有依赖。
+- **COPY**：把宿主机的文件复制到镜像中。**先COPY依赖列表→RUN安装→再COPY源码**，如果 `requirements.txt` 没变，Docker 缓存 `RUN pip install` 的结果，避免每次构建都重新下载所有依赖。
 - **RUN**：构建镜像时执行的命令。
-- **EXPOSE**：文档性质——声明容器将监听 8000 端口（不影响实际网络行为）。
+- **EXPOSE**：文档性质，声明容器将监听 8000 端口（不影响实际网络行为）。
 - **CMD**：容器启动时默认执行的命令。
 
 构建并运行：
@@ -278,16 +278,16 @@ docker compose down -v      # 同时删除数据卷——彻底重置
 
 1. **不要在 Dockerfile 中写密码/Token**。用环境变量（`${VAR}`）或 Docker Secrets（`docker secret`，只在 Swarm 集群模式下可用，超出本书范围）。
 2. **不要以 root 运行容器**。在 Dockerfile 中添加 `USER 1000`（或非 root 用户）。
-3. **用 `.dockerignore` 排除不需要的文件**——和 `.gitignore` 类似规则。排除 `.git`、`node_modules`、`venv`、`__pycache__` 可以显著减小构建上下文。
-4. **不挂载不必要的宿主目录**。谨慎使用 `bind mount`（`-v /host/path:/container/path`）——容器对挂载目录的写操作直接影响宿主机。
+3. **用 `.dockerignore` 排除不需要的文件**，和 `.gitignore` 类似规则。排除 `.git`、`node_modules`、`venv`、`__pycache__` 可以显著减小构建上下文。
+4. **不挂载不必要的宿主目录**。谨慎使用 `bind mount`（`-v /host/path:/container/path`），容器对挂载目录的写操作直接影响宿主机。
 
 ---
 
 ## $\rm \S \, 30.7$ 资源限制：让容器失败而不是拖垮宿主机
 
-默认情况下，一个容器能吃光宿主机的全部内存和 CPU。如果你在宿主机上跑了三个服务，其中一个进程内存失控，内核的 OOM Killer（Out-Of-Memory Killer）会在内存耗尽时挑一个进程杀掉——它**没有义务挑那个惹事的容器**，可能顺手把数据库杀了。资源限制把“谁负责”这件事变明确：给容器划一块配额，超了就杀这个容器自己。
+默认情况下，一个容器能吃光宿主机的全部内存和 CPU。如果你在宿主机上跑了三个服务，其中一个进程内存失控，内核的 OOM Killer（Out-Of-Memory Killer）会在内存耗尽时挑一个进程杀掉，它**没有义务挑那个惹事的容器**，可能顺手把数据库杀了。资源限制把“谁负责”这件事变明确：给容器划一块配额，超了就杀这个容器自己。
 
-底层机制是 **cgroup**（control group，控制组）——Linux 内核按组统计和限制资源的能力。Docker 把每个容器放进一个 cgroup，`--memory` 之类的参数就是往那个 cgroup 的限额文件里写值。容器看到的“可用内存上限”也来自 cgroup，所以很多运行时能感知到限额并按它调整自身策略（例如 JVM 的堆上限）。
+底层机制是 **cgroup**（control group，控制组）：Linux 内核按组统计和限制资源的能力。Docker 把每个容器放进一个 cgroup，`--memory` 之类的参数就是往那个 cgroup 的限额文件里写值。容器看到的“可用内存上限”也来自 cgroup，所以很多运行时能感知到限额并按它调整自身策略（例如 JVM 的堆上限）。
 
 ```bash
 # 限制内存 512MB，最多用 1.5 个 CPU 核心
@@ -309,7 +309,7 @@ docker stats --no-stream  # 只打印一次（适合放进脚本）
 几个容易误解的点：
 
 - **超内存是“被杀”，不是“变慢”**：内存是硬边界，容器内进程申请超过限额时分配失败，容器以退出码 137 被终止（$128+9$，即收到信号 9 / SIGKILL）。看到 137 且 `docker inspect <container> --format '{{.State.OOMKilled}}'` 为 `true`，就可以判定是 OOM，而不是代码崩溃。
-- **CPU 超限是“变慢”**：`--cpus` 是配额，容器用满配额时会被内核限流（throttle），请求延迟升高但不会被杀。所以“CPU 打满”表现为响应变慢，“内存打满”表现为进程消失——这两种现象指向的处理完全不同。
+- **CPU 超限是“变慢”**：`--cpus` 是配额，容器用满配额时会被内核限流（throttle），请求延迟升高但不会被杀。所以“CPU 打满”表现为响应变慢，“内存打满”表现为进程消失，这两种现象指向的处理完全不同。
 - **`--memory-swap` 要一起设**：只设 `--memory` 时，容器仍可能使用 swap，实际内存压力会被 swap 掩盖一部分，延迟变得难以解释。显式设 `--memory-swap` 等于 `--memory` 可以关掉这条模糊地带。
 - **限制不是越小越好**：给 Python 服务 128MB 反而会让它在正常流量下就 OOM。先用 `docker stats` 观察正常运行一天的内存峰值，再留 $20\%\text{–}30\%$ 余量设限。
 
@@ -339,7 +339,7 @@ USER 1000
 ENTRYPOINT ["/app/paper-cli"]
 ```
 
-与 §30.2.1 的分层机制呼应：`COPY --from=builder` 只把**文件**复制进新阶段，不复制 builder 的任何层。所以 `gcc:14` 的几百 MB 完全不进入最终镜像——这比“在同一个阶段里编译完再 `rm` 掉工具链”干净得多，因为被删除的层仍然会留在镜像里（§30.2.1 讲的正是这件事）。
+与 §30.2.1 的分层机制呼应：`COPY --from=builder` 只把**文件**复制进新阶段，不复制 builder 的任何层。所以 `gcc:14` 的几百 MB 完全不进入最终镜像，这比“在同一个阶段里编译完再 `rm` 掉工具链”干净得多，因为被删除的层仍然会留在镜像里（§30.2.1 讲的正是这件事）。
 
 ```bash
 docker build -t paper-cli .
@@ -360,7 +360,7 @@ docker history paper-cli       # 层数很少，且没有任何一层来自 gcc
 | 数据实际位置 | Docker 管理区（Linux 上默认 `/var/lib/docker/volumes/<名字>/_data`；Docker Desktop 在虚拟机内部） | 你指定的**宿主机路径** | 内存 |
 | 生命周期 | 独立于容器，直到 `docker volume rm` | 与宿主机目录一致，容器删了文件还在 | 容器停止即消失 |
 | 谁创建、谁管理 | `docker volume create` 或 `-v name:/path` 自动创建，`docker volume ls` 可列 | 你自己事先建好目录 | 无 |
-| 跨平台一致性 | 三种平台行为一致 | **差异明显**——见下文 | 仅 Linux 容器 |
+| 跨平台一致性 | 三种平台行为一致 | **差异明显**，见下文 | 仅 Linux 容器 |
 | 典型用途 | 数据库数据、上传文件、需要备份的持久数据 | 开发时把源码挂进容器、改完立即生效、挂配置文件 | 临时缓存、密钥文件、高性能但可丢的中间数据 |
 
 写法上的区别只有一个小细节：
@@ -372,7 +372,7 @@ docker run --mount type=tmpfs,destination=/tmp paper-api
 # 也可用更明确的 --mount 语法：--mount type=volume,source=paper-data,target=/data
 ```
 
-**Docker Desktop 上 bind mount 的性能问题**：在 macOS 和 Windows 上，Docker 跑在一个轻量虚拟机里，宿主机文件系统与虚拟机文件系统是两套。绑定挂载需要跨这道边界同步文件访问，因此**大量小文件读写**（比如 `node_modules`、Python 的导入）会明显变慢——这是 Windows/macOS 上的已知代价，Linux 上不存在，因为容器与宿主机共用同一套文件系统。应对办法：把依赖目录放在容器内（用卷覆盖它，而不是绑定挂载宿主机目录）、或改用 Compose 提供的文件同步机制。
+**Docker Desktop 上 bind mount 的性能问题**：在 macOS 和 Windows 上，Docker 跑在一个轻量虚拟机里，宿主机文件系统与虚拟机文件系统是两套。绑定挂载需要跨这道边界同步文件访问，因此**大量小文件读写**（比如 `node_modules`、Python 的导入）会明显变慢，这是 Windows/macOS 上的已知代价，Linux 上不存在，因为容器与宿主机共用同一套文件系统。应对办法：把依赖目录放在容器内（用卷覆盖它，而不是绑定挂载宿主机目录）、或改用 Compose 提供的文件同步机制。
 
 **选择依据**（不是绝对规则，取决于目标）：
 
@@ -388,7 +388,7 @@ docker run --mount type=tmpfs,destination=/tmp paper-api
 
 ### $\rm \S \, 30.10.1$ bridge 网络与 `docker0`
 
-每个容器有自己的**网络命名空间**（network namespace）——独立的一套网卡、路由表、`localhost`。Docker 默认给容器接上一个叫 `bridge` 的虚拟网络：宿主机上会出现一个虚拟网桥设备 `docker0`，每个容器从它那里分到一个私有 IP（默认 `172.17.0.0/16` 网段）。容器之间通过这个网桥通信，宿主机也能看到这些虚拟网卡。
+每个容器有自己的**网络命名空间**（network namespace）：独立的一套网卡、路由表、`localhost`。Docker 默认给容器接上一个叫 `bridge` 的虚拟网络：宿主机上会出现一个虚拟网桥设备 `docker0`，每个容器从它那里分到一个私有 IP（默认 `172.17.0.0/16` 网段）。容器之间通过这个网桥通信，宿主机也能看到这些虚拟网卡。
 
 ```bash
 docker network ls              # 列出网络（默认有 bridge/host/none）
@@ -401,7 +401,7 @@ docker exec <container> hostname -i   # 查看某容器拿到的 IP
 
 ### $\rm \S \, 30.10.2$ 端口映射是怎么实现的
 
-§30.3.2 说过 `-p 8000:8000` 把宿主机端口转发到容器。机制在 Linux 上是 **iptables 的 DNAT**（Destination NAT，目标地址转换）：Docker 在 `nat` 表的 `DOCKER` 链里插入一条规则，把目的端口为 $8000$ 的入站包的目标地址改写为容器 IP 的 $8000$ 端口。所以“端口映射”不是代理进程在转发，而是内核在网络层改写地址——这也是为什么它只认端口、不认识 HTTP（回顾 §30.3.2 里“工作的四层”那句）。
+§30.3.2 说过 `-p 8000:8000` 把宿主机端口转发到容器。机制在 Linux 上是 **iptables 的 DNAT**（Destination NAT，目标地址转换）：Docker 在 `nat` 表的 `DOCKER` 链里插入一条规则，把目的端口为 $8000$ 的入站包的目标地址改写为容器 IP 的 $8000$ 端口。所以“端口映射”不是代理进程在转发，而是内核在网络层改写地址，这也是为什么它只认端口、不认识 HTTP（回顾 §30.3.2 里“工作的四层”那句）。
 
 ```bash
 # Linux 上查看映射规则
@@ -410,13 +410,13 @@ sudo iptables -t nat -L DOCKER -n
 docker port <container>        # 查看某容器当前映射
 ```
 
-这带来两个实用推论：其一，同一个宿主机端口不能被两个容器映射，冲突时报 `port is already allocated`；其二，**映射只在宿主机生效**——容器之间访问不需要映射，直接用服务名或容器 IP 就能通（这正是 §30.5 Compose 里 `DATABASE_URL` 写 `db:5432` 的原因，`db` 由 Compose 的内嵌 DNS 解析成容器 IP）。
+这带来两个实用推论：其一，同一个宿主机端口不能被两个容器映射，冲突时报 `port is already allocated`；其二，**映射只在宿主机生效**，容器之间访问不需要映射，直接用服务名或容器 IP 就能通（这正是 §30.5 Compose 里 `DATABASE_URL` 写 `db:5432` 的原因，`db` 由 Compose 的内嵌 DNS 解析成容器 IP）。
 
 ### $\rm \S \, 30.10.3$ 容器内的 `localhost` 指向容器自己
 
 这是从宿主机迁移到容器时最常见的困惑：在容器里写 `http://localhost:8000`，访问的是**这个容器自己**的 8000 端口，不是宿主机的，也不是别的容器的。因为每个容器有独立的网络命名空间，`localhost`（`127.0.0.1`）在容器内解析到容器自己的回环接口。
 
-对照 §23.9 的结论：容器内服务必须监听 `0.0.0.0` 才能被端口映射转发来的连接接住——监听 `127.0.0.1` 时只有容器自己连得上，宿主机映射来的连接目标地址是容器的非回环 IP，会被拒绝。两者是同一条机制的两面：**网络命名空间隔离了 `localhost`，映射负责把连接送进容器的网卡。**
+对照 §23.9 的结论：容器内服务必须监听 `0.0.0.0` 才能被端口映射转发来的连接接住，监听 `127.0.0.1` 时只有容器自己连得上，宿主机映射来的连接目标地址是容器的非回环 IP，会被拒绝。两者是同一条机制的两面：**网络命名空间隔离了 `localhost`，映射负责把连接送进容器的网卡。**
 
 需要从容器访问宿主机上的服务时：
 
@@ -438,29 +438,29 @@ docker run -it --rm alpine sh -c 'cat /etc/hosts'
 
 ### $\rm \S \, 30.11.1$ 实践一：容器化 Python 后端
 
-1. 在论文管理器后端目录创建 Dockerfile（内容见 §30.4）——目录里应有可运行的 `app.py`、`requirements.txt`。
-2. `docker build -t paper-api .`——构建输出随构建器版本略有差异，成功标志是最后出现 `paper-api` 镜像名（BuildKit 会打印 `naming to docker.io/library/paper-api:latest`）；失败时看第一条 `ERROR`。
-3. `docker run -p 8000:8000 paper-api`——成功判据：另一个终端里 `curl http://localhost:8000/api/papers` 返回 JSON；若报 `port is already allocated`，换一个宿主机端口再试。
+1. 在论文管理器后端目录创建 Dockerfile（内容见 §30.4），目录里应有可运行的 `app.py`、`requirements.txt`。
+2. `docker build -t paper-api .`，构建输出随构建器版本略有差异，成功标志是最后出现 `paper-api` 镜像名（BuildKit 会打印 `naming to docker.io/library/paper-api:latest`）；失败时看第一条 `ERROR`。
+3. `docker run -p 8000:8000 paper-api`，成功判据：另一个终端里 `curl http://localhost:8000/api/papers` 返回 JSON；若报 `port is already allocated`，换一个宿主机端口再试。
 4. 用 `curl` 或浏览器验证 API 正常响应（同上一步）。
-5. `docker logs <container>` 查看输出——应看到后端启动日志；`docker exec -it <container> bash` 进入容器后 `ls /app` 能看到源码，说明镜像内容符合预期。
+5. `docker logs <container>` 查看输出，应看到后端启动日志；`docker exec -it <container> bash` 进入容器后 `ls /app` 能看到源码，说明镜像内容符合预期。
 
 > 前置：论文管理器后端可本地运行，当前目录就是后端目录（含 Dockerfile）；Docker 可用（`docker --version` 有输出）。成功判据：`docker ps` 显示容器 `Up`，`curl http://localhost:8000/api/papers` 返回 JSON。清理：`docker stop <container> && docker rm <container>`；若要连镜像一起删，再加 `docker rmi paper-api`。
 
 ### $\rm \S \, 30.11.2$ 实践二：添加数据卷
 
 1. 修改 Dockerfile，确保 SQLite 数据库文件存储在 `/data/` 目录（例如把数据库路径改成由 `DATABASE_PATH=/data/papers.db` 之类的环境变量控制）。
-2. `docker run -v paper-data:/data -p 8000:8000 paper-api`——成功判据：`docker volume ls` 里出现 `paper-data`，容器正常响应请求。
+2. `docker run -v paper-data:/data -p 8000:8000 paper-api`，成功判据：`docker volume ls` 里出现 `paper-data`，容器正常响应请求。
 3. 在容器内插入几条数据（用后端的 POST 接口最省事；`python:*-slim` 镜像里没有 `sqlite3` 命令行，用 `docker exec <container> python -c ...` 走 Python 的 sqlite3 模块也可以），然后删除容器：`docker rm -f <container>`。
-4. 重新启动一个同样的容器（挂载同一个卷）：`docker run -v paper-data:/data -p 8000:8000 paper-api`——成功判据：之前插入的数据仍能查到（卷独立于容器生命周期）。
+4. 重新启动一个同样的容器（挂载同一个卷）：`docker run -v paper-data:/data -p 8000:8000 paper-api`，成功判据：之前插入的数据仍能查到（卷独立于容器生命周期）。
 
 > 前置：完成实践一且镜像可构建；后端支持把数据库路径配置到 `/data`。成功判据：删除容器并重建后，数据仍然存在。清理：`docker rm -f <container>`；确认不再需要这些数据后，再 `docker volume rm paper-data`（该命令会永久删除卷内数据）。
 
 ### $\rm \S \, 30.11.3$ 实践三：Compose 启动全栈
 
-1. 用上面的 `docker-compose.yml` 启动前端+后端+数据库——成功判据：`docker compose ps` 三个服务都是 `running`。
-2. `docker compose logs -f` 观察三个服务的启动顺序——应看到 db 先就绪、backend 与 frontend 随后开始监听；`depends_on` 只保证启动顺序，不保证 db 已经能接受连接。
-3. 在前端页面中添加一条论文，确认数据库已持久化——成功判据：`docker compose restart backend` 后这条记录仍能查到（或后端 API 返回的条数增加）。
-4. `docker compose down -v` 彻底清理——成功判据：`docker compose ps` 不再列出服务，数据卷也被删除。
+1. 用上面的 `docker-compose.yml` 启动前端+后端+数据库，成功判据：`docker compose ps` 三个服务都是 `running`。
+2. `docker compose logs -f` 观察三个服务的启动顺序，应看到 db 先就绪、backend 与 frontend 随后开始监听；`depends_on` 只保证启动顺序，不保证 db 已经能接受连接。
+3. 在前端页面中添加一条论文，确认数据库已持久化，成功判据：`docker compose restart backend` 后这条记录仍能查到（或后端 API 返回的条数增加）。
+4. `docker compose down -v` 彻底清理，成功判据：`docker compose ps` 不再列出服务，数据卷也被删除。
 
 > 前置：项目根目录有 §30.5 的 `docker-compose.yml`，并在同目录的 `.env` 里设置 `DB_PASSWORD`（Compose 会读取它）。成功判据：三个服务同时运行，写入的数据在容器重启后仍在。清理：只想停止服务、保留数据用 `docker compose down`；`docker compose down -v` 会连数据卷一起删除（数据永久丢失，确认不需要后再执行）。
 
@@ -470,10 +470,10 @@ docker run -it --rm alpine sh -c 'cat /etc/hosts'
 
 - 镜像 = 只读模板，容器 = 运行实例 + 可写层。同一个镜像可以启动多个容器。
 - 每条 Dockerfile 指令产生一个只读层，靠联合文件系统叠成统一目录视图；层可被多个镜像共享，但**删除文件只在新层留下标记，镜像不会因此变小**。
-- Dockerfile 把环境构建写成代码——基础镜像→安装依赖→复制源码→设置启动命令。多阶段构建让编译工具链只留在 builder 阶段。
+- Dockerfile 把环境构建写成代码：基础镜像→安装依赖→复制源码→设置启动命令。多阶段构建让编译工具链只留在 builder 阶段。
 - 端口映射（`-p`）把容器端口暴露到宿主机，底层是 iptables DNAT；容器内 `localhost` 指容器自己。
 - 数据要放在容器外：卷（volume）跨平台一致、绑定挂载（bind mount）方便开发但在 Docker Desktop 上跨文件系统有性能代价、tmpfs 只存内存。
-- 容器的第一个进程是 PID 1，内核不对它施加默认信号动作——所以 `docker stop` 可能等满 10 秒才杀。用 exec 形式 `CMD`、应用自处理 `SIGTERM`、或加 `--init` 让优雅退出真正生效。
+- 容器的第一个进程是 PID 1，内核不对它施加默认信号动作，所以 `docker stop` 可能等满 10 秒才杀。用 exec 形式 `CMD`、应用自处理 `SIGTERM`、或加 `--init` 让优雅退出真正生效。
 - 用 `--memory`/`--cpus` 限制资源（机制是 cgroup）：内存超限被杀（退出码 137），CPU 超限只是变慢。
 - Compose 编排多个服务的启动顺序、网络和存储。
 
@@ -504,19 +504,19 @@ docker run -it --rm alpine sh -c 'cat /etc/hosts'
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
 ### $\rm \S \, 30.15.1$ 自测答案 · 关键概念回顾
-1. 镜像是只读模板，容器是镜像的运行实例（加可写层）。Docker 容器和宿主机共享内核（不是虚拟机——不需要启动完整的 OS），因此启动极快（秒级）、内存开销极小。
-2. COPY 在构建时执行（把宿主机文件复制到镜像），RUN 在构建时执行（运行命令）。先 COPY requirements.txt → RUN pip install → 再 COPY 源码——利用 Docker 的层缓存：只要 requirements.txt 没变，pip install 的结果就被缓存。
-3. ①层可以被复用：`python:3.12-slim` 这样的基础层对基于它的所有镜像只有一份，`docker pull` 按层下载、已有层显示 `Already exists`，构建时的 “Using cache” 也是同一机制。②删除文件只是在新层记录删除标记，历史只读层里的原始文件仍在、仍占空间。所以 `RUN rm -rf` 不会让镜像变小——要让大文件不进任何层，得在同一条 `RUN` 里创建并删除、或用多阶段构建只复制产物。
-4. 普通进程收到未注册处理函数的 `SIGTERM` 会被内核默认终止；PID 1 是例外，内核不施加默认动作，信号被静默丢弃。所以容器里 PID 1 不处理 `SIGTERM` 时，`docker stop` 会等满默认 $10$ 秒宽限期再发 `SIGKILL`，优雅退出失效。看到两个进程通常说明 `CMD` 用的是 shell 形式（`CMD python app.py`），PID 1 是 `sh`，它不转发信号给 `python`——改成 exec 形式 `CMD ["python", "app.py"]`。
+1. 镜像是只读模板，容器是镜像的运行实例（加可写层）。Docker 容器和宿主机共享内核（不是虚拟机，不需要启动完整的 OS），因此启动极快（秒级）、内存开销极小。
+2. COPY 在构建时执行（把宿主机文件复制到镜像），RUN 在构建时执行（运行命令）。先 COPY requirements.txt → RUN pip install → 再 COPY 源码，利用 Docker 的层缓存：只要 requirements.txt 没变，pip install 的结果就被缓存。
+3. ①层可以被复用：`python:3.12-slim` 这样的基础层对基于它的所有镜像只有一份，`docker pull` 按层下载、已有层显示 `Already exists`，构建时的 “Using cache” 也是同一机制。②删除文件只是在新层记录删除标记，历史只读层里的原始文件仍在、仍占空间。所以 `RUN rm -rf` 不会让镜像变小，要让大文件不进任何层，得在同一条 `RUN` 里创建并删除、或用多阶段构建只复制产物。
+4. 普通进程收到未注册处理函数的 `SIGTERM` 会被内核默认终止；PID 1 是例外，内核不施加默认动作，信号被静默丢弃。所以容器里 PID 1 不处理 `SIGTERM` 时，`docker stop` 会等满默认 $10$ 秒宽限期再发 `SIGKILL`，优雅退出失效。看到两个进程通常说明 `CMD` 用的是 shell 形式（`CMD python app.py`），PID 1 是 `sh`，它不转发信号给 `python`，改成 exec 形式 `CMD ["python", "app.py"]`。
 5. `--memory` 是硬上限，超限的容器被 OOM Killer 杀掉（退出码 137，`docker inspect ... --format '{{.State.OOMKilled}}'` 为 true）；`--cpus` 是配额，超限只是被限流，表现为响应变慢而进程仍在。两者都用 `docker stats` 观察实时用量与上限。
 
 ### $\rm \S \, 30.15.2$ 自测答案 · 应用与辨析
-6. 容器内是隔离的文件系统、网络栈和进程空间——不依赖宿主机的 Python 版本、系统库、全局包。但容器内服务监听 `0.0.0.0:8000` 需要容器自己的端口映射才能从宿主机访问。
-7. 前者停止并删除容器和网络，保留数据卷。后者同时删除数据卷——数据彻底丢失（类似 `DROP DATABASE` + 删除备份）。三者选择：需要备份、迁移、与容器解耦的持久数据用**卷**（跨平台行为一致）；开发时要把宿主机源码改动即时映射进容器、或挂配置文件用**绑定挂载**（注意 Docker Desktop 上跨文件系统同步大量小文件会慢）；只在内存中短期存在、不希望落盘的数据用 **tmpfs**。
-8. 原因一：应用没有注册 `SIGTERM` 处理函数，PID 1 忽略信号——修法是应用自己处理 `SIGTERM`（Gunicorn/waitress 等已内置，自写循环需自行注册）。原因二：`CMD` 写成了 shell 形式，PID 1 是 `sh`，它把子进程 `python` 挡在了信号之外——修法是改成 exec 形式 `CMD ["python", "app.py"]`。若第三方镜像不方便改代码，可加 `--init` 用 tini 转发信号。多阶段构建之所以能大幅瘦身，是因为 `COPY --from=builder` 只复制**产物文件**，不复制 builder 的任何层，`gcc:14` 等工具链的数百 MB 从不进入最终镜像。
+6. 容器内是隔离的文件系统、网络栈和进程空间，不依赖宿主机的 Python 版本、系统库、全局包。但容器内服务监听 `0.0.0.0:8000` 需要容器自己的端口映射才能从宿主机访问。
+7. 前者停止并删除容器和网络，保留数据卷。后者同时删除数据卷，数据彻底丢失（类似 `DROP DATABASE` + 删除备份）。三者选择：需要备份、迁移、与容器解耦的持久数据用**卷**（跨平台行为一致）；开发时要把宿主机源码改动即时映射进容器、或挂配置文件用**绑定挂载**（注意 Docker Desktop 上跨文件系统同步大量小文件会慢）；只在内存中短期存在、不希望落盘的数据用 **tmpfs**。
+8. 原因一：应用没有注册 `SIGTERM` 处理函数，PID 1 忽略信号，修法是应用自己处理 `SIGTERM`（Gunicorn/waitress 等已内置，自写循环需自行注册）。原因二：`CMD` 写成了 shell 形式，PID 1 是 `sh`，它把子进程 `python` 挡在了信号之外，修法是改成 exec 形式 `CMD ["python", "app.py"]`。若第三方镜像不方便改代码，可加 `--init` 用 tini 转发信号。多阶段构建之所以能大幅瘦身，是因为 `COPY --from=builder` 只复制**产物文件**，不复制 builder 的任何层，`gcc:14` 等工具链的数百 MB 从不进入最终镜像。
 
 ---
 
-Docker 让你的项目可以在任何机器上无差异运行。但“能运行”和“用户能通过公网访问”之间还差好几步——域名配置、HTTPS 证书、反向代理、CI/CD 部署流水线。下一章把 Docker 容器送上云。
+Docker 让你的项目可以在任何机器上无差异运行。但“能运行”和“用户能通过公网访问”之间还差好几步：域名配置、HTTPS 证书、反向代理、CI/CD 部署流水线。下一章把 Docker 容器送上云。
 
 > 你现在能：解释镜像与容器的关系与分层机制，写一个 Dockerfile（含多阶段构建）打包应用，用 docker run/ps/exec/stats 运行与排查容器，给容器设资源限制，按场景选择卷/绑定挂载/tmpfs，并解释端口映射与容器内 `localhost` 的含义

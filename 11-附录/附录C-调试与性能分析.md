@@ -1,14 +1,14 @@
 # $\rm Appendix \, C$ 调试、崩溃分析与性能剖析
 
-> 在这套教材的前 46 章中，你学会了写代码、编译、运行、测试、部署。但有一个问题被分散在各章零散提及，从未系统回答：**程序出错了，你怎么办？** 本章把诊断能力作为一门独立技能来教——不是某个调试器的快捷键列表，而是从错误信息中提取证据、定位根因、验证修复的系统方法。
+> 在这套教材的前 46 章中，你学会了写代码、编译、运行、测试、部署。但有一个问题被分散在各章零散提及，从未系统回答：**程序出错了，你怎么办？** 本章把诊断能力作为一门独立技能来教：不是某个调试器的快捷键列表，而是从错误信息中提取证据、定位根因、验证修复的系统方法。
 
-你应该已经会编译 C++ 和 Python 程序，用过 `g++` 和 `pip`，见过编译错误和运行时崩溃，知道 `printf` 调试和断点的基本用法。如果你没读过前面的章节，本章至少需要你理解终端、编译和进程的基本概念。本章不依赖 GPU、Docker 或任何云服务——所有实验在本地完成。
+你应该已经会编译 C++ 和 Python 程序，用过 `g++` 和 `pip`，见过编译错误和运行时崩溃，知道 `printf` 调试和断点的基本用法。如果你没读过前面的章节，本章至少需要你理解终端、编译和进程的基本概念。本章不依赖 GPU、Docker 或任何云服务，所有实验在本地完成。
 
 ## $\rm \S \, C.1$ 错误信息是你的朋友，不是敌人
 
 ### $\rm \S \, C.1.1$ 为什么开发者把一半时间花在读错误信息上
 
-OJ 给你的反馈只有 Accepted / Wrong Answer / Runtime Error / Time Limit Exceeded。真实开发中，编译器、链接器、操作系统、运行时库和你的程序本身都会产生错误信息——每条都告诉你**哪里**出了问题，而不仅仅是**是否**出了问题。
+OJ 给你的反馈只有 Accepted / Wrong Answer / Runtime Error / Time Limit Exceeded。真实开发中，编译器、链接器、操作系统、运行时库和你的程序本身都会产生错误信息，每条都告诉你**哪里**出了问题，而不仅仅是**是否**出了问题。
 
 阅读错误信息是一种**可训练的技能**——不是天赋，不是经验，就是技能。下面从最常见的三类开始。
 
@@ -33,8 +33,8 @@ buggy.cpp:4:5: error: expected ';' before 'return'
 ```
 
 **关键信息**（按重要性排序）：
-1. **文件名和行号**：`buggy.cpp:4`——问题在第 4 行附近
-2. **错误类型**：`error: expected ';' before 'return'`——在 `return` 之前缺了分号
+1. **文件名和行号**：`buggy.cpp:4`，问题在第 4 行附近
+2. **错误类型**：`error: expected ';' before 'return'`，在 `return` 之前缺了分号
 3. **上下文**：编译器用 `^` 和 `~` 标出精确位置
 
 **常见陷阱**：行号指向的是编译器**发现**问题的位置，不一定是**原因**所在的位置。缺分号时编译器报在下一行开头；缺括号时可能报在文件末尾。
@@ -49,7 +49,7 @@ int main() {
 }
 ```
 
-> **经验规则**：如果编译器报的行号看起来完全正确——先看前一行。如果报在文件末尾——通常是少了一个 `}` 或 `)`（也可能是少了 `#endif`、字符串/注释没闭合）。
+> **经验规则**：如果编译器报的行号看起来完全正确，先看前一行。如果报在文件末尾，通常是少了一个 `}` 或 `)`（也可能是少了 `#endif`、字符串/注释没闭合）。
 
 **链接错误的阅读方法**：
 
@@ -61,9 +61,9 @@ collect2: error: ld returned 1 exit status
 ```
 
 `undefined reference to` = 你声明了某个函数（在头文件或 `extern` 中），但没有提供实现。典型原因：
-- 忘记链接包含该函数实现的 `.cpp` 或 `.o` 文件
-- 函数签名不匹配（参数类型或 `const` 不同）
-- 库的链接顺序错误
+1. 忘记链接包含该函数实现的 `.cpp` 或 `.o` 文件
+2. 函数签名不匹配（参数类型或 `const` 不同）
+3. 库的链接顺序错误
 
 ### $\rm \S \, C.1.3$ 运行时崩溃：Segfault 不是“程序崩了”那么简单
 
@@ -72,7 +72,7 @@ $ ./buggy
 Segmentation fault (core dumped)
 ```
 
-**Segfault**（段错误）= 程序试图访问不属于它的内存地址。不是“随机的错误”——每次 segfault 都有一个精确的原因：
+**Segfault**（段错误）= 程序试图访问不属于它的内存地址。不是“随机的错误”，每次 segfault 都有一个精确的原因：
 
 | 原因 | C++ 示例 |
 |------|---------|
@@ -90,7 +90,7 @@ Segmentation fault (core dumped)
 
 ### $\rm \S \, C.2.1$ 什么是调用栈
 
-当函数 A 调用函数 B，B 调用 C——程序崩溃在 C 中。**调用栈**（call stack / backtrace）告诉你“从 main 到崩溃点经过了哪些函数”。它像一个面包屑路径：`main → parse_file → split_line → crash at line 47`。
+当函数 A 调用函数 B，B 调用 C，程序崩溃在 C 中。**调用栈**（call stack / backtrace）告诉你“从 main 到崩溃点经过了哪些函数”。它像一个面包屑路径：`main → parse_file → split_line → crash at line 47`。
 
 ### $\rm \S \, C.2.2$ 获取 Backtrace
 
@@ -116,7 +116,7 @@ gdb ./buggy
 
 **方法二：Core Dump（程序死后分析）**
 
-Core dump 是程序崩溃时操作系统保存的内存快照——包含完整调用栈、所有变量的值和寄存器状态：
+Core dump 是程序崩溃时操作系统保存的内存快照，包含完整调用栈、所有变量的值和寄存器状态：
 
 ```bash
 # 启用 core dump（默认通常禁用）
@@ -141,7 +141,7 @@ Core dump 的强大之处：你不需要复现崩溃。程序崩溃了一次，c
 
 | 特性 | Debug（`-O0 -g`） | Release（`-O2` 或 `-O3`） |
 |------|-------------------|--------------------------|
-| 优化 | 关闭——每行代码独立翻译 | 激进——内联、重排、向量化、消除“无用”代码 |
+| 优化 | 关闭（每行代码独立翻译） | 激进（内联、重排、向量化、消除“无用”代码） |
 | 调试符号 | 保留（`-g`） | 通常剥离 |
 | 断言 | `assert()` 生效 | `NDEBUG` 定义后 `assert()` 被移除 |
 | 未初始化变量 | 有时被零初始化（不是标准行为！） | 包含栈上的随机垃圾值 |
@@ -149,10 +149,10 @@ Core dump 的强大之处：你不需要复现崩溃。程序崩溃了一次，c
 
 ### $\rm \S \, C.3.2$ “Debug 正常，Release 崩”的常见原因
 
-1. **未初始化变量**——Debug 模式可能帮你清零，Release 不会
-2. **未定义行为被优化器利用**——编译器假设你的代码没有 UB，如果实际有，优化器可以产生意料之外的结果
-3. **时序敏感代码**——Debug 的额外指令改变了时间窗口，隐藏了 race condition
-4. **`assert()` 中有副作用**——`assert(process_data())` 在 Release 中被完全删除
+1. **未初始化变量**：Debug 模式可能帮你清零，Release 不会
+2. **未定义行为被优化器利用**：编译器假设你的代码没有 UB，如果实际有，优化器可以产生意料之外的结果
+3. **时序敏感代码**：Debug 的额外指令改变了时间窗口，隐藏了 race condition
+4. **`assert()` 中有副作用**：`assert(process_data())` 在 Release 中被完全删除
 
 ```cpp
 // 经典陷阱：assert 中有副作用
@@ -166,7 +166,7 @@ assert(connected);
 
 ## $\rm \S \, C.4$ Sanitizer：编译器的内置侦探
 
-Google 开发的 **Sanitizer** 套件已经被集成到 GCC 和 Clang 中。它们通过在编译时**插入额外的检查代码**来捕获内存错误和未定义行为——不需要改变你的代码，只需要加一个编译参数。
+Google 开发的 **Sanitizer** 套件已经被集成到 GCC 和 Clang 中。它们通过在编译时**插入额外的检查代码**来捕获内存错误和未定义行为，不需要改变你的代码，只需要加一个编译参数。
 
 ### $\rm \S \, C.4.1$ AddressSanitizer（ASan）：内存错误的克星
 
@@ -181,12 +181,12 @@ g++ -std=c++17 -g -fsanitize=address buggy.cpp -o buggy
 ```
 
 ASan 能检测：
-- use-after-free（使用已释放的内存）
-- heap-buffer-overflow（堆缓冲区越界）
-- stack-buffer-overflow（栈缓冲区越界）
-- memory leak（内存泄漏——加 `ASAN_OPTIONS=detect_leaks=1`）
+1. use-after-free（使用已释放的内存）
+2. heap-buffer-overflow（堆缓冲区越界）
+3. stack-buffer-overflow（栈缓冲区越界）
+4. memory leak（内存泄漏，加 `ASAN_OPTIONS=detect_leaks=1`）
 
-性能开销约 $2\times$ 慢——比 Valgrind（$10\times$—$50\times$）轻得多。调试时可以日常开启。
+性能开销约 $2\times$ 慢，比 Valgrind（$10\times$—$50\times$）轻得多。调试时可以日常开启。
 
 ### $\rm \S \, C.4.2$ UndefinedBehaviorSanitizer（UBSan）
 
@@ -195,11 +195,11 @@ g++ -fsanitize=undefined buggy.cpp -o buggy
 ```
 
 检测：
-- 有符号整数溢出（`INT_MAX + 1`）
-- 除零
-- 空指针解引用
-- 非法的类型转换
-- 越界的 `bitshift`（`1 << 33` 在 32-bit `int` 上）
+1. 有符号整数溢出（`INT_MAX + 1`）
+2. 除零
+3. 空指针解引用
+4. 非法的类型转换
+5. 越界的 `bitshift`（`1 << 33` 在 32-bit `int` 上）
 
 ### $\rm \S \, C.4.3$ ThreadSanitizer（TSan）
 
@@ -207,25 +207,25 @@ g++ -fsanitize=undefined buggy.cpp -o buggy
 g++ -fsanitize=thread -g race.cpp -o race -lpthread
 ```
 
-检测 data race——两个线程同时访问同一块内存，且至少一个是写操作，且没有任何同步机制。TSan 会在检测到 race 时输出两个线程各自的调用栈，精确定位冲突的变量和代码行。
+检测 data race：两个线程同时访问同一块内存，且至少一个是写操作，且没有任何同步机制。TSan 会在检测到 race 时输出两个线程各自的调用栈，精确定位冲突的变量和代码行。
 
-> **经验规则**：日常调试至少开 `-fsanitize=address,undefined`。CI 里再单独构建一次 TSan 版本——ASan 与 TSan **不能编进同一个二进制**，必须分成两次构建（见 C.5 的场景表）。Sanitizer 比 Valgrind 快得多，误报率也低；代价是编译、运行都稍慢，排查内存与并发问题时通常值得。
+> **经验规则**：日常调试至少开 `-fsanitize=address,undefined`。CI 里再单独构建一次 TSan 版本，因为 ASan 与 TSan **不能编进同一个二进制**，必须分成两次构建（见 C.5 的场景表）。Sanitizer 比 Valgrind 快得多，误报率也低；代价是编译、运行都稍慢，排查内存与并发问题时通常值得。
 
 ---
 
 ## $\rm \S \, C.5$ Valgrind：当 Sanitizer 不够时
 
-Sanitizer 需要重新编译——如果你拿到的是一个已编译的二进制文件，或者需要检测未初始化内存的读取，Valgrind 登场。
+Sanitizer 需要重新编译，如果你拿到的是一个已编译的二进制文件，或者需要检测未初始化内存的读取，Valgrind 登场。
 
 ```bash
 sudo apt install valgrind
 valgrind --leak-check=full ./buggy
 ```
 
-Valgrind 在你的程序和操作系统之间插入了一层虚拟机——每一条内存访问指令都被拦截和检查。这意味着：
-- 不需要重新编译
-- 但运行速度降低 $10\times$—$50\times$
-- 检测类型和 ASan 重叠但各有侧重
+Valgrind 在你的程序和操作系统之间插入了一层虚拟机：每一条内存访问指令都被拦截和检查。这意味着：
+1. 不需要重新编译
+2. 但运行速度降低 $10\times$—$50\times$
+3. 检测类型和 ASan 重叠但各有侧重
 
 | 场景 | 工具 |
 |------|------|
@@ -253,15 +253,15 @@ strace ./paper-cli papers.txt 2>&1 | head -30
 # exit_group(0)                        ← 正常退出
 ```
 
-`strace` 显示你的程序发出的**每一个系统调用**——打开什么文件、读了多少字节、连接到哪个 IP、分配了多少内存。它回答：“程序为什么卡住了？”“它到底在访问哪个文件？”“权限错误发生在哪里？”
+`strace` 显示你的程序发出的**每一个系统调用**：打开什么文件、读了多少字节、连接到哪个 IP、分配了多少内存。它回答：“程序为什么卡住了？”“它到底在访问哪个文件？”“权限错误发生在哪里？”
 
 ### $\rm \S \, C.6.2$ 实战场景
 
-**场景一**：程序卡住不动了——`strace` 显示最后一条系统调用是 `read(5, ...)`——它在等待 fd 5 的数据。`ls -l /proc/PID/fd/5` 看看 fd 5 是什么（可能是管道、socket 或文件）。
+**场景一**：程序卡住不动了，`strace` 显示最后一条系统调用是 `read(5, ...)`：它在等待 fd 5 的数据。`ls -l /proc/PID/fd/5` 看看 fd 5 是什么（可能是管道、socket 或文件）。
 
-**场景二**：程序报 `No such file or directory` 但文件确实存在——`strace` 显示 `open("/etc/config.conf", O_RDONLY) = -1 EACCES`——是权限问题（EACCES），不是文件不存在（ENOENT）。程序把 EACCES 转成了 “No such file or directory”。
+**场景二**：程序报 `No such file or directory` 但文件确实存在，`strace` 显示 `open("/etc/config.conf", O_RDONLY) = -1 EACCES`，是权限问题（EACCES），不是文件不存在（ENOENT）。程序把 EACCES 转成了 “No such file or directory”。
 
-**场景三**：程序突然变慢了——`strace -c ./program` 在退出时输出统计表：哪个系统调用被调用了多少次、总共花了多少时间。如果 `read` 花了 90% 的时间，I/O 是瓶颈；如果 `futex` 很频繁，锁竞争是瓶颈。
+**场景三**：程序突然变慢了，`strace -c ./program` 在退出时输出统计表：哪个系统调用被调用了多少次、总共花了多少时间。如果 `read` 花了 90% 的时间，I/O 是瓶颈；如果 `futex` 很频繁，锁竞争是瓶颈。
 
 ---
 
@@ -298,19 +298,19 @@ perf report
 
 ### $\rm \S \, C.7.3$ 火焰图：把 perf 输出可视化
 
-火焰图（Flame Graph）把调用栈画成彩色横条——宽 = 占用 CPU 比例，高 = 调用深度。`parse_line` 占了 45% 的宽度？立刻知道优化目标。
+火焰图（Flame Graph）把调用栈画成彩色横条：宽 = 占用 CPU 比例，高 = 调用深度。`parse_line` 占了 45% 的宽度？立刻知道优化目标。
 
 生成火焰图：
 
-> `stackcollapse-perf.pl` 和 `flamegraph.pl` 来自 https://github.com/brendangregg/FlameGraph——先克隆该仓库，再运行下面的命令。
+> `stackcollapse-perf.pl` 和 `flamegraph.pl` 来自 https://github.com/brendangregg/FlameGraph，先克隆该仓库，再运行下面的命令。
 
 ```bash
 perf record -g ./paper-cli papers.txt
 perf script | stackcollapse-perf.pl | flamegraph.pl > flamegraph.svg
-# 浏览器打开 flamegraph.svg——鼠标悬停在每个函数上看到精确百分比
+# 浏览器打开 flamegraph.svg，鼠标悬停在每个函数上看到精确百分比
 ```
 
-> **经验规则**：先 profile 再优化。凭直觉优化的准确率约等于抛硬币——至少三分之一的情况，你以为的瓶颈和实际瓶颈在完全不同的地方。
+> **经验规则**：先 profile 再优化。凭直觉优化的准确率约等于抛硬币：至少三分之一的情况，你以为的瓶颈和实际瓶颈在完全不同的地方。
 
 ### $\rm \S \, C.7.4$ Benchmark 的正确姿势
 
@@ -335,7 +335,7 @@ print(f"耗时: {time.time() - start:.3f}s")
 
 ### $\rm \S \, C.8.1$ 二分缩小问题
 
-和 `git bisect` 一样的思路——你可以切代码而不是提交：
+和 `git bisect` 一样的思路：你可以切代码而不是提交：
 
 1. 注释掉一半代码 → 重新运行，问题还在吗？
 2. 如果还在 → 问题在**没被注释掉的**那一半里（被注释的部分不是原因）。
@@ -361,14 +361,14 @@ print(f"耗时: {time.time() - start:.3f}s")
 ### $\rm \S \, C.8.3$ Heisenbug 与未定义行为
 
 **Heisenbug**：一调试就消失的 bug。典型原因：
-- 未初始化变量——GDB 可能会改变内存布局
-- race condition——调试器改变了线程调度时序
-- ASLR（地址空间布局随机化）——每次运行内存地址不同
+1. 未初始化变量：GDB 可能会改变内存布局
+2. race condition：调试器改变了线程调度时序
+3. ASLR（地址空间布局随机化），每次运行内存地址不同
 
 解决方法：
-- 用 Sanitizer 而非 printf
-- 用 `rr`（Mozilla 的 record-and-replay 调试器）记录一次运行，之后可以反复回放
-- 对 race condition——用 TSan，然后加锁或原子操作，不是“多加几个 printf”
+1. 用 Sanitizer 而非 printf
+2. 用 `rr`（Mozilla 的 record-and-replay 调试器）记录一次运行，之后可以反复回放
+3. 对 race condition：用 TSan，然后加锁或原子操作，不是“多加几个 printf”
 
 ---
 
@@ -378,34 +378,34 @@ print(f"耗时: {time.time() - start:.3f}s")
 
 合法且常见的场景：
 
-- 你依赖的库有 bug 而作者不再维护——逆向它，看它内部到底做了什么，才能决定是绕过还是替换；
-- 恶意软件分析——安全研究员拿到可疑样本，不能运行它，只能静态拆解（不要把可疑二进制拿到自己的机器上直接运行）；
-- CTF（Capture The Flag，夺旗赛）竞赛中的逆向题目——拿到一个二进制，找出它内部的校验逻辑。
+1. 你依赖的库有 bug 而作者不再维护，逆向它，看它内部到底做了什么，才能决定是绕过还是替换；
+2. 恶意软件分析：安全研究员拿到可疑样本，不能运行它，只能静态拆解（不要把可疑二进制拿到自己的机器上直接运行）；
+3. CTF（Capture The Flag，夺旗赛）竞赛中的逆向题目：拿到一个二进制，找出它内部的校验逻辑。
 
 基本工具链（Linux/macOS；Windows 用 WSL 运行）：
 
 ```bash
 file ./unknown            # 先看这是什么类型的文件（Linux ELF？Windows PE？）
-strings ./unknown | head  # 提取二进制里的可读字符串——常常直接泄露功能
+strings ./unknown | head  # 提取二进制里的可读字符串，常常直接泄露功能
 objdump -d ./program      # 反汇编：把机器码还原成汇编（第 10 章介绍过）
 ```
 
-`file` 和 `strings` 是零成本的第一次侦察——程序的功能、版本、依赖库往往直接从字符串里暴露出来。汇编太长太杂时，用 **Ghidra**（NSA 开源的逆向工具）把汇编反编译成近似 C 代码；IDA Pro 是商业标准，Binary Ninja 是更现代的替代品。日常开发不需要它们，知道存在即可。
+`file` 和 `strings` 是零成本的第一次侦察：程序的功能、版本、依赖库往往直接从字符串里暴露出来。汇编太长太杂时，用 **Ghidra**（NSA 开源的逆向工具）把汇编反编译成近似 C 代码；IDA Pro 是商业标准，Binary Ninja 是更现代的替代品。日常开发不需要它们，知道存在即可。
 
-> **声明边界**：常规软件开发不需要逆向工程。知道它存在、知道从哪开始（`file` → `strings` → `objdump -d`）就够了——等你真正需要它时，再花时间深入。
+> **声明边界**：常规软件开发不需要逆向工程。知道它存在、知道从哪开始（`file` → `strings` → `objdump -d`）就够了。等你真正需要它时，再花时间深入。
 
 ---
 
 ## $\rm \S \, C.10$ 关键概念回顾
 
 1. 编译器错误中行号指向的是什么位置？为什么它可能不是真正的错误所在位置？
-> 编译器**发现**语法不合法时的位置——缺分号时可能在下一行报错，缺括号时可能报在文件末尾。
+> 编译器**发现**语法不合法时的位置：缺分号时可能在下一行报错，缺括号时可能报在文件末尾。
 
 2. ASan、UBSan、TSan 分别检测哪类问题？为什么日常开发应该开至少前两个？
-> ASan 检测内存错误（越界、use-after-free、泄漏），UBSan 检测未定义行为（整数溢出、非法类型转换），TSan 检测 data race。开销低、误报率极低、不需要改代码——只是加编译参数。
+> ASan 检测内存错误（越界、use-after-free、泄漏），UBSan 检测未定义行为（整数溢出、非法类型转换），TSan 检测 data race。开销低、误报率极低、不需要改代码，只是加编译参数。
 
 3. Core dump 和 GDB 现场调试的区别？什么时候 core dump 更有用？
-> GDB 现场调试需要复现崩溃；core dump 是崩溃瞬间的完整快照，分析时不需要复现。生产环境或偶发崩溃没有第二次现场机会——core dump 常常是唯一还能拿到的证据（有日志和 rr 回放可以补上时间线）。
+> GDB 现场调试需要复现崩溃；core dump 是崩溃瞬间的完整快照，分析时不需要复现。生产环境或偶发崩溃没有第二次现场机会，core dump 常常是唯一还能拿到的证据（有日志和 rr 回放可以补上时间线）。
 
 4. Benchmark 的“预热”和“多次取最小”分别解决什么问题？
 > 预热消除冷启动的缓存加载开销；多次取最小/中位数消除操作系统调度噪声的干扰。只用一次测量结果做判断是不可靠的。
@@ -422,4 +422,4 @@ objdump -d ./program      # 反汇编：把机器码还原成汇编（第 10 章
 
 ---
 
-从“怎么修 bug”到“怎么证明修好了”——中间缺的是测试方法论。下一章讲测试策略：单元测试、集成测试、模糊测试，以及为什么“覆盖率 $100\%$”不代表没有 bug。
+从“怎么修 bug”到“怎么证明修好了”，中间缺的是测试方法论。下一章讲测试策略：单元测试、集成测试、模糊测试，以及为什么“覆盖率 $100\%$”不代表没有 bug。

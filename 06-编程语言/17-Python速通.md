@@ -1,6 +1,6 @@
 # $\rm Chapter \, 17$ 面向 C++ 选手的 Python 速通
 
-> 你会 C++，变量、循环、函数、类你都见过——只是语法不同。Python 有一半的概念你已经在 C++ 中见过（函数、类、异常、模块），另一半是 C++ 没有或很弱的概念（动态类型、迭代器协议、列表推导、上下文管理器）。这一章把 Python 映射到你已有的 C++ 知识上，让你用熟悉的模型快速理解陌生的语法。
+> 你会 C++，变量、循环、函数、类你都见过，只是语法不同。Python 有一半的概念你已经在 C++ 中见过（函数、类、异常、模块），另一半是 C++ 没有或很弱的概念（动态类型、迭代器协议、列表推导、上下文管理器）。这一章把 Python 映射到你已有的 C++ 知识上，让你用熟悉的模型快速理解陌生的语法。
 
 > **开始前自检**：本章假设你已经会：
 >
@@ -24,7 +24,7 @@ x = 42             # x 是一个名字，指向堆上的 int 对象 42
 x = "hello"        # x 现在指向一个 str 对象——完全没有类型错误
 ```
 
-这像 C++ 的指针引用语义——所有 Python 变量都像是指向堆对象的智能指针，只是你不需要写 `*` 和 `->`：
+这像 C++ 的指针引用语义：所有 Python 变量都像是指向堆对象的智能指针，只是你不需要写 `*` 和 `->`：
 
 ```cpp
 // C++ 无法编译这段（int 和 string 是不同类型）——只用来对照 Python 的引用语义
@@ -32,7 +32,7 @@ auto x = std::make_shared<int>(42);         // x 是一个引用计数的 int
 x = std::make_shared<std::string>("hello"); // 在 Python 里等价于：x 改指向 str 对象
 ```
 
-Python 的赋值从不拷贝对象——只拷贝引用：
+Python 的赋值从不拷贝对象，只拷贝引用：
 
 ```python
 a = [1, 2, 3]
@@ -41,7 +41,7 @@ b.append(4)
 print(a)         # [1, 2, 3, 4]——a 和 b 是同一个对象
 ```
 
-这和 C++ 的默认值语义完全不同——C++ 中 `auto b = a;` 通常拷贝整个对象。理解了“Python 中一切赋值都是引用绑定”，你就理解了 Python 一半的“奇怪行为”。
+这和 C++ 的默认值语义完全不同：C++ 中 `auto b = a;` 通常拷贝整个对象。理解了“Python 中一切赋值都是引用绑定”，你就理解了 Python 一半的“奇怪行为”。
 
 ---
 
@@ -72,7 +72,7 @@ for p in papers:
 # 没有 #include、没有 main()、没有类型声明、没有 return 0
 ```
 
-Python 脚本从第一行执行到最后一行。`if __name__ == "__main__":` 提供“当脚本直接运行时才执行”的语义——类似于 C++ 的 `main()` 但更灵活（同一个文件也可以被其他脚本 `import` 为模块）。
+Python 脚本从第一行执行到最后一行。`if __name__ == "__main__":` 提供“当脚本直接运行时才执行”的语义，类似于 C++ 的 `main()` 但更灵活（同一个文件也可以被其他脚本 `import` 为模块）。
 
 ### $\rm \S \, 17.2.2$ 容器对比
 
@@ -80,7 +80,7 @@ Python 脚本从第一行执行到最后一行。`if __name__ == "__main__":` �
 |---|---|---|
 | `std::vector<T>` | `list` | Python list 可以存不同类型 `[1, "hello", 3.0]` |
 | `std::array<T, N>` / `T[N]` | `tuple` | 不可变 `(1, 2, 3)`；Python 没有栈上定长数组 |
-| `std::string` | `str` | Python str 不可变——`s[0] = 'X'` 会报错 |
+| `std::string` | `str` | Python str 不可变，`s[0] = 'X'` 会报错 |
 | `std::map<K,V>` | `dict` | Python dict 是有序的（3.7+），任意 hashable 类型可做 key |
 | `std::set<T>` | `set` | 语法 `{"a", "b"}` |
 | `std::unordered_map/set` | 没有（dict 内部实现就是哈希） | Python dict 就是哈希表 |
@@ -136,13 +136,13 @@ def parse_papers(filepath, encoding="utf-8"):
         return [parse_line(line) for line in f if line.strip()]
 ```
 
-- 没有类型声明（但有类型标注可选——见第 6 节）
+- 没有类型声明（但有类型标注可选，见第 6 节）
 - 参数可以有默认值
-- 返回值不需要声明；可以返回不同类型（但不要滥用——调用方会困惑）
+- 返回值不需要声明；可以返回不同类型（但不要滥用，调用方会困惑）
 
 ### $\rm \S \, 17.3.2$ `import` 和模块系统
 
-Python 的 `import` 在运行时执行——不是 C++ 编译期的 `#include`（文本替换）。当一个模块首次被 `import`，Python 执行它的全部顶层代码，创建模块对象并缓存。后续 `import` 同一个模块直接返回缓存。
+Python 的 `import` 在运行时执行，不是 C++ 编译期的 `#include`（文本替换）。当一个模块首次被 `import`，Python 执行它的全部顶层代码，创建模块对象并缓存。后续 `import` 同一个模块直接返回缓存。
 
 ```python
 # 导入整个模块
@@ -162,9 +162,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 ```
 
-Python 的模块搜索路径由 `sys.path` 决定——搜索顺序是：脚本所在目录（或当前目录）→ `PYTHONPATH` 环境变量 → 标准库 → 第三方包（site-packages）。当你的文件名和标准库重名时（如 `json.py`），`import json` 会导入你自己的文件而不是标准库——因为当前目录在标准库之前被搜索。
+Python 的模块搜索路径由 `sys.path` 决定，搜索顺序是：脚本所在目录（或当前目录）→ `PYTHONPATH` 环境变量 → 标准库 → 第三方包（site-packages）。当你的文件名和标准库重名时（如 `json.py`），`import json` 会导入你自己的文件而不是标准库，因为当前目录在标准库之前被搜索。
 
-### $\rm \S \, 17.3.3$ `pip` 和 `venv`——你已经在 [软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md) 中理解了概念
+### $\rm \S \, 17.3.3$ `pip` 和 `venv`：你已经在 [软件、运行时、SDK 与包管理器](../02-终端与工具/09-软件运行时SDK与包管理器.md) 中理解了概念
 
 回忆那边的分层模型：系统包管理器装 Python 解释器；语言包管理器（pip）装第三方库；虚拟环境（venv）隔离项目依赖。Python 项目中修复“找不到模块”的标准排查路径是：
 
@@ -179,7 +179,7 @@ python -m pip install -r requirements.txt  # 安装依赖
 
 ## $\rm \S \, 17.4$ 异常：不是“出错”，而是“控制流”
 
-C++ 有 `try/catch/throw`。Python 一样有，但用法更自由——异常在 Python 中不仅用于错误，也用于正常的流程控制（如迭代器用 `StopIteration` 表示结束）。
+C++ 有 `try/catch/throw`。Python 一样有，但用法更自由：异常在 Python 中不仅用于错误，也用于正常的流程控制（如迭代器用 `StopIteration` 表示结束）。
 
 ```python
 try:
@@ -196,13 +196,13 @@ finally:
     file.close()  # 无论如何都执行——但通常不需要，见第 5 节
 ```
 
-和 C++ 的关键差异：Python 的异常自带完整 traceback（不需要 `-g` 之类的编译期调试信息），而且异常是几乎所有错误处理的默认方式——文件不存在抛 `FileNotFoundError`，字典键不存在抛 `KeyError`，除法除零抛 `ZeroDivisionError`。
+和 C++ 的关键差异：Python 的异常自带完整 traceback（不需要 `-g` 之类的编译期调试信息），而且异常是几乎所有错误处理的默认方式：文件不存在抛 `FileNotFoundError`，字典键不存在抛 `KeyError`，除法除零抛 `ZeroDivisionError`。
 
 ---
 
 ## $\rm \S \, 17.5$ 上下文管理器：Python 版的 RAII（但有限）
 
-[从竞赛 C++ 到工程 C++](15-C++从竞赛到工程.md) 中详细讲了 RAII——对象析构时自动释放资源。Python 没有析构函数的确定性调用（垃圾回收时机不可预测），所以提供了 `with` 语句：
+[从竞赛 C++ 到工程 C++](15-C++从竞赛到工程.md) 中详细讲了 RAII：对象析构时自动释放资源。Python 没有析构函数的确定性调用（垃圾回收时机不可预测），所以提供了 `with` 语句：
 
 ```python
 # 文件——自动关闭
@@ -225,7 +225,7 @@ with lock:
 
 ## $\rm \S \, 17.6$ 类型标注：让 Python 代码可静态检查
 
-Python 3.5+ 支持可选的类型标注——不改变运行时行为，但让你可以用 `mypy` 做静态检查，用编辑器获得补全和跳转：
+Python 3.5+ 支持可选的类型标注，不改变运行时行为，但让你可以用 `mypy` 做静态检查，用编辑器获得补全和跳转：
 
 ```python
 from typing import Optional
@@ -241,7 +241,7 @@ def find_paper(title: str, papers: list[dict]) -> Optional[dict]:
 # 编辑器会基于标注提供自动补全
 ```
 
-从 C++ 转型时，先写无标注的 Python（感受动态类型的灵活性），再对公开 API 加标注（提升可维护性）。不要把 Python 写成“有 `self` 的 Java”或者“有缩进的 C++”——每门语言有自己的惯用写法，类型标注是辅助，不是必须。
+从 C++ 转型时，先写无标注的 Python（感受动态类型的灵活性），再对公开 API 加标注（提升可维护性）。不要把 Python 写成“有 `self` 的 Java”或者“有缩进的 C++”。每门语言有自己的惯用写法，类型标注是辅助，不是必须。
 
 ---
 
@@ -296,7 +296,7 @@ if __name__ == "__main__":
 ```
 
 对比 C++ 版本的区别：
-- 没有显式的内存管理——`papers` 列表自动增长，自动释放。
+- 没有显式的内存管理，`papers` 列表自动增长，自动释放。
 - 错误处理用异常 + `try/except`，而不是检查返回值。
 - `Path` 对象操作路径，比 C++ 的字符串拼接更安全。
 - `:=`（海象运算符，Python 3.8+）在 `if` 条件中同时赋值和判断。
@@ -309,7 +309,7 @@ if __name__ == "__main__":
 |---|---|
 | **CPython** | 官方实现（C 语言），你 `python` 命令运行的就是它 |
 | **PyPy**（pypy.org） | JIT 编译的 Python，纯 Python 代码通常快 4-7 倍 |
-| **Cython**（cython.org） | Python 的超集，编译为 C 扩展——在高性能计算中广泛使用 |
+| **Cython**（cython.org） | Python 的超集，编译为 C 扩展，在高性能计算中广泛使用 |
 | **Numba**（numba.pydata.org） | 用装饰器 JIT 编译 Python 函数（尤其数值计算）到机器码 |
 | **PyInstaller**（pyinstaller.org） | 把 Python 脚本打包成独立可执行文件（含解释器） |
 | **uv**（astral.sh/uv） | Rust 写的 pip 替代，官方基准约 10 倍（实际随场景变化）；也做 venv 和 Python 版本管理 |
@@ -377,7 +377,7 @@ deactivate
 ```
 
 成功标志：两个环境打印的 `requests` 版本相同，说明 `requirements.txt` 足以重建依赖。
-清理：先 `deactivate`；用 `pwd` 确认当前目录不在两个环境目录里，再删除它们——Bash：`rm -r papers-env papers-env2`；PowerShell：`Remove-Item -Recurse papers-env, papers-env2`；`requirements.txt` 保留。
+清理：先 `deactivate`；用 `pwd` 确认当前目录不在两个环境目录里，再删除它们。Bash：`rm -r papers-env papers-env2`；PowerShell：`Remove-Item -Recurse papers-env, papers-env2`；`requirements.txt` 保留。
 
 ### $\rm \S \, 17.9.3$ 实践三：体验切片和推导式
 
@@ -403,7 +403,7 @@ words = ["hello", "world", "python", "is", "fun"]
 - 容器（`list`/`dict`/`set`/`tuple`）和切片（`[start:stop:step]`）是数据处理的基础。
 - 列表/字典/集合推导式用声明式风格替代命令式循环。
 - `with` 语句是 Python 的资源管理模式（类似 RAII 但有限）。
-- 类型标注是可选的——用 `mypy` 静态检查，用编辑器智能提示，但不要过度标注让 Python 变成 Java。
+- 类型标注是可选的，用 `mypy` 静态检查，用编辑器智能提示，但不要过度标注让 Python 变成 Java。
 - `python -m pip` 保证调用当前解释器的 pip；`venv` 隔离项目依赖。
 
 ---
@@ -429,17 +429,17 @@ words = ["hello", "world", "python", "is", "fun"]
 > 先闭卷作答本章“关键概念回顾”与“应用与辨析”，再核对以下答案。
 
 ### $\rm \S \, 17.13.1$ 自测答案 · 关键概念回顾
-1. `[1, 2, 3, 4]`——Python 的赋值从不拷贝对象，只拷贝引用，a 和 b 指向同一个列表对象。
+1. `[1, 2, 3, 4]`。Python 的赋值从不拷贝对象，只拷贝引用，a 和 b 指向同一个列表对象。
 2. 反转后的新序列：从末尾到开头、步长为 -1 取全部元素。
 3. 替代 RAII 的资源自动释放（文件自动关闭、锁自动释放）；差异是 with 只在作用域退出时触发，不能绑定整个对象的生命周期，但已覆盖 90% 的资源管理场景。
 
 ### $\rm \S \, 17.13.2$ 自测答案 · 应用与辨析
-4. `#include` 是编译期的文本替换；import 在运行时执行模块的顶层代码并缓存模块对象，后续 import 直接返回缓存——所以模块里不能有反复执行的副作用。
+4. `#include` 是编译期的文本替换；import 在运行时执行模块的顶层代码并缓存模块对象，后续 import 直接返回缓存，所以模块里不能有反复执行的副作用。
 5. `python -c "import sys; print(sys.executable)"`（最可靠），或 Bash 的 `command -v python`、PowerShell 的 `Get-Command python`。
-6. 前者调用 PATH 中第一个 pip——它可能属于另一个 Python 安装；后者调用当前 `python` 自己关联的 pip，保证包装进当前解释器的环境。
+6. 前者调用 PATH 中第一个 pip，它可能属于另一个 Python 安装；后者调用当前 `python` 自己关联的 pip，保证包装进当前解释器的环境。
 
 ---
 
-下一章（第 18 章）进入 Python 的生态系统：Jupyter Notebook 是什么（它不是“浏览器里的 Python 编辑器”）、NumPy 的 ndarray 为什么通常比 Python 循环快几十倍、科学计算栈（pandas/Matplotlib/scikit-learn）各自负责什么——以及 AI 初学者最常遇到的环境混乱问题。
+下一章（第 18 章）进入 Python 的生态系统：Jupyter Notebook 是什么（它不是“浏览器里的 Python 编辑器”）、NumPy 的 ndarray 为什么通常比 Python 循环快几十倍、科学计算栈（pandas/Matplotlib/scikit-learn）各自负责什么，以及 AI 初学者最常遇到的环境混乱问题。
 
 > 你现在能：读与写 Python 脚本，解释名字绑定、切片、推导式与 import 机制，并把一段 C++ 逻辑等价改写为 Python

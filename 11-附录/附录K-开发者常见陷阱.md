@@ -1,6 +1,6 @@
 # $\rm Appendix \, K$ 开发者常见陷阱
 
-> 前面 46 章和 10 个附录覆盖了从终端到部署的完整链路。但还有一些“小知识”——每条只需一段话就能讲清楚，不知道却可能让你 debug 一整个下午。本章汇集这些零散的陷阱。不需要按顺序读——遇到问题时回来查。
+> 前面 46 章和 10 个附录覆盖了从终端到部署的完整链路。但还有一些“小知识”，每条只需一段话就能讲清楚，不知道却可能让你 debug 一整个下午。本章汇集这些零散的陷阱。不需要按顺序读，遇到问题时回来查。
 
 ---
 
@@ -9,11 +9,11 @@
 ### $\rm \S \, K.1.1$ 浮点数不精确
 
 ```python
-0.1 + 0.2 == 0.3    # False——结果是 0.30000000000000004
+0.1 + 0.2 == 0.3    # False，结果是 0.30000000000000004
 0.1 + 0.2            # 0.30000000000000004
 ```
 
-这不是 Python 的 bug——是所有语言（C++、JavaScript、Java）的二进制浮点数（IEEE 754）的通病。十进制中有限的 $0.1$，在二进制中是无限循环小数，存储时被截断。比较浮点数用“接近相等”而非 `==`：
+这不是 Python 的 bug，而是所有语言（C++、JavaScript、Java）的二进制浮点数（IEEE 754）的通病。十进制中有限的 $0.1$，在二进制中是无限循环小数，存储时被截断。比较浮点数用“接近相等”而非 `==`：
 
 ```python
 abs(a - b) < 1e-9    # 而不是 a == b
@@ -24,38 +24,38 @@ abs(a - b) < 1e-9    # 而不是 a == b
 ### $\rm \S \, K.1.2$ NaN 和 Infinity
 
 ```python
-float('nan')   # Not a Number——0/0、sqrt(-1) 的结果
-float('inf')   # 无穷大——1/0 的结果
+float('nan')   # Not a Number，即 0/0、sqrt(-1) 的结果
+float('inf')   # 无穷大（1/0 的结果）
 
-float('nan') == float('nan')  # False——NaN 不等于任何东西，包括它自己
+float('nan') == float('nan')  # False，NaN 不等于任何东西，包括它自己
 # 检查 NaN 用 math.isnan(x)，不是 x == float('nan')
 ```
 
 ### $\rm \S \, K.1.3$ 熵与随机数
 
-**熵**（entropy）衡量“不可预测的程度”，单位是比特（bit）。一个结果的熵越高，猜测它就越难：`random.randint(1, 100)` 有 100 种可能结果，约 $\log_2 100 \approx 6.6$ 比特——足够做游戏（猜中也不损失什么），不够做安全。数量级参考：约 40 比特可以挡住在线暴力破解（逐次尝试且有速率限制），80 比特以上即使攻击者拿到数据离线慢慢算也基本不可行。
+**熵**（entropy）衡量“不可预测的程度”，单位是比特（bit）。一个结果的熵越高，猜测它就越难：`random.randint(1, 100)` 有 100 种可能结果，约 $\log_2 100 \approx 6.6$ 比特，足够做游戏（猜中也不损失什么），不够做安全。数量级参考：约 40 比特可以挡住在线暴力破解（逐次尝试且有速率限制），80 比特以上即使攻击者拿到数据离线慢慢算也基本不可行。
 
 ```python
 import random
-random.randint(1, 100)    # ≈ 6.6 比特——伪随机，适合游戏、模拟
+random.randint(1, 100)    # ≈ 6.6 比特，伪随机，适合游戏、模拟
 
 import secrets
-secrets.randbelow(100)     # 密码学安全随机——不可预测，适合 Token、密码重置链接
-secrets.token_hex(16)      # 16 字节 = 128 比特——适合生成 API Key、密码重置 Token
+secrets.randbelow(100)     # 密码学安全随机，不可预测，适合 Token、密码重置链接
+secrets.token_hex(16)      # 16 字节 = 128 比特，适合生成 API Key、密码重置 Token
 ```
 
-为什么 `random` 不够：它是**伪随机**（pseudorandom）——给定种子（seed）后输出序列完全确定，而常用种子来自当前时间戳，对手猜中种子就能复现你“随机”生成的一切。安全场景必须用 `secrets`（Python）或 `/dev/urandom`（Linux）——它们从操作系统收集的熵池取数，无法从种子预测。永远不要用 `random` 生成密码重置 Token 或 API Key。
+为什么 `random` 不够：它是**伪随机**（pseudorandom）：给定种子（seed）后输出序列完全确定，而常用种子来自当前时间戳，对手猜中种子就能复现你“随机”生成的一切。安全场景必须用 `secrets`（Python）或 `/dev/urandom`（Linux），它们从操作系统收集的熵池取数，无法从种子预测。永远不要用 `random` 生成密码重置 Token 或 API Key。
 
 ### $\rm \S \, K.1.4$ 退出码范围
 
-Unix 中程序的退出码只有 $0$—$255$（一个字节）。`exit(256)` 实际退出码是 $0$（256 mod 256 = 0）。`exit(-1)` 实际是 $255$。脚本中 `$?` 读取的是 $0$—$255$ 的值——不要用负数退出码。
+Unix 中程序的退出码只有 $0$—$255$（一个字节）。`exit(256)` 实际退出码是 $0$（256 mod 256 = 0）。`exit(-1)` 实际是 $255$。脚本中 `$?` 读取的是 $0$—$255$ 的值，不要用负数退出码。
 
 ### $\rm \S \, K.1.5$ 时区、DST 与时间戳
 
 ```python
 import time
-time.time()          # Unix 时间戳——UTC，不受时区和夏令时影响
-# 日志中永远用 UTC 或带时区标记的时间。不带时区的本地时间是 bug 的温床——
+time.time()          # Unix 时间戳（UTC，不受时区和夏令时影响）
+# 日志中永远用 UTC 或带时区标记的时间。不带时区的本地时间是 bug 的温床：
 # 夏令时切换那天，凌晨 2:30 出现了两次，你的日志分不清哪个是哪个。
 ```
 
@@ -66,15 +66,15 @@ time.time()          # Unix 时间戳——UTC，不受时区和夏令时影响
 ### $\rm \S \, K.2.1$ `kill` 默认不是“强制杀死”
 
 ```bash
-kill 1234       # 发送 SIGTERM——"请优雅退出"（程序可以忽略或清理后退出）
-kill -9 1234    # 发送 SIGKILL——操作系统直接终止进程（程序无法捕获，无法清理）
+kill 1234       # 发送 SIGTERM，即"请优雅退出"（程序可以忽略或清理后退出）
+kill -9 1234    # 发送 SIGKILL：操作系统直接终止进程（程序无法捕获，无法清理）
 ```
 
-`-9` 是最后手段。先用 `kill`（SIGTERM）给程序清理资源的机会。有些程序收到 SIGTERM 后需要几秒钟保存状态——不要立刻补 `-9`。
+`-9` 是最后手段。先用 `kill`（SIGTERM）给程序清理资源的机会。有些程序收到 SIGTERM 后需要几秒钟保存状态，不要立刻补 `-9`。
 
 ### $\rm \S \, K.2.2$ PID 会复用
 
-进程退出后，它的 PID 可能被分配给新进程。如果你在脚本中缓存了一个 PID，稍后用 `kill` 发信号——确认那个 PID 仍然是你以为的进程。`/proc/PID/cmdline`（Linux）可以验证。
+进程退出后，它的 PID 可能被分配给新进程。如果你在脚本中缓存了一个 PID，稍后用 `kill` 发信号，先确认那个 PID 仍然是你以为的进程。`/proc/PID/cmdline`（Linux）可以验证。
 
 ### $\rm \S \, K.2.3$ `sudo` 后 PATH 可能不同
 
@@ -103,10 +103,10 @@ Linux 中，文件删除只删掉目录项。如果有进程仍然持有该文�
 
 ### $\rm \S \, K.3.2$ CSV 没有统一方言
 
-- 分隔符：逗号？分号？Tab？
-- 引号：双引号？单引号？
-- 转义：`""` 还是 `\"`？
-- 编码：UTF-8？GBK？Latin-1？
+1. 分隔符：逗号？分号？Tab？
+2. 引号：双引号？单引号？
+3. 转义：`""` 还是 `\"`？
+4. 编码：UTF-8？GBK？Latin-1？
 
 处理陌生 CSV 时，**永远先用文本编辑器肉眼检查前几行**，不要假设 Excel 导出的 CSV 和 Python `csv` 模块的默认值一致。
 
@@ -126,8 +126,8 @@ YAML 1.1 中 `yes`/`no`/`on`/`off` 被解析为布尔值。不确定时加引号
 
 ### $\rm \S \, K.3.5$ URL Encoding 与 Base64 不是加密
 
-- **URL Encoding**（`%20` 表示空格）：为了让特殊字符能放进 URL——不是安全措施，任何人都能解码
-- **Base64**：把二进制数据编码为 ASCII 文本——不是加密，不需要密钥就能解码。Base64 编码的 API Key 不等于加密的 API Key
+1. **URL Encoding**（`%20` 表示空格）：为了让特殊字符能放进 URL，不是安全措施，任何人都能解码
+2. **Base64**：把二进制数据编码为 ASCII 文本，不是加密，不需要密钥就能解码。Base64 编码的 API Key 不等于加密的 API Key
 
 ---
 
@@ -135,33 +135,33 @@ YAML 1.1 中 `yes`/`no`/`on`/`off` 被解析为布尔值。不确定时加引号
 
 ### $\rm \S \, K.4.1$ Notebook 执行顺序 ≠ 页面顺序
 
-Jupyter Notebook 的单元格可以任意顺序执行。如果你在页面中间定义了一个变量，然后跳到页面顶部执行使用该变量的单元格——它是能运行的（变量已在内核中）。但关闭 notebook 重启后，从头顺序执行会报错。**每次开始重要工作前 Kernel → Restart & Run All**。
+Jupyter Notebook 的单元格可以任意顺序执行。如果你在页面中间定义了一个变量，然后跳到页面顶部执行使用该变量的单元格，它是能运行的（变量已在内核中）。但关闭 notebook 重启后，从头顺序执行会报错。**每次开始重要工作前 Kernel → Restart & Run All**。
 
 ### $\rm \S \, K.4.2$ Docker `latest` Tag
 
 ```bash
-docker pull python:latest    # "latest" 不代表最新版——只代表"构建者最近 push 的那个 tag"
+docker pull python:latest    # "latest" 不代表最新版，只代表"构建者最近 push 的那个 tag"
 ```
 
 `latest` 是 Docker 的默认 tag，不是特殊版本。如果你三个月前构建的镜像忘了打 tag，它也被标为 `latest`。**生产环境永远用显式版本号**（`python:3.12-slim`，不是 `python:latest`）。
 
 ### $\rm \S \, K.4.3$ Docker Tag 会变，digest 才固定
 
-同一个 tag（如 `python:3.12`）今天和明天拉到的镜像可能不同——维护者可能更新了底层系统包。要精确复现，用 digest（SHA256 哈希）：`python:3.12@sha256:abc123...`。
+同一个 tag（如 `python:3.12`）今天和明天拉到的镜像可能不同：维护者可能更新了底层系统包。要精确复现，用 digest（SHA256 哈希）：`python:3.12@sha256:abc123...`。
 
 ### $\rm \S \, K.4.4$ Git 中删除的 Secret 不等于消失
 
 `git filter-branch` 能从当前分支历史中删除 Secret。但：
-- 已经 `git push` 到 GitHub 的，任何 fork 了仓库的人可能已经拉取了包含 Secret 的提交
-- GitHub 的 API/事件日志中可能仍能看到
-- **唯一的安全措施是 revoke（在服务商后台让旧 Secret 失效），然后轮换新 Secret**
+1. 已经 `git push` 到 GitHub 的，任何 fork 了仓库的人可能已经拉取了包含 Secret 的提交
+2. GitHub 的 API/事件日志中可能仍能看到
+3. **唯一的安全措施是 revoke（在服务商后台让旧 Secret 失效），然后轮换新 Secret**
 
 ### $\rm \S \, K.4.5$ 固定随机种子不一定保证完全可复现
 
 ```python
 torch.manual_seed(42)
 # 即使设了种子，以下因素仍可能导致不同运行结果不同：
-# - GPU 上的浮点运算顺序（非结合性——(a+b)+c ≠ a+(b+c) 在浮点中）
+# - GPU 上的浮点运算顺序（非结合性：(a+b)+c ≠ a+(b+c) 在浮点中）
 # - cuDNN 的算法选择（设置 torch.backends.cudnn.deterministic = True 可以缓解，但会变慢）
 # - DataLoader 的多进程 shuffle 时序
 ```
@@ -170,11 +170,11 @@ torch.manual_seed(42)
 
 ### $\rm \S \, K.4.6$ CPU 使用率低 ≠ 没有性能问题
 
-CPU 低但用户感觉慢——通常是**等 I/O**（磁盘、网络、数据库、锁）。CPU 利用率衡量的是“CPU 有没有在工作”，不是“程序有没有在干活”。磁盘等 50ms 返回数据——这 50ms CPU 利用率是 0，但你的请求确实等了 50ms。
+CPU 低但用户感觉慢，通常是**等 I/O**（磁盘、网络、数据库、锁）。CPU 利用率衡量的是“CPU 有没有在工作”，不是“程序有没有在干活”。磁盘等 50ms 返回数据。这 50ms CPU 利用率是 0，但你的请求确实等了 50ms。
 
 ### $\rm \S \, K.4.7$ 健康检查通过 ≠ 服务真的可用
 
-你的 `/api/health` 返回 200（“数据库连接正常”），但用户登录功能崩了——因为登录逻辑调用的第三方 SSO 服务挂了。健康检查只验证你告诉它验证的东西。**端到端健康检查**（模拟一次真实用户操作——登录→查询→获取结果）比只检查数据库连接可靠得多。
+你的 `/api/health` 返回 200（“数据库连接正常”），但用户登录功能崩了，因为登录逻辑调用的第三方 SSO 服务挂了。健康检查只验证你告诉它验证的东西。**端到端健康检查**（模拟一次真实用户操作：登录→查询→获取结果）比只检查数据库连接可靠得多。
 
 ---
 
@@ -182,7 +182,7 @@ CPU 低但用户感觉慢——通常是**等 I/O**（磁盘、网络、数据�
 
 ### $\rm \S \, K.5.1$ 宿主机时间错误 = TLS/认证失败
 
-TLS 证书有有效期限。如果你的服务器时钟偏差超过证书有效期范围——浏览器拒绝连接（“证书已过期”错误）。同样，JWT 的 `exp` 字段（以及 OAuth 服务返回的 token 过期时间）都依赖时钟同步。服务器上 `systemctl enable --now systemd-timesyncd`（或 `chronyd`）确保 NTP 自动同步。
+TLS 证书有有效期限。如果你的服务器时钟偏差超过证书有效期范围，浏览器拒绝连接（“证书已过期”错误）。同样，JWT 的 `exp` 字段（以及 OAuth 服务返回的 token 过期时间）都依赖时钟同步。服务器上 `systemctl enable --now systemd-timesyncd`（或 `chronyd`）确保 NTP 自动同步。
 
 ### $\rm \S \, K.5.2$ DNS 缓存多层存在
 
@@ -190,7 +190,7 @@ TLS 证书有有效期限。如果你的服务器时钟偏差超过证书有效�
 
 ### $\rm \S \, K.5.3$ MIME Type 决定浏览器如何处理文件
 
-服务器返回文件时的 `Content-Type` Header 告诉浏览器这是什么。`Content-Type: text/plain` → 浏览器显示文本；`Content-Type: application/pdf` → 浏览器触发下载或 PDF 阅读器。没有这个 Header 或设错——浏览器可能尝试把二进制文件当文本显示（乱码），或不触发下载。
+服务器返回文件时的 `Content-Type` Header 告诉浏览器这是什么。`Content-Type: text/plain` → 浏览器显示文本；`Content-Type: application/pdf` → 浏览器触发下载或 PDF 阅读器。没有这个 Header 或设错，浏览器可能尝试把二进制文件当文本显示（乱码），或不触发下载。
 
 ---
 
@@ -204,7 +204,7 @@ def append_to(item, target=[]):    # ❌ 这个 [] 在函数定义时创建，�
     return target
 
 append_to(1)  # [1]
-append_to(2)  # [1, 2]——不是 [2]！
+append_to(2)  # [1, 2]，不是 [2]！
 ```
 
 正确做法：
@@ -219,7 +219,7 @@ def append_to(item, target=None):
 
 ### $\rm \S \, K.6.2$ C++ 未定义行为 ≠ 编译错误
 
-未定义行为（Undefined Behavior, UB）——越界访问、use-after-free、有符号整数溢出——编译器**可以不报错**。UB 意味着编译器和 CPU 可以做任何事——包括“碰巧正常运行”（直到你换了一个优化级别或编译器版本）。
+未定义行为（Undefined Behavior, UB），即越界访问、use-after-free、有符号整数溢出：编译器**可以不报错**。UB 意味着编译器和 CPU 可以做任何事，包括“碰巧正常运行”（直到你换了一个优化级别或编译器版本）。
 
 ---
 
@@ -236,16 +236,16 @@ def append_to(item, target=None):
 ### $\rm \S \, K.7.2$ `df -h` 有空间但创建文件失败 → 检查 inode
 
 ```bash
-df -h     # 磁盘空间：还有 20 GB——正常
-df -i     # inode 使用：100%——无法创建新文件！
+df -h     # 磁盘空间：还有 20 GB，正常
+df -i     # inode 使用：100%，无法创建新文件！
 ```
 
 inode 是在格式化时分配的“文件槽位”。大量小文件（如 `node_modules`）可能耗光 inode 而磁盘空间还剩很多。常见于邮件服务器、缓存目录、打包工具的输出目录。
 
 ### $\rm \S \, K.7.3$ 安装成功但命令找不到 → 检查 PATH，不只检查安装
 
-程序装到了磁盘上 ≠ Shell 能找到它。安装后如果命令找不到：先确认可执行文件位置——Bash 用 `which`，PowerShell 用 `Get-Command`（别打 `where`：在 5.1 里它是 `Where-Object` 的别名，要调原生命令得写 `where.exe`）——再检查该位置是否在 `$PATH` 中。有些安装程序默认不修改 PATH（尤其是 `pip install --user` 和某些 conda 环境）。
+程序装到了磁盘上 ≠ Shell 能找到它。安装后如果命令找不到：先确认可执行文件位置：Bash 用 `which`，PowerShell 用 `Get-Command`（别打 `where`：在 5.1 里它是 `Where-Object` 的别名，要调原生命令得写 `where.exe`），再检查该位置是否在 `$PATH` 中。有些安装程序默认不修改 PATH（尤其是 `pip install --user` 和某些 conda 环境）。
 
 ---
 
-本书正文到此结束。这些陷阱不值得单独成章——但值得在踩到的时候回来翻一遍。
+本书正文到此结束。这些陷阱不值得单独成章，但值得在踩到的时候回来翻一遍。

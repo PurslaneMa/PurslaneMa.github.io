@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""《速通笔记》站点品牌资产生成脚本（可重复运行、幂等）。
+"""《CS Wiki》站点品牌资产生成脚本（可重复运行、幂等）。
 
 生成物（全部落在本脚本所在目录 assets/）：
 - og-cover.png         1200x630 社交分享封面（og:image / twitter:image）
 - icon-192.png         192x192 应用图标（PWA manifest，圆角）
 - icon-512.png         512x512 应用图标（PWA manifest，圆角）
 - apple-touch-icon.png 180x180 iOS 主屏图标（不透明、不透明角）
-- manifest.json        Web App Manifest（name/short_name = 速通笔记）
+- manifest.json        Web App Manifest（name/short_name = CS Wiki）
 
-视觉语言与站点 / favicon 一致：底色 #0a0f1f → #101a33，强调色 #6366f1 → #22d3ee。
+视觉语言与站点 / favicon 一致：底色 #1b1f27 → #1e232c，强调色 #5aa9e6 → #e0a44e。
 只使用 Pillow 绘制几何图形与系统字体，不依赖任何外链素材。
 
 用法：
@@ -24,14 +24,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 
 # ── 品牌色（与 reader.html 的 CSS 变量一致）─────────────────────────────
-BG_TOP = (10, 15, 31)        # #0a0f1f
-BG_BOTTOM = (16, 26, 51)     # #101a33
-TILE_TOP = (19, 29, 51)      # #131d33（图标底板渐变起点）
-TILE_BOTTOM = (10, 15, 31)   # #0a0f1f
-TEXT = (230, 236, 248)       # #e6ecf8
-DIM = (148, 166, 196)        # #94a6c4
-ACCENT1 = (99, 102, 241)     # #6366f1
-ACCENT2 = (34, 211, 238)     # #22d3ee
+BG_TOP = (27, 31, 39)        # #1b1f27
+BG_BOTTOM = (30, 35, 44)     # #1e232c
+TILE_TOP = (33, 39, 49)      # #212731（图标底板渐变起点）
+TILE_BOTTOM = (21, 26, 33)   # #151a21
+TEXT = (227, 230, 235)       # #e3e6eb
+DIM = (154, 164, 178)        # #9aa4b2
+ACCENT1 = (90, 169, 230)     # #5aa9e6
+ACCENT2 = (224, 164, 78)     # #e0a44e
 
 # ── 字体：Windows 自带中文黑体，缺失时逐级回退 ──────────────────────────
 FONT_BOLD_CANDIDATES = [
@@ -48,10 +48,10 @@ FONT_REG_CANDIDATES = [
     '/System/Library/Fonts/PingFang.ttc',
 ]
 
-TITLE = '速通笔记'
-SUBTITLE = '从 OJ 到开发部署 · 算法竞赛生的计算机补全课'
+TITLE = 'CS Wiki'
+SUBTITLE = '计算机速通 · 从 OJ 到开发部署'
 FOOTER = '64 章 · 终端 / 系统 / 网络 / Git / 数据库 / 前后端 / Docker / AI 工程'
-DESCRIPTION = ('面向算法竞赛生的计算机速通教材：从 OJ 到开发部署，'
+DESCRIPTION = ('CS Wiki 的「计算机速通」书目：面向算法竞赛生，从 OJ 到开发部署，'
                '覆盖终端、系统、网络、Git、数据库、前后端、Docker 与 AI 工程，共 64 章。')
 
 # 生成后用于自检的字符集（标题/副标题/页脚全部字符）
@@ -295,16 +295,16 @@ def make_og_cover(w=1200, h=630, font_bold=None, font_reg=None):
 # ══════════════ 清单与写盘 ══════════════
 def build_manifest():
     return {
-        'name': '速通笔记',
-        'short_name': '速通笔记',
+        'name': 'CS Wiki',
+        'short_name': 'CS Wiki',
         'description': DESCRIPTION,
         # 注意：start_url 是相对 manifest 自身的 URL 解析的。本文件发布在
         # assets/manifest.json，所以 "." 指向 assets/；若希望 PWA 启动页是首页，
         # 把下面这行改成 '../'（或把 manifest 复制一份到站点根目录）。
         'start_url': '../',   # manifest 位于 /assets/ 下，'../' 指回站点首页
         'display': 'standalone',
-        'background_color': '#0a0f1f',
-        'theme_color': '#0a0f1f',
+        'background_color': '#1b1f27',
+        'theme_color': '#1b1f27',
         'lang': 'zh-CN',
         'icons': [
             {'src': 'icon-192.png', 'sizes': '192x192', 'type': 'image/png',
