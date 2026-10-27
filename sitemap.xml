@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://purslanema.github.io/</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://purslanema.github.io/00-%E5%AD%A6%E4%B9%A0%E5%9C%B0%E5%9B%BE%E4%B8%8E%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95.md</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
@@ -361,6 +361,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://purslanema.github.io/12-%E5%A4%8D%E4%B9%A0%E6%80%BB%E7%BB%93/R1-%E5%A4%8D%E4%B9%A0%E6%80%BB%E7%BB%93-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://purslanema.github.io/12-%E5%A4%8D%E4%B9%A0%E6%80%BB%E7%BB%93/R1-%E5%A4%8D%E4%B9%A0%E6%80%BB%E7%BB%93-%E8%8C%83%E7%95%B4%E8%AE%BA4CS.md</loc>
     <lastmod>2026-10-27</lastmod>
     <priority>0.8</priority>
@@ -502,7 +507,7 @@
   </url>
   <url>
     <loc>https://purslanema.github.io/13-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/13-%E6%B3%A8%E6%84%8F%E5%8A%9B%E4%B8%8ETransformer.md</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
@@ -1561,7 +1566,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://purslanema.github.io/33-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6/02-%E8%AE%A1%E7%AE%97%E5%9B%BE%E4%B8%8E%E5%8F%8D%E5%90%91%E6%A8%A1%E5%BC%8F%E5%BE%AE%E5%88%86.md</loc>
+    <loc>https://purslanema.github.io/33-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6/02-%E8%87%AA%E5%8A%A8%E6%B1%82%E5%AF%BC.md</loc>
     <lastmod>2026-10-27</lastmod>
     <priority>0.8</priority>
   </url>
@@ -1596,13 +1601,133 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://purslanema.github.io/33-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6/09-%E5%88%86%E5%B8%83%E5%BC%8F%E4%B8%8E%E4%BF%9D%E5%AD%98.md</loc>
+    <loc>https://purslanema.github.io/33-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6/09-%E4%BF%9D%E5%AD%98%E4%B8%8E%E5%A4%9A%E5%8D%A1.md</loc>
     <lastmod>2026-10-27</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://purslanema.github.io/33-%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E6%A1%86%E6%9E%B6/10-%E6%94%B6%E6%9D%9F%E5%9C%B0%E5%9B%BE.md</loc>
     <lastmod>2026-10-27</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/01-CFG%E4%B8%8ELSA.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/02-GMM-EM%E4%B8%8EHMM.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/03-N-gram%E4%B8%8E%E8%AF%8D%E5%90%91%E9%87%8F%E4%B8%8E%E5%9B%BE%E6%A8%A1%E5%9E%8B.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/04-%E7%A5%9E%E7%BB%8F%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/05-%E5%AD%90%E8%AF%8D%E5%88%86%E8%AF%8D%E4%B8%8E%E6%8D%9F%E5%A4%B1%E5%AE%9E%E7%8E%B0.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/06-BERT%E5%8F%8A%E5%85%B6%E8%A1%8D%E7%94%9F.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/07-GPT%E4%B8%8Edecoder-only.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/08-VAE%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/09-%E6%9B%9D%E5%85%89%E5%81%8F%E5%B7%AE%E4%B8%8E%E8%AF%AD%E8%A8%80GAN.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/10-LLM%E6%89%A9%E5%B1%95%E7%90%86%E8%AE%BA%E6%94%B6%E6%8B%A2.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/11-LLM%E8%AE%AD%E7%BB%83%E4%B8%8E%E5%AF%B9%E9%BD%90.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/12-LLM-Agent%E4%B8%8E%E5%BA%94%E7%94%A8.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/13-%E8%AF%8D%E4%B8%8E%E8%AF%AD%E8%A8%80%E7%BB%9F%E8%AE%A1.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/14-%E6%9C%BA%E5%99%A8%E7%BF%BB%E8%AF%91%E4%B8%8E%E5%AD%97%E7%AC%A6%E7%BA%A7%E7%94%9F%E6%88%90.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/15-%E5%BA%8F%E5%88%97%E6%A0%87%E6%B3%A8%E4%B8%8E%E4%BE%9D%E5%AD%98%E5%8F%A5%E6%B3%95.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/16-%E9%95%BF%E6%96%87%E6%A1%A3%E4%B8%8E%E7%9F%A5%E8%AF%86%E5%BA%93%E4%B8%8E%E6%8F%90%E7%A4%BA%E5%B7%A5%E7%A8%8B.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/17-%E6%A3%80%E6%B5%8B%E6%B0%B4%E5%8D%B0%E4%B8%8E%E5%AE%89%E5%85%A8%E8%AF%84%E6%B5%8B.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/18-%E5%A4%9A%E6%A8%A1%E6%80%81%E4%B8%8EAgent.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/34-%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/19-%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84%E4%B8%B2%E8%81%94.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/35-%E7%BB%84%E5%90%88%E5%AD%A6/01-%E8%AE%A1%E6%95%B0%E6%B3%95%E5%88%99%E4%B8%8E%E5%8F%8C%E5%B0%84.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/36-%E6%95%B0%E8%AE%BA/01-%E6%95%B4%E9%99%A4%E4%B8%8E%E6%AC%A7%E5%87%A0%E9%87%8C%E5%BE%97%E7%AE%97%E6%B3%95.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/36-%E6%95%B0%E8%AE%BA/02-%E5%90%8C%E4%BD%99%E4%B8%8E%E6%A8%A1%E7%AE%97%E6%9C%AF.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/37-%E7%BE%A4%E8%AE%BA%E4%B8%8E%E6%A8%A1%E8%AE%BA/01-%E7%BE%A4%E4%B8%8E%E9%99%AA%E9%9B%86.md</loc>
+    <lastmod>2026-10-28</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/37-%E7%BE%A4%E8%AE%BA%E4%B8%8E%E6%A8%A1%E8%AE%BA/02-%E5%95%86%E7%BE%A4%E4%B8%8E%E5%90%8C%E6%80%81%E5%AE%9A%E7%90%86.md</loc>
+    <lastmod>2026-10-28</lastmod>
     <priority>0.8</priority>
   </url>
 </urlset>

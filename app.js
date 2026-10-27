@@ -34,7 +34,11 @@ const BOOKS = [
   { key: 'math', label: '数学基础',               trackLabel: '数学', trackClass: 'badge-math', desc: '四个部分按序：连续数学、概率论、随机微分方程、范畴论4CS，各部分独立编号、自带复习章' },
   { key: 'dl',   label: '深度学习',               trackLabel: '分册', trackClass: 'badge-dl',   desc: '数学与记号、MLP 与反向传播、CNN 与训练技巧，生成模型四讲，RNN 与 Transformer' },
   { key: 'ml',   label: '机器学习与凸优化',       trackLabel: 'ML',   trackClass: 'badge-ml',   desc: '损失函数与凸性、梯度下降、线性模型与对偶，走到泛化与神经网络' },
-  { key: 'dlf',  label: '深度学习框架',           trackLabel: '框架', trackClass: 'badge-dlf',  desc: '手写迷你深度学习框架对照 PyTorch：张量、计算图与自动微分、autograd 引擎、Module 系统、优化器、训练循环、数据管道、设备精度与分布式' },
+  { key: 'dlf',  label: '深度学习框架',           trackLabel: '框架', trackClass: 'badge-dlf',  desc: 'PyTorch 能做什么：张量、自动求导、层与模块、优化器、训练循环、数据管道、设备与精度、保存与多卡，每层再打开盖子看内部机制' },
+  { key: 'nlp',  label: '自然语言处理',           trackLabel: 'NLP',  trackClass: 'badge-nlp',  desc: '从0开始的自然语言处理：经典方法（CFG、HMM、N-gram 与词向量）、神经语言模型与分词、BERT/GPT 双路线、LLM 训练与对齐、多模态与安全' },
+  { key: 'comb', label: '组合学',                 trackLabel: '组合', trackClass: 'badge-comb', desc: '计数与双射、生成函数、经典数列、树与图的计数，进阶到分析组合学（奇点分析）与图上的谱方法（扩张图、随机游走）' },
+  { key: 'nt',   label: '数论',                   trackLabel: '数论', trackClass: 'badge-nt',   desc: '整除与同余、原根与互反、素数分布（筛法到素数定理）、代数数论（高斯整数与理想）、算术函数与 L 函数' },
+  { key: 'gm',   label: '群论与模论',             trackLabel: '群模', trackClass: 'badge-gm',   desc: '群与陪集、商群与同态、Sylow、合成列与可解群、自由群；模与同态、张量积、PID 结构定理、半单性与表示论' },
   { key: 'qc',   label: '量子力学',               trackLabel: '量子', trackClass: 'badge-qc',   desc: '从狄拉克记号与「要解决什么问题」出发的最小量子力学，收在量子计算的路口' },
   { key: 'qai',  label: '交换代数·拓扑·同调速通', trackLabel: 'QAI',  trackClass: 'badge-qai',  desc: '交换代数、点集拓扑与同调代数，总装于 CSS 码、环面码与量子 AI 地图' },
   { key: 'fla',  label: '形式语言与自动机',       trackLabel: '语言', trackClass: 'badge-fla',  desc: '正则与上下文无关、图灵机与不可判定、一阶逻辑、MSO 与自动机的重合、复杂度地图' },
@@ -56,8 +60,8 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math'],           future: [] },
-  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf'], future: ['强化学习', '自然语言处理', '具身智能'] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm'], future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp'], future: ['强化学习', '具身智能'] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct'],      future: ['算法与数据结构', '近似算法', '随机算法'] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
@@ -182,11 +186,32 @@ const PHASES = [
   { key: 'num1', no: '误', title: '数值计算 · 误差与逼近',   desc: '浮点与舍入、数值微积分、插值与 Runge 现象',              range: [1, 3] },
   { key: 'num2', no: '解', title: '数值计算 · 方程与迭代',   desc: 'LU 分解与条件数、牛顿法与不动点迭代',                    range: [4, 5] },
   { key: 'numr1', no: '复', title: '数值计算 · 复习总结',    desc: '闭卷自测与易混点对照',                                  range: [6, 6] },
-  { key: 'df1',  no: '张', title: '深度学习框架 · 张量与计算图', desc: '迷你张量与广播、反向模式微分',                          range: [1, 2] },
-  { key: 'df2',  no: '引', title: '深度学习框架 · 引擎与模块', desc: '手写 autograd 引擎、Module 系统与层',                  range: [3, 4] },
-  { key: 'df3',  no: '练', title: '深度学习框架 · 优化与训练', desc: 'SGD/Momentum/Adam、端到端训练循环',                    range: [5, 6] },
-  { key: 'df4',  no: '系', title: '深度学习框架 · 工程与收束', desc: '数据管道、设备与精度、分布式与保存、收束地图',          range: [7, 10] },
+  { key: 'df1',  no: '张', title: '深度学习框架 · 张量与自动求导', desc: '张量对象与广播、自动求导用法、手写 40 行引擎',        range: [1, 3] },
+  { key: 'df2',  no: '网', title: '深度学习框架 · 网络与训练', desc: 'nn.Module 与损失、三种优化器、五句话训练循环',        range: [4, 6] },
+  { key: 'df3',  no: '数', title: '深度学习框架 · 数据与设备', desc: 'Dataset 与 DataLoader、GPU 与混合精度',               range: [7, 8] },
+  { key: 'df4',  no: '收', title: '深度学习框架 · 保存与收束', desc: 'state_dict 与断点续训、数据并行、能力总表',           range: [9, 10] },
   { key: 'dfr1', no: '复', title: '深度学习框架 · 复习总结',  desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'nl1',  no: '典', title: '自然语言处理 · 经典方法', desc: 'CFG 与 LSA、GMM-EM 与 HMM、N-gram 与词向量',            range: [1, 3] },
+  { key: 'nl2',  no: '语', title: '自然语言处理 · 语言模型与分词', desc: 'RNN 语言模型、子词分词与损失实现',               range: [4, 5] },
+  { key: 'nl3',  no: '预', title: '自然语言处理 · 预训练双路线', desc: 'BERT 与衍生、GPT 与 decoder-only、VAE 与语言 GAN',  range: [6, 9] },
+  { key: 'nl4',  no: '智', title: '自然语言处理 · LLM 与对齐', desc: '扩展理论、训练与对齐、Agent 与应用',                 range: [10, 12] },
+  { key: 'nl5',  no: '扩', title: '自然语言处理 · 扩充专题与收束', desc: '统计、翻译、标注、长文档、安全、多模态与架构串联', range: [13, 19] },
+  { key: 'nlr1', no: '复', title: '自然语言处理 · 复习总结', desc: '概念线与流程速览',                                       range: [20, 20] },
+  { key: 'cb1',  no: '计', title: '组合学 · 计数与生成函数', desc: '计数法则与双射、生成函数、经典数列',             range: [1, 3] },
+  { key: 'cb2',  no: '构', title: '组合学 · 结构计数', desc: '树与图的计数、排列的组合结构',                             range: [4, 5] },
+  { key: 'cb3',  no: '析', title: '组合学 · 分析组合学', desc: '奇点分析、奇点摄动与参数分布',                           range: [6, 7] },
+  { key: 'cb4',  no: '谱', title: '组合学 · 谱方法', desc: '邻接谱与图参数、扩张图与随机游走、收束地图',         range: [8, 10] },
+  { key: 'cbr1', no: '复', title: '组合学 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [11, 11] },
+  { key: 'nt1',  no: '整', title: '数论 · 整除与同余', desc: '欧几里得算法、同余与模算术、原根与离散对数',           range: [1, 3] },
+  { key: 'nt2',  no: '余', title: '数论 · 二次互反', desc: '二次剩余与互反律、素数分布一（筛法与 Chebyshev）',           range: [4, 5] },
+  { key: 'nt3',  no: '析', title: '数论 · 素数分布', desc: 'ζ 函数与素数定理、高斯整数与唯一分解',                      range: [6, 7] },
+  { key: 'nt4',  no: '代', title: '数论 · 代数数论与收束', desc: '代数整数与理想、算术函数与 Dirichlet 级数、收束地图',   range: [8, 10] },
+  { key: 'ntr1', no: '复', title: '数论 · 复习总结', desc: '闭卷自测与易混点对照',                                       range: [11, 11] },
+  { key: 'gm1',  no: '群', title: '群论与模论 · 群论基础', desc: '群与陪集、商群与同态定理、群作用与 Sylow',             range: [1, 3] },
+  { key: 'gm2',  no: '构', title: '群论与模论 · 结构定理', desc: '合成列与可解群、自由群与表现',                       range: [4, 5] },
+  { key: 'gm3',  no: '模', title: '群论与模论 · 模论', desc: '模与同态、自由模与张量积',                                 range: [6, 7] },
+  { key: 'gm4',  no: '示', title: '群论与模论 · 结构与表示', desc: 'PID 结构定理、半单性与表示论、收束地图',             range: [8, 10] },
+  { key: 'gmr1', no: '复', title: '群论与模论 · 复习总结', desc: '闭卷自测与易混点对照',                                 range: [11, 11] },
   { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
   { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
   { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [47, 99] },
@@ -217,11 +242,15 @@ const PHASE_BOOK = {
   cir1: 'cir', cir2: 'cir', cir3: 'cir', cir4: 'cir', cirr1: 'cir',
   num1: 'math', num2: 'math', numr1: 'math',
   df1: 'dlf', df2: 'dlf', df3: 'dlf', df4: 'dlf', dfr1: 'dlf',
+  nl1: 'nlp', nl2: 'nlp', nl3: 'nlp', nl4: 'nlp', nl5: 'nlp', nlr1: 'nlp',
+  cb1: 'comb', cb2: 'comb', cb3: 'comb', cb4: 'comb', cbr1: 'comb',
+  nt1: 'nt', nt2: 'nt', nt3: 'nt', nt4: 'nt', ntr1: 'nt',
+  gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gmr1: 'gm',
   gt1: 'gt', gt2: 'gt', gt3: 'gt', gt4: 'gt', gtr1: 'gt',
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -346,6 +375,17 @@ function updateTopnavActive() {
   if (home) home.classList.toggle('active', !cur);
 }
 
+// 悬停关闭走短延迟而不是立即关：鼠标斜穿按钮与菜单间的缝隙、
+// 或滑过相邻学部按钮的瞬间不至把菜单拍死（缝隙本身由 .nav-menu::before 桥面盖住）
+let topnavCloseTimer = null;
+function armTopnavClose() {
+  if (!window.matchMedia('(hover: hover)').matches) return;
+  if (topnavCloseTimer) clearTimeout(topnavCloseTimer);
+  topnavCloseTimer = setTimeout(() => { topnavCloseTimer = null; closeAllNavMenus(); }, 220);
+}
+function cancelTopnavClose() {
+  if (topnavCloseTimer) { clearTimeout(topnavCloseTimer); topnavCloseTimer = null; }
+}
 function closeAllNavMenus(except) {
   document.querySelectorAll('.nav-group.open').forEach(g => {
     if (g === except) return;
@@ -390,19 +430,20 @@ if (topnavEl) {
     if (!window.matchMedia('(hover: hover)').matches) return;
     const group = event.target.closest('.nav-group');
     if (!group) return;
+    cancelTopnavClose();
     closeAllNavMenus(group);
     group.classList.add('open');
     group.querySelector('.nav-menu').hidden = false;
     group.querySelector('.topnav-item').setAttribute('aria-expanded', 'true');
   });
   topnavEl.addEventListener('mouseleave', () => {
-    if (window.matchMedia('(hover: hover)').matches) closeAllNavMenus();
+    if (window.matchMedia('(hover: hover)').matches) armTopnavClose();
   });
   document.addEventListener('click', event => {
-    if (!event.target.closest('#topnav')) closeAllNavMenus();
+    if (!event.target.closest('#topnav')) { cancelTopnavClose(); closeAllNavMenus(); }
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeAllNavMenus();
+    if (event.key === 'Escape') { cancelTopnavClose(); closeAllNavMenus(); }
   });
 }
 
@@ -2616,7 +2657,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');

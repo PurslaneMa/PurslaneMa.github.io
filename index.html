@@ -406,6 +406,10 @@ kbd {
 .badge-ca       { color: #f9a8d4; background: rgba(244, 114, 182, 0.14); border-color: rgba(244, 114, 182, 0.3); }
 .badge-cir      { color: #fdba74; background: rgba(251, 146, 60, 0.14); border-color: rgba(251, 146, 60, 0.3); }
 .badge-dlf      { color: #a5b4fc; background: rgba(129, 140, 248, 0.14); border-color: rgba(129, 140, 248, 0.3); }
+.badge-nlp      { color: #f0abfc; background: rgba(217, 70, 239, 0.14); border-color: rgba(217, 70, 239, 0.3); }
+.badge-comb     { color: #6ee7b7; background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
+.badge-nt       { color: #cbd5e1; background: rgba(148, 163, 184, 0.14); border-color: rgba(148, 163, 184, 0.3); }
+.badge-gm       { color: #c084fc; background: rgba(192, 132, 252, 0.14); border-color: rgba(192, 132, 252, 0.3); }
 .badge-wip     { color: #fca5a5; background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.3); }
 
 /* 本章目录（TOC）面板 */
@@ -1466,6 +1470,10 @@ html[data-theme="light"] .badge-gt { color: #166534; background: rgba(74, 222, 1
 html[data-theme="light"] .badge-ca { color: #9d174d; background: rgba(244, 114, 182, 0.10); border-color: rgba(244, 114, 182, 0.25); }
 html[data-theme="light"] .badge-cir { color: #9a3412; background: rgba(251, 146, 60, 0.10); border-color: rgba(251, 146, 60, 0.25); }
 html[data-theme="light"] .badge-dlf { color: #3730a3; background: rgba(129, 140, 248, 0.10); border-color: rgba(129, 140, 248, 0.25); }
+html[data-theme="light"] .badge-nlp { color: #86198f; background: rgba(217, 70, 239, 0.10); border-color: rgba(217, 70, 239, 0.25); }
+html[data-theme="light"] .badge-comb { color: #065f46; background: rgba(16, 185, 129, 0.10); border-color: rgba(16, 185, 129, 0.25); }
+html[data-theme="light"] .badge-nt { color: #334155; background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.3); }
+html[data-theme="light"] .badge-gm { color: #6b21a8; background: rgba(192, 132, 252, 0.10); border-color: rgba(192, 132, 252, 0.25); }
 html[data-theme="light"] .badge-wip { color: #b91c1c; background: rgba(220, 38, 38, 0.08); border-color: rgba(220, 38, 38, 0.22); }
 html[data-theme="light"] .kbd { background: #fff; }
 html[data-theme="light"] .state-panel .spinner { border-color: rgba(var(--accent-rgb), 0.25); border-top-color: var(--accent); }
@@ -2440,6 +2448,26 @@ body {
   color: #818cf8;
   background: rgba(129, 140, 248, 0.12);
   border-color: rgba(129, 140, 248, 0.30);
+}
+.badge-nlp {
+  color: #e879f9;
+  background: rgba(217, 70, 239, 0.12);
+  border-color: rgba(217, 70, 239, 0.30);
+}
+.badge-comb {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.30);
+}
+.badge-nt {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.30);
+}
+.badge-gm {
+  color: #a855f7;
+  background: rgba(192, 132, 252, 0.12);
+  border-color: rgba(192, 132, 252, 0.30);
 }
 .badge-wip {
   color: var(--danger);
@@ -3729,6 +3757,17 @@ body {
   z-index: 90;
   animation: navmenu-in var(--t-fast, 160ms) var(--ease-out-quart, ease-out);
 }
+/* 悬停桥：菜单与按钮之间那 4px 视觉缝隙不属于任何元素的盒子，
+   鼠标下行穿过时会触发 #topnav 的 mouseleave 把菜单关掉——
+   用透明桥面把缝隙盖进菜单可悬停范围，视觉不动、判定连续。 */
+.nav-menu::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+}
 @keyframes navmenu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 /* 靠右的学部菜单向左展开，避免溢出视口 */
 .nav-group:nth-last-child(-n + 2) .nav-menu { left: auto; right: 0; }
@@ -4869,6 +4908,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=33b2402c5e"></script>
+<script defer src="app.js?v=a7424e4710"></script>
 </body>
 </html>
