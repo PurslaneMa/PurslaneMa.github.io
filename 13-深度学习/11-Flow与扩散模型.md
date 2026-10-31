@@ -50,6 +50,8 @@ L8 p3 用两个词总结了第 7 讲的两节，正好就是两条路线：
 
 两条路线的共同点是**放弃对抗、回到似然**；不同点是「一步到位」与「千步逼近」的取舍，§11.4 会把它们放进同一张表里。
 
+**本节小结**：前三章各留一道缝——EBM 采样慢、VAE 推断是近似、GAN 干脆没有似然——把这些缝反过来描，就得到理想模型的三条要求：似然精确、映射可逆、采样便宜；实现它们的两条路，一是把简单分布一步步「推」成数据分布的 Flow，二是把破坏过程写死、只学生成过程的 Diffusion。
+
 ---
 
 ## $\rm \S \, 11.2$ 归一化流：把似然精确算出来（重建）
@@ -450,6 +452,8 @@ $$
 **latent diffusion（L11 p53–p56）就是对第 2 条的回应**：讲义的原话是「我们可以用预训练模型来提供潜表示」——用一个**预训练的 VAE** 把图像压到潜空间，**扩散过程在潜空间里跑**（A pretrained VAE for image latent space, run diffusion process in latent space），条件信息则用预训练的语言/图像编码器通过交叉注意力（cross attention）注入（Pretrained LLM/Image encoders for conditioning by cross attention）。讲义在 p56 注明这就是 Stable Diffusion 的技术基础。**白话**：把「在百万维的像素上跑一千步」换成「在几千维的潜变量上跑一千步」，细节纹理交给 VAE 解码器。
 
 这条线的上一站是 DALL-E 2（L11 p43–p46）：图像先生成到一个「图像嵌入」空间，然后用**层次化扩散模型（hierarchical diffusion models）**做到 ${1024\times1024}$，文本条件由一个 Transformer 扩散模型承担（Transformer-based diffusion model）；讲义在 p44 括注 "diffusion model will be mentioned in lec 14"，说明课程后面还有扩散的专题。L11 p67 的总结页把这条路线概括成「DALL-E 系列与 latent diffusion model」。更早的一步是 DALL-E（L11 p42）用离散 VAE + 自回归（autoregressive）Transformer 的路线——把生成问题交给**离散词元 + 序列模型**，这是第 58、59 章的主题。
+
+**本节小结**：扩散把生成拆成一千步小去噪——前向链写死且有闭式，反向每一步都拿可算的后验当监督目标，训练于是退化成「预测噪声」的回归题，稳定性是五种模型里最好的；代价全压在采样端（$T$ 次前向）与像素空间成本上，latent diffusion 用预训练 VAE 的潜空间把后者砍掉。
 
 ---
 

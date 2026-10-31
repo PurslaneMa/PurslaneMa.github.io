@@ -29,6 +29,8 @@ BERT（Bidirectional Encoder Representations from Transformers，2018，P2 p195�
 1. 编码器路线（BERT）：双向看全文，擅长理解类任务（分类、问答匹配）。代价是天生不会从左到右写作文（每个位置已经偷看了右边的词）。
 2. 解码器路线（GPT）：只准看左边，天然会生成。
 
+**本节小结**：BERT 走编码器路线——双向看全文换来理解能力、代价是放弃生成；这条路线成不成立，全看下面两个造题机器。
+
 ## $\rm \S \, 6.3$ 预训练目标一：MLM——给模型出完形填空
 
 ### $\rm \S \, 6.3.1$ 做法
@@ -59,6 +61,8 @@ Masked language modeling（P2 p197）：每条序列随机挑 15% 的 token 换�
 
 ![图 2：80% 换 mask、10% 换随机词、10% 不变（P2 p198）](assets/nlp/bert-mainllm_part2nnlm_complete-p0198.png)
 
+**本节小结**：MLM 用完形填空把双向编码器逼成理解引擎，80/10/10 掺假则是让没被挖空的 85% 位置也出学习信号的补偿。
+
 ## $\rm \S \, 6.4$ 预训练目标二：NSP——以及它后来的下场
 
 第二目标 Next Sentence Prediction（P2 p199）：输入拼成 `[CLS] 句1 [SEP] 句2 [SEP]`，其中 `[CLS]` 是加在句首的特殊记号（它的最终表示充当「整段输入的总结」），`[SEP]` 是分隔符。让 BERT 用 `[CLS]` 的表示做二分类：句 2 是不是句 1 的真实下一句？负例 50% 概率换成随机抽的句子。
@@ -88,6 +92,8 @@ BERT 的用法是两段式（P2 p200–202）：先预训练（读万卷书：�
 
 ![图 4：pretrain-finetune 范式总览（P2 p202，图引自 BERT 论文）](assets/nlp/bert-mainllm_part2nnlm_complete-p0202.png)
 
+**本节小结**：预训练管通用语言能力、微调管具体任务，中间只加一个任务头；base 与 large 的差别只在规模。
+
 ## $\rm \S \, 6.6$ 衍生一：ELECTRA——把填空改成找茬
 
 MLM 有个隐蔽的浪费：每条序列只有 15% 的位置产生学习信号，85% 的计算「陪跑」。ELECTRA（2020，全名 Efficiently Learning an Encoder that Classifies Token Replacements Accurately，P2 p207）换了玩法：
@@ -100,6 +106,8 @@ MLM 有个隐蔽的浪费：每条序列只有 15% 的位置产生学习信号�
 白话对比：MLM 是改卷只批挖空的几道题；ELECTRA 是整张卷子每道题都要签「真迹 / 赝品」。顺带防一个误解：它长得像 GAN（有生成器有判别器），但生成器不是对抗的对手，而是造题的陪练（它的目标就是把题出得有难度），这与第 9 章语言 GAN 的真对抗训练不同。
 
 ![图 5：ELECTRA 的找茬任务覆盖所有 token（P2 p208）](assets/nlp/bert-mainllm_part2nnlm_complete-p0208.png)
+
+**本节小结**：ELECTRA 把「只有 15% 位置出梯度」的浪费改成全 token 判真假，同样一遍数据处处有学习信号。
 
 ## $\rm \S \, 6.7$ 衍生二：Longformer——长文注意力的省钱术
 
@@ -126,6 +134,8 @@ Transformer 处理超长序列的障碍（P2 p209）：attention 的计算量随
 但空隙之间会漏掉中间的信息，总得有人兜底：回收多头注意力，让 2 个头用膨胀窗看远、其余头用局部滑窗看近，各司其职。实测（P2 p213）：Longformer 在需要长文档的任务（如 multi-hop QA，答案要跨多篇文档拼线索的问答）上高效。
 
 ![图 7：膨胀滑窗 + 局部滑窗的多头分工（P2 p212）](assets/nlp/bert-mainllm_part2nnlm_complete-p0212.png)
+
+**本节小结**：滑窗把平方账压成线性，膨胀窗用同样名额看更远，多头分工补上膨胀漏掉的中间信息。
 
 ## $\rm \S \, 6.8$ 家族点名与本章收拢
 

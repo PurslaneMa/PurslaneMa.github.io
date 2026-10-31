@@ -30,6 +30,8 @@ $$
 
 ![图 1：注意力掩码——未来位置 (i<j) 的权重置 0（P2 p218）](assets/nlp/gpt-mainllm_part2nnlm_complete-p0218.png)
 
+**本节小结**：掩码把双向注意力改成只看左边的 transformer decoder，实现靠 softmax 前塞 $-10^9$——一个数值技巧换来合法分布。
+
 ## $\rm \S \, 7.3$ GPT：decoder-only 的规模叙事
 
 ### $\rm \S \, 7.3.1$ GPT 是什么
@@ -51,6 +53,8 @@ $$
 4. 生成样例（p225、p227）：给定故事开头，GPT2 零样本续写出连贯情节；p227 用 MIT 简介做对照实验：naive 采样流畅但跑题（质量差），top-k40 两条采样都话题稳定但各不相同。课件的结论是采样算法提供「质量–多样性的甜点」，与 beam search 的确定性解码是两种哲学。（课件注明没精选、平实展示。）
 
 GPT3 与 in-context learning 的故事属于 Part III（P3），第 11 章承接。
+
+**本节小结**：GPT1 还在「预训练＋微调」的老范式里，GPT2 用更大规模把「提示词换任务」变成现实——规模是这一切的前提。
 
 ## $\rm \S \, 7.4$ 三种采样（简表）与三条性质
 
@@ -114,6 +118,8 @@ FFN 是一本「键值记忆」（key-value memory）字典：每行 key 是一�
 
 ![图 4：FFN 的两个矩阵视作 K、V——「对 V 行的注意力」（P2 p238）](assets/nlp/gpt-mainllm_part2nnlm_complete-p0238.png)
 
+**本节小结**：FFN 换个视角就是对 V 行的注意力，「知识存在哪」有了答案：key 行记模式、value 行记输出，两个实证各查一侧。
+
 ## $\rm \S \, 7.7$ 深挖二：RoPE——让点积直接看见「相距多远」
 
 ### $\rm \S \, 7.7.1$ 老位置编码的局限与动机
@@ -149,6 +155,8 @@ $$
 3. 顺带（p247）：pre-norm、RMSNorm、SwiGLU 等变体的官方评语是「实践中略好一点」，细节留作视频作业，深度学习分册第 13 章回收。
 
 ![图 5：RoPE 的动机与二维情形（P2 p243）](assets/nlp/gpt-mainllm_part2nnlm_complete-p0243.png)
+
+**本节小结**：RoPE 把「给位置加向量」换成「按位置转角度」，点积里自动出现角度差；高维就是两两分组的多次二维旋转。
 
 ## $\rm \S \, 7.8$ 深挖三：推理效率——KV cache 与 GQA
 
@@ -192,6 +200,8 @@ $$
 ![图 7：GQA——每组 query 头共享一套 K/V 头（P2 p265）](assets/nlp/gpt-mainllm_part2nnlm_complete-p0265.png)
 
 ![图 8：MHA vs GQA 实测（P2 p266）](assets/nlp/gpt-mainllm_part2nnlm_complete-p0266.png)
+
+**本节小结**：KV cache 把平方重算换成线性追加，GQA 再把缓存本体按组缩小，两者合起来才撑得住长上下文生成。
 
 ## $\rm \S \, 7.9$ 工程一页与收拢
 
