@@ -38,7 +38,11 @@ const BOOKS = [
   { key: 'nlp',  label: '自然语言处理',           trackLabel: 'NLP',  trackClass: 'badge-nlp',  desc: '从0开始的自然语言处理：经典方法（CFG、HMM、N-gram 与词向量）、神经语言模型与分词、BERT/GPT 双路线、LLM 训练与对齐、多模态与安全' },
   { key: 'comb', label: '组合学',                 trackLabel: '组合', trackClass: 'badge-comb', desc: '计数与双射、生成函数、经典数列、树与图的计数，进阶到分析组合学（奇点分析）与图上的谱方法（扩张图、随机游走）' },
   { key: 'nt',   label: '数论',                   trackLabel: '数论', trackClass: 'badge-nt',   desc: '整除与同余、原根与互反、素数分布（筛法到素数定理）、代数数论（高斯整数与理想）、算术函数与 L 函数' },
-  { key: 'gm',   label: '群论与模论',             trackLabel: '群模', trackClass: 'badge-gm',   desc: '群与陪集、商群与同态、Sylow、合成列与可解群、自由群；模与同态、张量积、PID 结构定理、半单性与表示论' },
+  { key: 'gm',   label: '群论与模论',             trackLabel: '群模', trackClass: 'badge-gm',   desc: '群论（陪集、Sylow、合成列、有限阿贝尔群、幂零群、自由群）；模论（同态、张量积、PID 结构定理、半单性与表示）；域论（域扩张、Galois 与经典应用、有限域、无限 Galois）' },
+  { key: 'qe',   label: '排队论',                 trackLabel: '排队', trackClass: 'badge-qe',   desc: '从泊松过程到排队网络：M/M/1 全解剖、Little 定律、M/M/k 与网络' },
+  { key: 'hp',   label: '高维概率与矩阵分析',     trackLabel: '高维', trackClass: 'badge-hp',   desc: '集中不等式、亚高斯、高维几何、随机矩阵谱、矩阵函数与微积分、PCA 与谱聚类' },
+  { key: 'bc',   label: '区块链',                 trackLabel: '链',   trackClass: 'badge-bc',   desc: '共识问题的谱系、链结构与激励机制、智能合约与扩容' },
+  { key: 'qf',   label: '量化金融',               trackLabel: '量化', trackClass: 'badge-qf',   desc: '金融时间序列与随机游走、组合优化与执行、因子回测与过拟合' },
   { key: 'qc',   label: '量子力学',               trackLabel: '量子', trackClass: 'badge-qc',   desc: '从狄拉克记号与「要解决什么问题」出发的最小量子力学，收在量子计算的路口' },
   { key: 'qai',  label: '交换代数·拓扑·同调速通', trackLabel: 'QAI',  trackClass: 'badge-qai',  desc: '交换代数、点集拓扑与同调代数，总装于 CSS 码、环面码与量子 AI 地图' },
   { key: 'fla',  label: '形式语言与自动机',       trackLabel: '语言', trackClass: 'badge-fla',  desc: '正则与上下文无关、图灵机与不可判定、一阶逻辑、MSO 与自动机的重合、复杂度地图' },
@@ -60,13 +64,13 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm'], future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp'], future: [] },
   { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp'], future: ['强化学习', '具身智能'] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct'],      future: ['算法与数据结构', '近似算法', '随机算法'] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
-  { key: 'econ',   label: '经济学',          books: ['econ', 'gt'],     future: [] },
-  { key: 'crypt',  label: '密码学',          books: ['crypt'],          future: [] },
+  { key: 'econ',   label: '经济学',          books: ['econ', 'gt', 'qf'], future: [] },
+  { key: 'crypt',  label: '密码学',          books: ['crypt', 'bc'],    future: [] },
   { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net'], future: [] },
 ];
 const DIVISION_OF = {};
@@ -166,8 +170,8 @@ const PHASES = [
   { key: 'th1',  no: '模', title: '计算理论 · 模型与归约',   desc: '从 OJ 机器到图灵机、归约的技艺与不可判定地图',            range: [1, 2] },
   { key: 'th2',  no: '类', title: '计算理论 · 复杂性类与 NPC', desc: 'P/NP 图谱、Cook-Levin、Ladner 与细粒度复杂度',          range: [3, 5] },
   { key: 'th3',  no: '机', title: '计算理论 · 空间、随机与交互', desc: 'PSPACE 与 TQBF、BPP、交互证明与 IP',                  range: [6, 8] },
-  { key: 'th4',  no: '界', title: '计算理论 · 难近似与下界', desc: 'PCP 定理、电路复杂性与收束地图',                        range: [9, 10] },
-  { key: 'thr1', no: '复', title: '计算理论 · 复习总结',     desc: '闭卷自测与易混点对照',                                  range: [11, 11] },
+  { key: 'th4',  no: '界', title: '计算理论 · 难近似与下界', desc: 'PCP 定理、电路复杂性下界与收束地图',                    range: [9, 11] },
+  { key: 'thr1', no: '复', title: '计算理论 · 复习总结',     desc: '闭卷自测与易混点对照',                                  range: [12, 12] },
   { key: 'gt1',  no: '静', title: '博弈论 · 静态博弈',       desc: '策略式博弈与纳什均衡、零和与线性规划',                    range: [1, 2] },
   { key: 'gt2',  no: '动', title: '博弈论 · 动态、重复与信息', desc: '子博弈完美、重复博弈与合作的诞生、贝叶斯博弈与信号',      range: [3, 5] },
   { key: 'gt3',  no: '群', title: '博弈论 · 演化、合作与计算', desc: 'ESS 与复制子、核心与 Shapley 值、PPAD 与相关均衡',       range: [6, 8] },
@@ -195,7 +199,7 @@ const PHASES = [
   { key: 'nl2',  no: '语', title: '自然语言处理 · 语言模型与分词', desc: 'RNN 语言模型、子词分词与损失实现',               range: [4, 5] },
   { key: 'nl3',  no: '预', title: '自然语言处理 · 预训练双路线', desc: 'BERT 与衍生、GPT 与 decoder-only、VAE 与语言 GAN',  range: [6, 9] },
   { key: 'nl4',  no: '智', title: '自然语言处理 · LLM 与对齐', desc: '扩展理论、训练与对齐、Agent 与应用',                 range: [10, 12] },
-  { key: 'nl5',  no: '扩', title: '自然语言处理 · 扩充专题与收束', desc: '统计、翻译、标注、长文档、安全、多模态与架构串联', range: [13, 19] },
+  { key: 'nl5',  no: '扩', title: '自然语言处理 · 扩充专题与系统', desc: '统计、翻译、标注、长文档、安全、多模态、架构串联与训练/推理系统', range: [13, 21] },
   { key: 'nlr1', no: '复', title: '自然语言处理 · 复习总结', desc: '概念线与流程速览',                                       range: [20, 20] },
   { key: 'cb1',  no: '射', title: '组合学 · 双射与形式幂级数', desc: '双射的艺术（对合与符号反转）、形式幂级数语法、Lagrange 反演全证', range: [1, 3] },
   { key: 'cb2',  no: '恒', title: '组合学 · 恒等式与容斥', desc: '双计数与二项式反演、容斥的偏序观点与 Möbius、高维前缀和',           range: [4, 5] },
@@ -210,11 +214,26 @@ const PHASES = [
   { key: 'nt3',  no: 'L', title: '数论 · L 函数与筛法圆法', desc: 'Dirichlet 特征与 L(1,χ)、筛法与孪生素数前沿',           range: [5, 6] },
   { key: 'nt4',  no: '代', title: '数论 · 代数数论与局部方法', desc: '数域与代数整数环、理想与类数、p-adic 与局部-全局、收束', range: [7, 10] },
   { key: 'ntr1', no: '复', title: '数论 · 复习总结', desc: '闭卷自测与易混点对照',                                       range: [11, 11] },
-  { key: 'gm1',  no: '群', title: '群论与模论 · 群论基础', desc: '群与陪集、商群与同态定理、群作用与 Sylow',             range: [1, 3] },
-  { key: 'gm2',  no: '构', title: '群论与模论 · 结构定理', desc: '合成列与可解群、自由群与表现',                       range: [4, 5] },
-  { key: 'gm3',  no: '模', title: '群论与模论 · 模论', desc: '模与同态、自由模与张量积',                                 range: [6, 7] },
-  { key: 'gm4',  no: '示', title: '群论与模论 · 结构与表示', desc: 'PID 结构定理、半单性与表示论、收束地图',             range: [8, 10] },
-  { key: 'gmr1', no: '复', title: '群论与模论 · 复习总结', desc: '闭卷自测与易混点对照',                                 range: [11, 11] },
+  { key: 'gm1',  no: '群', title: '群论与模论 · 群的构造', desc: '群与陪集、商群与同态定理、群作用与 Sylow',             range: [1, 3] },
+  { key: 'gm2',  no: '构', title: '群论与模论 · 群的结构理论', desc: '合成列与可解群、有限阿贝尔群的结构、幂零群与 p-群',  range: [4, 6] },
+  { key: 'gm3',  no: '由', title: '群论与模论 · 自由对象与普遍性质', desc: '自由群与表现、模与同态',                       range: [7, 8] },
+  { key: 'gm4',  no: '模', title: '群论与模论 · 模论', desc: '自由模与张量积、PID 结构定理、半单性与表示论',               range: [9, 11] },
+  { key: 'gm5',  no: '域', title: '群论与模论 · 域论与 Galois', desc: '域扩张、Galois 理论基础、Galois 理论的经典应用',     range: [12, 14] },
+  { key: 'gm6',  no: '拓', title: '群论与模论 · 域论专题与收束', desc: '有限域与分圆域、无限 Galois 与 Krull 拓扑、收束地图', range: [15, 17] },
+  { key: 'gmr1', no: '复', title: '群论与模论 · 复习总结', desc: '闭卷自测与易混点对照',                                 range: [18, 18] },
+  { key: 'qe1',  no: '队', title: '排队论 · 泊松与 M/M/1', desc: '泊松过程与指数分布、M/M/1 全解剖',                     range: [1, 2] },
+  { key: 'qe2',  no: '律', title: '排队论 · Little 定律与网络', desc: 'Little 定律与 Palm 视角、M/M/k 与排队网络',       range: [3, 4] },
+  { key: 'qer1', no: '复', title: '排队论 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [5, 5] },
+  { key: 'hp1',  no: '集', title: '高维概率与矩阵分析 · 集中现象', desc: '集中不等式、亚高斯与亚指数',                       range: [1, 2] },
+  { key: 'hp2',  no: '谱', title: '高维概率与矩阵分析 · 高维几何与随机矩阵', desc: '维数诅咒、随机矩阵谱',                   range: [3, 4] },
+  { key: 'hp3',  no: '函', title: '高维概率与矩阵分析 · 矩阵分析与应用', desc: '矩阵函数与微积分、PCA 与谱方法',             range: [5, 6] },
+  { key: 'hpr1', no: '复', title: '高维概率与矩阵分析 · 复习总结', desc: '闭卷自测与易混点对照',                             range: [7, 7] },
+  { key: 'bc1',  no: '识', title: '区块链 · 共识与结构', desc: '共识问题的谱系、链结构与挖矿经济',                       range: [1, 2] },
+  { key: 'bc2',  no: '约', title: '区块链 · 合约与扩容', desc: '智能合约与扩容',                                           range: [3, 3] },
+  { key: 'bcr1', no: '复', title: '区块链 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [4, 4] },
+  { key: 'qf1',  no: '游', title: '量化金融 · 时间序列与组合', desc: '金融时间序列与随机游走、组合优化与执行',             range: [1, 2] },
+  { key: 'qf2',  no: '因', title: '量化金融 · 因子与回测', desc: '因子、回测与过拟合',                                       range: [3, 3] },
+  { key: 'qfr1', no: '复', title: '量化金融 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [4, 4] },
   { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
   { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
   { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [47, 99] },
@@ -248,12 +267,12 @@ const PHASE_BOOK = {
   nl1: 'nlp', nl2: 'nlp', nl3: 'nlp', nl4: 'nlp', nl5: 'nlp', nlr1: 'nlp',
   cb1: 'comb', cb2: 'comb', cb3: 'comb', cb4: 'comb', cb5: 'comb', cb6: 'comb', cb7: 'comb', cbr1: 'comb',
   nt1: 'nt', nt2: 'nt', nt3: 'nt', nt4: 'nt', ntr1: 'nt',
-  gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gmr1: 'gm',
+  gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gm5: 'gm', gm6: 'gm', gmr1: 'gm', qe1: 'qe', qe2: 'qe', qer1: 'qe', hp1: 'hp', hp2: 'hp', hp3: 'hp', hpr1: 'hp', bc1: 'bc', bc2: 'bc', bcr1: 'bc', qf1: 'qf', qf2: 'qf', qfr1: 'qf',
   gt1: 'gt', gt2: 'gt', gt3: 'gt', gt4: 'gt', gtr1: 'gt',
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -2660,7 +2679,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
