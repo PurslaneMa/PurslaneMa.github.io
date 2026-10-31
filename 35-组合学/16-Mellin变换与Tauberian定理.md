@@ -17,6 +17,8 @@
 2. **Tauberian 问题**：已知 GF $F(z)$ 在 $z \to 1^-$（实轴方向）的行为，问 $\sum_{k \le n} a_k$ 或 $a_n$ 的渐近。与奇点分析（第 9 章）的差别：奇点分析要求 $F$ 在奇点的**复邻域**解析延拓，Tauberian 只要求**实方向**的信息——假设弱一档、结论也弱一档（通常只能到求和函数，系数渐近需要额外的 Tauberian 条件如单调性）。
 3. 比喻：Mellin 变换是一台**频谱分析仪**——函数 $f(x)$ 分解成纯频率 $x^{s-1}$（$s$ 是频率复数化）；「按 $k/n$ 采样求和」这个操作在频域里是乘一个已知的传递函数 $\zeta(s)$；渐近展开 = 从右往左收割 $\zeta$ 与 $f^*$ 的极点（频率越靠左、对 $n$ 的幂次越低）。第 9 章「最近奇点独裁」在这里变成「最右侧极点独裁」——同一独裁原则的第三次现身。
 
+**本节小结**：本节摆出本章的两类问题（调和和的正向渐近、GF 实轴信息的反向提取）并给出频谱分析仪的总比喻；先把正问题做出来，需要把 Mellin 变换本身定义清楚——下一节入门。
+
 ## $\rm \S \, 16.2$ Mellin 变换入门
 
 1. **定义**：$f^*(s) = \int_0^\infty f(x) \, x^{s-1} \, \mathrm{d}x$，使积分两侧都收敛的竖直带 $\langle \alpha, \beta \rangle$（$\alpha < \mathrm{Re}\, s < \beta$）叫**基本带**。三个工作马（推导给全）：
@@ -33,6 +35,10 @@ $$
 $$
 f(x) = \frac{1}{2 \pi \mathrm{i}} \int_{c - \mathrm{i}\infty}^{c + \mathrm{i}\infty} f^*(s) \, x^{-s} \, \mathrm{d}s, \qquad c \in \text{基本带}.
 $$
+
+读法：$f$ 能从它的频谱原样重建——竖直线 $c$ 取在基本带里即可；这正是下一节「移围道收残差」的出发点（与第 9 章系数积分的围道同工）。
+
+**本节小结**：本节定义 Mellin 变换与基本带，备好三条工作马、尺度法则与反演公式；工具齐了，下一节把它们拧成调和和的主公式。
 
 ## $\rm \S \, 16.3$ 调和和的主公式与残差收割
 
@@ -54,9 +60,11 @@ $$
 4. **例二（模对偶的预告）**：$f(x) = \mathrm{e}^{-x^2}$，$f^*(s) = \frac12 \Gamma\!\left( \frac{s}{2} \right)$（换元 $u = x^2$）。被积函数 $\frac12 \Gamma(s/2)\zeta(s)n^s$：1. $s = 1$：$\zeta$ 残差 1、$\frac12\Gamma(\frac12) = \frac{\sqrt\pi}{2}$（$\int_0^\infty \mathrm{e}^{-x^2}\mathrm{d}x = \frac{\sqrt\pi}{2}$，正是连续近似的积分）：贡献 $\frac{\sqrt\pi}{2} n$。2. $s = 0$：$\frac12\Gamma(s/2) \approx \frac1s$、$\zeta(0) = -\frac12$：贡献 $-\frac12$。3. $s = -2, -4, \ldots$：$\zeta$ 的平凡零点**全部清零**——负幂次修正一个都不剩，展开在 $\frac{\sqrt\pi}{2} n - \frac12$ 之后直接跳到指数小项（ theta 函数的模变换 $\sum \mathrm{e}^{-k^2 t} \sim \frac{\sqrt{\pi}}{2\sqrt{t}}$ 的离散回声）。数值验收：$\sum_{k\ge1}\mathrm{e}^{-(k/n)^2}$ 与 $\frac{\sqrt\pi}{2}n - \frac12$ 在 $n = 20$ 相差 $< 10^{-8}$（指数小项 $\mathrm{e}^{-\pi^2 n^2}$ 量级，真算确认）。
 5. **尖锐截断的陷阱（诚实声明）**：$H_n = \sum_{k \le n} \frac1k$ 想写成 $\sum_k f(k/n)$，$f$ 得带截断 $\mathbf{1}[x \le 1]$——它不光滑，Mellin 反演在其间断点只给**半权重**（Perron 公式的经典现象：积分给 $\sum_{k < n} + \frac{a_n}{2}$），且残差展开与 Euler–Maclaurin 的系数不再逐项对应。处理方式两条：1. 换光滑截断（展开依赖截断形状，需配权重修正，标注出处 FGD95 第 3 节）；2. 直接走 Euler–Maclaurin（$\ln n + \gamma + \frac{1}{2n} - \frac{1}{12n^2} + \cdots$，$\gamma$ 由单调收敛论证 $\mathrm{H}_n - \ln n$ 递减有下界完整证明）。本章选择后者：**工具要挑对手**——光滑衰减的和用 Mellin，截断和用 EM。
 
+**本节小结**：本节推导主公式（$\zeta$ 是求和的传递函数）、立下收割规则，并用两个范例（Bernoulli 会师、模对偶预告）与一个陷阱（尖锐截断半权重）划清适用范围；下一节处理假设更弱的反向问题。
+
 ## $\rm \S \, 16.4$ Tauberian 定理：弱假设下的收割
 
-1. **Karamata 定理**（Hardy–Littlewood–Karamata，1931；表述取 Feller《An Introduction to Probability Theory》XIII.5 或 Tenenbaum 第 II 章，标注出处）：设 $a_k \ge 0$，$F(z) = \sum_k a_k z^k$，且沿实轴
+1. **Karamata 定理**（Hardy–Littlewood–Karamata，1931；表述取 Feller《An Introduction to Probability Theory》XIII.5 或 Tenenbaum 第 II 章，标注出处）：白话——GF 沿实轴靠近 1 时像 $(1-z)^{-\rho}$，系数又非负，那么部分和就以 $n^{\rho}$ 增长；全程不用复邻域，代价是只拿到求和主项。定理：设 $a_k \ge 0$，$F(z) = \sum_k a_k z^k$，且沿实轴
 $$
 F(z) \sim \frac{1}{(1 - z)^{\rho}} \, L\!\left( \frac{1}{1 - z} \right), \qquad \rho \ge 0,
 $$
@@ -67,6 +75,8 @@ $$
 2. **证明的地位（诚实声明＋证明思想）**：Karamata 定理的完整证明（Abelian 方向容易；Tauberian 反转需要 Weierstrass 多项式逼近把任意试探函数压进不等式，约两页）超出本章范围，标注出处：Feller《An Introduction to Probability Theory》第 XIII.5 节、Tenenbaum《Introduction to Analytic and Probabilistic Number Theory》第 II.7 节。证明思想值得复述：1. 把 $F(z)$ 换元 $z = \mathrm{e}^{-t}$，得 Laplace 型和 $\sum_k a_k \mathrm{e}^{-kt} \sim c\,t^{-\rho}$（$t \to 0^+$）；2. 造探针核 $\frac{u^{\rho}\mathrm{e}^{-u/t}}{t^{\rho+1}\Gamma(\rho+1)}$（积分为 1、质量集中在 $u \sim t$），与 $A(u) = \sum_{k \le u} a_k$ 卷积后用假设逐字积分出 $c$；3. 反转方向用 $a_k \ge 0$：非负性保证「倾斜平均」与「真实部分和」互相控制，再用多项式逼近把控制传给任意连续试探函数，逼出 $\sum_{k \le n} a_k \sim \frac{cn^{\rho}}{\Gamma(\rho+1)}$。非负性恰在反转步骤承重——没有它，振荡系数可以骗过任何实轴观测（见 §16.6 第 4 题）。
 3. **读法与分工**：Karamata 的输入只有实轴行为，输出是**求和函数** $\sum_{k \le n} a_k$ 的渐近；要下探到 $a_n$ 本身，需要额外的 Tauberian 条件（如 $a_k$ 最终单调——此时 $a_n \sim \frac{c\rho}{\Gamma(\rho+1)} n^{\rho-1} L(n)$），或回到奇点分析付「复邻域」的门票。对照表：第 9 章机器（强假设、强结论：$a_n$ 的全展开）↔ Karamata（弱假设、弱结论：求和主项）↔ Hayman（整函数专列）。
 4. **应用示范**：$a_k = \frac{1}{4^k}\binom{2k}{k}$（中心二项式的归一化，非负），其 GF 为 $(1-z)^{-1/2}$（第 2 章 §2.4）。Karamata（$c = 1$、$\rho = \frac12$）给出 $\sum_{k \le n} \frac{1}{4^k}\binom{2k}{k} \sim \frac{\sqrt{n}}{\Gamma(3/2)} = 2\sqrt{\frac{n}{\pi}}$——数值验收（直接求和真算）：与主项之比在 $n = 100, 400, 1600$ 为 ${0.915, 0.957, 0.978}$，收敛偏慢是因为存在常数次项 $\frac{\zeta(1/2)}{\sqrt{\pi}} \approx -0.824$（常数 $L$ 的 Karamata 不携带次项）；补上常数后差值为 $-0.134, -0.155, -0.166$，落入 $O(n^{-1/2})$ 档、逐点收敛。这个例子展示 Karamata 的正确用法与刻度：**系数本身的渐近**（$\frac{4^k}{\sqrt{\pi k}}$）来自第 9 章的复分析机器，Karamata 反过来只需实轴信息锁定求和主项——当 GF 的解析延拓未知时（例如由概率论证定义的 GF），它是唯一能用的收割机，但只承诺主项、不承诺次项。分拆数的对数渐近是更深的实例：Ingham–Tauberian 路线给 $\ln p(n) \sim \pi\sqrt{\frac{2n}{3}}$（含次项 $\ln p(n) = \pi\sqrt{\frac{2n}{3}} - \ln(4n\sqrt3) + o(1)$，由 Hardy–Ramanujan/Rademacher 级数强化，标注出处 Andrews《The Theory of Partitions》）；数值验收（第 1 章五边形递推真算）：$\ln p(100) - \left[ \pi\sqrt{\tfrac{200}{3}} - \ln(400\sqrt3) \right] = -0.045$、$n = 300$ 时 $-0.026$，收敛中。
+
+**本节小结**：本节陈述 Karamata 定理、复述其证明思想（非负性在反转步承重），并示范「只拿主项」的正确刻度；三台渐近机器（奇点分析、Hayman、Tauberian）的假设-产出对照在 §16.6 第 5 题收口。
 
 ## $\rm \S \, 16.5$ 关键概念回顾
 

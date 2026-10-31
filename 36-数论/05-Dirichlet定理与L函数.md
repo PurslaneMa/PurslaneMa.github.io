@@ -49,6 +49,8 @@
 
 四个特征里两个复、一个实非主、一个主。模 8 的情形相反：$(\mathbb{Z}/8)^\times = \{1,3,5,7\}$ 里每个非主特征都只取 $\pm 1$——**全部实**。这类模数把全部重量压到 §5.4 的实情形上，届时再回头看。
 
+白话：正交关系是这组滤波器的使用说明书——把全部特征的取值按固定权重求和，恰好只放行一个目标剩余类、其余全部归零。
+
 **引理 5.2（正交关系）**：对 $a, b \in G$，
 
 $$
@@ -61,9 +63,11 @@ $$
 
 这就是滤波器组的物理：$\frac{1}{\varphi(q)} \sum_\chi \overline{\chi(a)}\, \chi(\cdot)$ 是一台**只放行剩余类 $a$** 的带通滤波器。要问「素数是否落在类 $a$」，把任意按类记账的量用这台滤波器过一遍即可。
 
+**本节小结**：本节造出 $\varphi(q)$ 个特征（计数三步：下界、上界、非退化）并证正交关系——滤波器组装完毕；下一节把每个特征接上一条自己的 Euler 乘积。
+
 ## $\rm \S \, 5.3$ L 函数与 Euler 乘积
 
-**定义 5.3**：对特征 $\chi$ 与复数 $s$，$L(s, \chi) = \sum_{n=1}^{\infty} \dfrac{\chi(n)}{n^s}$。
+有了滤波器，还差录音设备：每个特征配一条自己的级数，把素数总账按特征分频。**定义 5.3**：对特征 $\chi$ 与复数 $s$，$L(s, \chi) = \sum_{n=1}^{\infty} \dfrac{\chi(n)}{n^s}$。
 
 **收敛域**。$\left|\dfrac{\chi(n)}{n^s}\right| = \dfrac{|\chi(n)|}{n^{\sigma}} \le \dfrac{1}{n^{\sigma}}$，与 $\sum n^{-\sigma}$ 比较得：$\sigma > 1$ 时绝对收敛，且在 $\sigma \ge 1 + \delta$ 上一致收敛——每项全纯，故 $L(s, \chi)$ 在 $\sigma > 1$ 全纯（与第 3 章 ζ 的论证逐字相同，只是系数从 $1$ 换成 $|\chi(n)| \le 1$，只会更好）。
 
@@ -108,6 +112,8 @@ $$
 
 余项逐项估计：$\left|\sum_{k \ge 2} \dfrac{\chi(p)^k}{k\, p^{ks}}\right| \le \dfrac12 \sum_{k \ge 2} p^{-k\sigma} = \dfrac{p^{-2\sigma}}{2\left(1 - p^{-\sigma}\right)}$，对 $p$ 求和得 $|R_\chi(s)| \le \dfrac{\zeta(2\sigma)}{2\left(1 - 2^{-\sigma}\right)}$——与 $\chi$ 无关的一致界，$\sigma \to 1^+$ 时不超过 $\zeta(2) \approx 1.645$。故 $\sigma \to 1^+$ 时**高次幂整体 $O(1)$，只有素数一次项可能携带发散**。
 
+**本节小结**：本节给每个特征立起 L 函数：Euler 乘积在 $\sigma > 1$ 对账成立、主特征与 ζ 同呼吸在 $s = 1$ 发散、非主特征靠周期归零与 Abel 求和把级数救活到 $\sigma > 0$——「一头发散、多头有界」的格局就位，只差证明多头不在 $s = 1$ 归零。
+
 ## $\rm \S \, 5.4$ 技术心脏：$L(1, \chi) \ne 0$
 
 收官要用的量是 $\ln L(s, \chi)$。主特征的账 $\ln L(s, \chi_0) \to +\infty$ 是我们**要的**发散；但若某个非主特征在 $s = 1$ 归零，则 $\ln L(s, \chi) \to -\infty$，负发散会污染合成账目（§5.5）。所以先立桥墩：
@@ -138,6 +144,8 @@ $$
 F(s) = \prod_{\chi} L(s, \chi) = \sum_{n=1}^{\infty} \frac{a_n}{n^s}, \qquad a_n \ge 0, \quad a_1 = 1 .
 $$
 
+读法：这行等式把全部 L 函数的乘积整理成一条非负系数的 Dirichlet 级数——后面两步全靠 $a_n \ge 0$（给下界 $F \ge 1$）与 $a_1 = 1$ 这两个便宜性质。
+
 **第三步（双零吃单极）**：$s \to 1^+$ 时给 $F$ 的每个因子记账。$L(s, \chi_0) = O\!\left(\dfrac{1}{s-1}\right)$（单极点）；$\bar\chi$ 也是非主特征且 $L(1, \bar\chi) = \overline{L(1, \chi)} = 0$（级数逐项共轭，$s = 1$ 是实数），两个因子在 $s = 1$ 全纯且取零，故各为 $O(s - 1)$；其余因子在 $s = 1$ 全纯（§5.3），各有界。合起来
 
 $$
@@ -158,6 +166,10 @@ $$
 
 右边全由正的算术量组成，故 $L(1, \chi_D) > 0$，特别地非零——而引理 5.4 需要的恰恰只有「非零」。两个当场兑现的自检：$D = -4$（模 4 的实特征 $\chi_4$，$\chi_4(1) = 1$、$\chi_4(3) = -1$）：$h(-4) = 1$、$w = 4$，得 $L(1, \chi_4) = \dfrac{2\pi}{4 \cdot 2} = \dfrac{\pi}{4}$，与 Leibniz 级数 $\sum_k \dfrac{(-1)^k}{2k+1} = \dfrac{\pi}{4}$ 吻合；$D = 5$（模 5 的 $\chi_2$）：$h(5) = 1$、$R = \ln \varphi$（$\varphi = \tfrac{1 + \sqrt5}{2}$ 为黄金比），得 $L(1, \chi_2) = \dfrac{2 \ln \varphi}{\sqrt5}$，数值见 §5.6。类数公式的完整证明超出本章范围；出处：Washington《Introduction to Cyclotomic Fields》（GTM 83）论 Dirichlet 类数公式的章节，Apostol《Introduction to Analytic Number Theory》第 6 章另有不经过类数公式的完整初等路线。本章后续只使用结论 $L(1, \chi) \ne 0$。
 
+**本节小结**：本节立起全章的桥墩 $L(1, \chi) \ne 0$：复情形用「双零吃单极」的整产品论证全证，实情形卡在「没有共轭陪葬」，由类数公式路线补刀并声明范围外。
+
+## $\rm \S \, 5.5$ 收官：从非零性到每类无穷素数
+
 ## $\rm \S \, 5.5$ 收官：从非零性到每类无穷素数
 
 **定理 5.5（Dirichlet，1837）**：设 $\gcd(a, q) = 1$。则等差数列 $a,\ a + q,\ a + 2q,\ \ldots$ 中含无穷多个素数。
@@ -170,7 +182,7 @@ $$
 \sum_{\chi} \overline{\chi(a)} \ln L(s, \chi) = \sum_p \left(\sum_{\chi} \overline{\chi(a)}\, \chi(p)\right) \frac{1}{p^s} + O(1) = \varphi(q) \sum_{\substack{p \\ p \equiv a \, (q)}} \frac{1}{p^s} + O(1),
 $$
 
-内层和用正交关系读出：$p \nmid q$ 时是 $\varphi(q) \cdot [\![p \equiv a \, (q)]\!]$，$p \mid q$ 时 $\chi(p) = 0$ 全体归零、自动出局。除以 $\varphi(q)$：
+内层和用正交关系读出：$p \nmid q$ 时是 $\varphi(q) \cdot [\![p \equiv a \, (q)]\!]$（$[\![\cdot]\!]$ 读作指示括号，条件成立取 $1$、否则取 $0$，对照把判断句变成数字的开关），$p \mid q$ 时 $\chi(p) = 0$ 全体归零、自动出局。除以 $\varphi(q)$：
 
 $$
 \sum_{\substack{p \\ p \equiv a \, (q)}} \frac{1}{p^s} = \frac{1}{\varphi(q)} \sum_{\chi} \overline{\chi(a)} \ln L(s, \chi) + O(1) \qquad (\sigma > 1).
@@ -197,6 +209,8 @@ $$
 $$
 
 这是第 4 章素数定理的等差数列版（de la Vallée Poussin，1896）。证明与 PNT 平行：L 函数的零点免费区域替代 ζ 的；新增胜负手是**整条线 $\sigma = 1$ 上的非零性**——若某个实特征在 $\sigma = 1$ 上有实零点，它会从某条类的账上偷走主项。完整证明见 Davenport《Multiplicative Number Theory》；它也解释了 §5.4 的实情形为何是全章真正的深水区，以及这个问题如何通向代数数论中的类数增长。
+
+**本节小结**：本节三账收官——正交合成把余类 $a$ 的素数账从全部 L 函数里滤出，主特征供出发散、非主特征凭 $L(1,\chi) \ne 0$ 保持有限，反顶出「每类无穷多素数」，并顺手送出发散的加强版与定量版。
 
 ## $\rm \S \, 5.6$ 数值验收
 
