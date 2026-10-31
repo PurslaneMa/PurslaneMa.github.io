@@ -140,6 +140,8 @@ agent 的真正威力是**转发**（agent forwarding）：`~/.ssh/config` 中�
 
 **安全注意**：ForwardAgent 期间，服务器 A 上能访问 agent socket 的人（root 用户、或攻破 A 的攻击者）可以冒用你的密钥。**只对信任的服务器开启 ForwardAgent**；对不信任的跳板机，改用 `ProxyJump`，它只借用 A 的网络通道到达 B，不把密钥暴露给 A。
 
+**本节小结**：密钥认证的分工是“私钥守身、公钥招领”——known_hosts 防冒名，config 省记忆，agent 省重复输密码；配好这一套，登录远程机器就不再是一串 IP 和端口的苦差。
+
 ---
 
 ## $\rm \S \, 14.3$ 基础远程操作
@@ -252,11 +254,15 @@ asciinema upload demo.cast # 上传，输出一个分享链接
 
 典型用途：录下 bug 的复现步骤发给队友（对方能逐字看到你输入的命令和输出）、做 CLI 工具演示、记录“我当时就是这样操作的”。安装：`sudo apt install asciinema`（Debian/Ubuntu）或 `brew install asciinema`（macOS）。
 
+**本节小结**：关终端程序就停，根子是 SIGHUP；tmux 把会话从终端里剥出来养在服务器上，SSH 断了它照跑——章首“关电脑后程序继续运行”的愿望在这一节兑现。
+
 ---
 
 ## $\rm \S \, 14.5$ 端口转发：安全访问远程服务
 
 在训练服务器上启动了 Jupyter Notebook（监听 `localhost:8888`），你怎么在自己电脑的浏览器中打开它？
+
+白话：端口转发就是在已经建好的 SSH 加密隧道里，再接一根“专用软管”——本地某个端口进来的流量，从隧道那头原封不动地送到远程的某个端口。
 
 **SSH 端口转发**（port forwarding，也叫 SSH tunneling）在本地开一个端口，把流量通过 SSH 隧道转发到远程服务器：
 
@@ -275,6 +281,8 @@ ssh -L 8888:localhost:8888 alice@server.example.com
 ssh -R 9090:localhost:3000 alice@server.example.com
 # 服务器上的 localhost:9090 → 你本地电脑的 localhost:3000
 ```
+
+**本节小结**：`-L` 把远程的服务“拉”到本地看，`-R` 把本地的服务“推”给远程用；方向相反，管道相同——都架在 SSH 加密隧道上，安全属性一并继承。
 
 ---
 
