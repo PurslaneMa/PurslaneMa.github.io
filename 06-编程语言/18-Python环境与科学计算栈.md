@@ -88,6 +88,8 @@ uv pip install numpy pandas
 # 组合 C（conda）在 PowerShell 里要先 conda init powershell 并重开窗口，conda activate 才可用
 ```
 
+**本节小结**：一个「Python 环境」= 一个解释器 + 它能看见的一组包，系统里并存多套是常态，「装了却 import 不到」就是装和跑不在同一套里；venv/conda/uv 选一套用到底，排查永远从「当前用的是哪个解释器」开始。
+
 ---
 
 ## $\rm \S \, 18.2$ Jupyter Notebook：一个状态化的 Python 环境
@@ -124,6 +126,8 @@ print(x)  # [1, 2, 3, 4]——x 是 Cell 1 定义的
 | **Kaggle Notebooks**（kaggle.com） | 免费 GPU/TPU，自带数据集搜索 |
 | **Deepnote**（deepnote.com） | 实时协作 Jupyter，类似 Google Docs 的数据科学版 |
 | **Quarto**（quarto.org） | 从 `.ipynb` 和 `.qmd` 生成报告、网站、PPT、书籍 |
+
+**本节小结**：Notebook 的本质是一个活着的 Python 进程，cell 只是往里投喂的片段——方便探索，代价是隐藏状态、乱序执行和数据残留；重要工作前 Restart & Run All，是这一节唯一需要养成习惯的动作。
 
 ---
 
@@ -187,6 +191,8 @@ print(a)         # [1, 999, 3, 4, 5]——a 不变
 ```
 
 这和 C++20 的 `std::span`（不拥有内存的“视图”）类似——`b = a[1:4]` 是观察（view），`c = a[1:4].copy()` 是深拷贝。NumPy 中切片默认返回 view（为了性能），当你改一个切片却意外修改了原数组时，这就是原因。
+
+**本节小结**：ndarray 快是因为它就是一块 C 风格的连续内存加底层循环，向量化把整次计算一次交给 C；代价是切片默认返回 view、广播悄悄对齐形状——改了切片等于改了原数组，拿不准就 `.copy()`、每步查 `.shape`。
 
 ---
 
@@ -376,6 +382,8 @@ Attention Is All You Need  2017  NaN
 
 Vaex（vaex.io）同样面向超大数据集，采用惰性计算策略，与 Dask 的适用面有重叠——遇到这一档问题时任选其一即可，不必都学。
 
+**本节小结**：pandas 把「按行遍历」的重复劳动换成「按列思考」——读入、筛选、分组、导出四个动作覆盖表格任务的九成；它的速度来自列式存储摊薄每元素开销，边界是「放得进内存的二维表」，出界就换工具而不是硬调。
+
 ## $\rm \S \, 18.5$ 可视化：Matplotlib
 
 ### $\rm \S \, 18.5.1$ 任务：把上一步的统计结果画成图
@@ -551,6 +559,8 @@ accuracy: 1.0
 - **本身就是数值优化、插值、信号处理，没有“从数据学映射”这一步**：这不是机器学习问题，用 SciPy（见 §18.7.5）。
 
 **JAX**（jax.readthedocs.io）是另一条路线：它的接口接近 NumPy，再加上自动微分与 JIT 编译（第 17 章 §17.8 讲过 JIT），适合需要自己写数值内核的研究场景。主线用不到它，知道它和 PyTorch 的差别在“更接近 NumPy、更函数式”即可。
+
+**本节小结**：模型选型先看数据形态——表格用 scikit-learn（树模型常常更划算），非结构化数据用 PyTorch，拿现成模型推理找 Hugging Face；「经典 ML 还是深度学习」是规模和形态问题，不是新旧之争。
 
 ## $\rm \S \, 18.7$ 工程工具：让脚本变成能用的工具
 
@@ -785,6 +795,8 @@ ValidationError: Value error, year 超出合理范围
 - **Dask** 与 **Ray**（ray.io）：当数据或计算装不进一台机器时接管。Dask 提供 NumPy/pandas 的并行版接口，把大数据集切成块在多核或集群上算；Ray 是更通用的分布式计算框架，同时用于数据处理、模型训练与 serving。两者面向的都是“单机单进程已经不够”的场景——单机上几百 MB 的数据用它们只会增加复杂度。
 
 选择困难时按这条顺序问：数据是表格吗（pandas）→ 是纯数值但是科学算法（SciPy）→ 是图像/视频（OpenCV、scikit-image）→ 瓶颈是 Python 循环（Numba）→ 装不进内存或一台机器（Dask、Ray）。
+
+**本节小结**：tqdm、argparse、logging、pydantic 四件套分别补上进度、参数、日志、校验，让脚本从「只有你会用」变成「别人拿去就能跑」；§18.7.5 那条替换链则回答「该用哪个计算库」——两者合起来就是本章后半部的交付清单。
 
 ---
 
