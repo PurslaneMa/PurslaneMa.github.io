@@ -232,7 +232,7 @@ const PHASES = [
   { key: 'bc2',  no: '约', title: '区块链 · 合约与扩容', desc: '智能合约与扩容',                                           range: [3, 3] },
   { key: 'bcr1', no: '复', title: '区块链 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [4, 4] },
   { key: 'qf1',  no: '游', title: '量化金融 · 时间序列与组合', desc: '金融时间序列与随机游走、组合优化与执行',             range: [1, 2] },
-  { key: 'qf2',  no: '因', title: '量化金融 · 因子与回测', desc: '因子、回测与过拟合',                                       range: [3, 3] },
+  { key: 'qf2',  no: '因', title: '量化金融 · 因子、期权与风险', desc: '因子与回测过拟合、期权定价、波动率与风险',               range: [3, 5] },
   { key: 'qfr1', no: '复', title: '量化金融 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [4, 4] },
   { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
   { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
