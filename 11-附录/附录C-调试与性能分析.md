@@ -84,6 +84,8 @@ Segmentation fault (core dumped)
 
 在 segfault 面前，`printf` 可能来不及输出（stdout 有缓冲区）。改用 `std::cerr`（无缓冲）或在可疑代码前加 `std::cerr << "reached line " << __LINE__ << std::endl;`。
 
+**本节小结**：读错误信息的次序是「位置 → 类型 → 上下文」，且要记住行号指向发现点、原因常在前一行；segfault 从来不是随机错误，每一条都有精确成因，而 stdout 缓冲可能吞掉临终输出，所以崩溃现场用无缓冲的 `std::cerr` 留脚印。
+
 ---
 
 ## $\rm \S \, C.2$ 调用栈与 Core Dump：事后分析
@@ -161,6 +163,8 @@ assert(connect_to_server());  // ❌ Release 编译后这个调用被删除！
 bool connected = connect_to_server();
 assert(connected);
 ```
+
+这段代码在做什么：第一行把「有副作用的调用」从 `assert` 里挪出来，保证无论哪个编译模式服务器连接都会真的建立，`assert` 只负责检查结果——副作用和断言分离，两全。
 
 ---
 
@@ -328,6 +332,8 @@ print(f"耗时: {time.time() - start:.3f}s")
 2. **噪声**：操作系统可能在你测试时调度其他任务。跑多次（≥5 次）取中位数或最小值。
 3. **编译器优化**：如果你的 benchmark 结果没有被使用，编译器可能把整个计算删掉。确保结果被“消费”（如累加到 volatile 变量）。
 4. **统计陷阱**：均值容易被一次异常拖偏。报告 P50（中位数）+ P99 + 标准差。
+
+**本节小结**：性能工作的纪律只有一条——先拿证据再动手：perf/火焰图告诉你慢在哪个函数，strace 告诉你慢在等什么资源；benchmark 本身也要先预热、多跑几次、防着编译器删掉无用计算，否则量出来的数先不可信。
 
 ---
 

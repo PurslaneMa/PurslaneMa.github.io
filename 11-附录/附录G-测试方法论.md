@@ -132,6 +132,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 }
 ```
 
+这段代码在做什么：它是你和 fuzzer 之间的唯一接口——fuzzer 负责生成字节流、喂进来、盯着进程有没有崩，你要写的只是「把字节流变成函数参数、调用被测函数」这几行。写好它，剩下的找边界工作全部交给机器。
+
 > **经验规则**：任何接受外部输入的函数（解析器、解码器、网络数据包处理）都适合 fuzz。几十行 fuzz target 代码可能省掉几百小时的边界调试。
 
 ---
@@ -158,6 +160,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 2. **复现**：在同一环境跑 100 次（`pytest --count=100 -k test_name`，`--count` 来自 `pytest-repeat`，先 `pip install pytest-repeat`）
 3. **修复**：找到根因（时间、顺序、网络？）并消除不确定性
 4. **如果不修**：删掉它。一个不稳定的测试比没有测试更糟糕，它教会团队**忽略测试失败**
+
+**本节小结**：flaky 的根因几乎总能归为一句话——测试依赖了不受自己控制的外部量：时间、随机数、执行顺序、网络、线程调度。修复就是把这些量收归测试控制（注入时钟、固定种子、清理状态、换 Fake、用同步原语），收不回来就隔离或删掉。
 
 ---
 

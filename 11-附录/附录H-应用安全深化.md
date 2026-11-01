@@ -66,6 +66,8 @@ with open(f"uploads/{safe_name}", "wb") as f:
 
 `basename` 只是第一层：还要拒绝 `..`、空文件名和带 `\` 的名字，再用 `os.path.realpath` 确认拼出来的绝对路径仍落在 `uploads/` 目录内（防符号链接绕路），最后限制扩展名与文件大小。
 
+**本节小结**：CSRF、SSRF、路径穿越三兄弟其实是同一个病：不可信的数据越过了本该隔离它的边界——浏览器替你带 Cookie 越了站边界，URL 越了内外网边界，文件名越了目录边界。防御也同构：在边界上校验，并且校验要落在真正执行动作的那一步（建连、落盘），不是落在输入字符串上。
+
 ---
 
 ## $\rm \S \, H.3$ 认证与授权：不是一回事
@@ -94,6 +96,8 @@ GitHub API（Resource Server）→ 返回用户信息（用户名、邮箱）
 ```
 
 OpenID Connect（OIDC）在 OAuth 2.0 上增加了一层**身份认证**。当你用“Sign in with Google”登录第三方网站时，你用的是 OAuth 2.0 + OIDC。
+
+**本节小结**：认证管「你是谁」，授权管「你能做什么」，混用这两个词的接口设计大概率有洞。落地口诀：用户会话用 session cookie，服务间与短期 API 用 JWT，「用 GitHub/Google 登录」这类场景用 OAuth 2.0（加 OIDC 做认证）。
 
 ---
 
