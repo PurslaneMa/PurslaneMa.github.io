@@ -39,6 +39,8 @@ $$
 
 每求导一次，光滑性降一级、多出一个跳跃处的 $\delta$——这正是第 12 章 $\lvert x\rvert'=\mathrm{sgn}$ 的同类现象，也是「分布框架完整保留跳跃信息」的含义。
 
+**本节小结**：分布把「函数」读成「对测试函数的作用」，运算规则统一为「移到测试函数那边」，于是求导对一切分布畅通无阻、每跨一个跳跃产出一个 $\delta$。下一节给分布装上 Fourier 变换。
+
 ## $\rm \S \, 16.3$ 分布上的 Fourier 变换：$\hat\delta$ 是常数
 
 沿用第 7 章的约定：$\hat f(\xi)=\int f(x)\mathrm{e}^{-i\xi x}\,\mathrm{d}x$，逆变换带 $\frac1{2\pi}$。对缓增分布 $T$，定义
@@ -57,7 +59,7 @@ $$
 
 ## $\rm \S \, 16.4$ Sobolev 空间 $H^s$：用范数给光滑性定价
 
-**Sobolev 空间（Sobolev space）**$H^s(\mathbb R)$ 的定义用 Fourier 变换写最干净：
+白话：Sobolev 空间是给「光滑性」标价的账本——想谈「带 $s$ 阶导数的函数全体」，得先有一把能量它的尺子；Fourier 变换把尺子变成一个简单的频域权重。**Sobolev 空间（Sobolev space）**$H^s(\mathbb R)$ 的定义用 Fourier 变换写最干净：
 
 $$
 H^s=\Bigl\{u\in\mathcal S':(1+\xi^2)^{s/2}\hat u(\xi)\in L^2\Bigr\},\qquad
@@ -84,9 +86,11 @@ $$
 
 边界卡在 $s=\frac32$：$s=1$ 那一行的收敛值与手算 $\lVert u\rVert_{H^1}^2=\frac83$ 相符（截断到 $10^4$ 还差 $1.9\times10^{-4}$，正是尾部估计 $\frac6\pi\cdot10^{-4}$）；$s=1.5$ 的对数斜率实测 $1.9107$，与渐近 $\frac6\pi=1.909859$ 一致。一个角点就把可正则性上限钉在 $s<\frac32$——「解的奇异程度决定它住在哪一级 $H^s$」这句 PDE 行话在这里有了具体的形状。
 
+**本节小结**：$H^s$ 用频域权重 $(1+\xi^2)^s$ 给光滑性定价——高频压得住就等于 $s$ 阶导数平方可积；$H^0=L^2$、$s$ 越大空间越小、内积让它仍是 Hilbert 空间，帽形函数把一维的临界指数钉在 $s<\frac32$。下一节问这些空间里的函数到底长多光滑。
+
 ## $\rm \S \, 16.5$ 嵌入与迹：$H^s$ 的函数有多光滑
 
-**Sobolev 嵌入（Sobolev embedding）**（陈述级）：当 $s>k+\frac n2$ 时，$H^s(\mathbb R^n)$ 中每个元素都有 $k$ 阶连续代表的嵌入 $H^s\hookrightarrow C^k$ 成立。一维最常用的情形可以当场推：$u\in H^1(0,1)$ 时由 Cauchy–Schwarz，
+白话：嵌入定理回答「$H^s$ 的元素到底长多光滑」——频域里高频被压了 $s$ 阶，换回实空间就兑换成连续性与导数。**Sobolev 嵌入（Sobolev embedding）**（陈述级）：当 $s>k+\frac n2$ 时，$H^s(\mathbb R^n)$ 中每个元素都有 $k$ 阶连续代表的嵌入 $H^s\hookrightarrow C^k$ 成立。一维最常用的情形可以当场推：$u\in H^1(0,1)$ 时由 Cauchy–Schwarz，
 
 $$
 \lvert u(x)-u(y)\rvert=\Bigl\lvert\int_y^xu'\Bigr\rvert\le\lVert u'\rVert_{L^2}\lvert x-y\rvert^{1/2}
@@ -106,7 +110,7 @@ $x^{1/2}$ 恰是 Hölder $\frac12$ 函数却不在 $H^1$ 里——嵌入是单�
 
 ## $\rm \S \, 16.6$ Lax–Milgram 与弱解：$-u''=1$ 全程手算
 
-**Lax–Milgram 定理（Lax–Milgram theorem）**：$\mathcal H$ 是 Hilbert 空间，$a(\cdot,\cdot)$ 是双线性形式，满足连续（$\lvert a(u,v)\rvert\le M\lVert u\rVert\lVert v\rVert$）与强制（coercive，$a(u,u)\ge\alpha\lVert u\rVert^2$，$\alpha>0$），则对每个连续线性泛函 $F$，存在唯一 $u\in\mathcal H$ 使 $a(u,v)=F(v)$ 对一切 $v\in\mathcal H$ 成立，且 $\lVert u\rVert\le\lVert F\rVert/\alpha$。证明骨架一句话：$u\mapsto a(u,\cdot)$ 是 $\mathcal H\to\mathcal H^*$ 的有界线性算子，强制性保证它可逆且逆有界，再用 Riesz 表示（§12.3）把 $F$ 换成一个向量——三件都是第 12、15 章的现成工具。
+白话：Lax–Milgram 是「能量正定就有最低点」的无限维严格版——双线性形式连续且强制，弱解就存在、唯一、连续依赖数据，三样一次给全。**Lax–Milgram 定理（Lax–Milgram theorem）**：$\mathcal H$ 是 Hilbert 空间，$a(\cdot,\cdot)$ 是双线性形式，满足连续（$\lvert a(u,v)\rvert\le M\lVert u\rVert\lVert v\rVert$）与强制（coercive，$a(u,u)\ge\alpha\lVert u\rVert^2$，$\alpha>0$），则对每个连续线性泛函 $F$，存在唯一 $u\in\mathcal H$ 使 $a(u,v)=F(v)$ 对一切 $v\in\mathcal H$ 成立，且 $\lVert u\rVert\le\lVert F\rVert/\alpha$。证明骨架一句话：$u\mapsto a(u,\cdot)$ 是 $\mathcal H\to\mathcal H^*$ 的有界线性算子，强制性保证它可逆且逆有界，再用 Riesz 表示（§12.3）把 $F$ 换成一个向量——三件都是第 12、15 章的现成工具。
 
 **1D 全流程例**：在 $(0,1)$ 上解 $-u''=f$，$u(0)=u(1)=0$，取 $f\equiv1$。
 
