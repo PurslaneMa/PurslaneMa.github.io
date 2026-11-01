@@ -237,8 +237,6 @@ git branch -d fix-parser-bug
 
 ## $\rm \S \, 20.6$ GitHub Actions：推送后自动发生的事情
 
-## $\rm \S \, 20.6$ GitHub Actions：推送后自动发生的事情
-
 GitHub Actions 是 GitHub 内置的 CI/CD（持续集成/持续部署）服务。你在仓库中创建 `.github/workflows/` 目录，放入 YAML 文件：
 
 ```yaml
