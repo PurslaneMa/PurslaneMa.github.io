@@ -4461,6 +4461,98 @@ body.no-server #comments { display: none !important; }
   body.sidebar-collapsed #sidebar-collapse { margin: 0; }
   body.sidebar-collapsed #sidebar-collapse svg { transform: rotate(180deg); }
 }
+
+/* ════════════ 视觉打磨（2026-11-02）：降噪、留白、一处点睛 ════════════
+   原则：信息不变，把「抢眼」的东西调暗半档，把「该亮的」只留给一个主角。 */
+/* 首页书卡：左竖条从实色 3px 降为半透明 2px，hover 时才点亮——卡片安静下来，标题成为主角 */
+.book-section {
+  border-left: 2px solid rgba(var(--accent-rgb), 0.38);
+  transition: border-color .18s var(--ease, ease);
+}
+.book-section:hover { border-left-color: rgba(var(--accent-rgb), 0.8); }
+/* 进度条整体降噪：细一档、降饱和一档，满屏蓝条不再压过内容 */
+.book-track { height: 3px; }
+.progress-track .progress-fill { background: rgba(var(--accent-rgb), 0.72); }
+/* 学部头：细线＋微字距，与书卡同级而非压过书卡 */
+.division-head {
+  border-left-width: 3px;
+  border-left-color: rgba(var(--accent-rgb), 0.5);
+  letter-spacing: 0.01em;
+}
+/* 阶段瓦片：hover 微抬＋边框点亮；进度条同步降为 3px 半饱和 */
+.phase-tile {
+  transition: border-color .18s var(--ease, ease),
+              transform .18s var(--ease, ease),
+              box-shadow .18s var(--ease, ease);
+}
+.phase-tile:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.13);
+}
+.pt-bar { height: 3px; }
+.pt-fill { background: rgba(var(--accent-rgb), 0.72); }
+/* 瓦片进度满格时改用安静的成功色——扫一眼就能看出「这本书读完了」，不再靠亮蓝喊 */
+.phase-tile[data-done="1"] .pt-fill { background: rgba(var(--ok-rgb, 127, 179, 127), 0.65); }
+.phase-tile[data-done="1"] { border-color: rgba(var(--ok-rgb, 127, 179, 127), 0.28); }
+/* 整本读完的书卡：进度条与左竖条同用安静的成功色，与满格瓦片一句话 */
+.book-done .book-track .progress-fill { background: rgba(var(--ok-rgb, 127, 179, 127), 0.6); }
+.book-done { border-left-color: rgba(var(--ok-rgb, 127, 179, 127), 0.45); }
+/* 右侧目录轨：行距放宽半档、条目更退后，活动项只留左侧短线不带底色 */
+.toc-rail .toc-item { padding: .22rem .2rem .22rem 0; line-height: 1.45; }
+.toc-rail .toc-item.active {
+  background: transparent;
+  border-left: 2px solid var(--accent);
+  padding-left: .45rem;
+  margin-left: -2px;
+}
+/* 阅读正文：标题上方多留一口气，段间节奏统一 */
+#content h2 { margin-top: 2.4em; }
+#content h3 { margin-top: 1.9em; }
+#content p { margin: 0.9em 0; }
+/* 首页 hero 下的统计行与标题之间留白对齐节奏 */
+.roadmap-hero { margin-bottom: 1.6rem; }
+/* ════ 内容增强：灯箱 + 公式复制 ════ */
+#content img { cursor: zoom-in; }
+#content .katex { cursor: copy; }
+#content .katex:hover { background: rgba(var(--accent-rgb), 0.08); border-radius: 4px; }
+#lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--bg-rgb, 11, 13, 16), 0.86);
+  backdrop-filter: blur(6px);
+  animation: lb-in .22s var(--ease, ease);
+}
+@keyframes lb-in { from { opacity: 0; } }
+#lightbox figure {
+  margin: 0;
+  max-width: min(92vw, 1280px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+#lightbox img {
+  max-width: 92vw;
+  max-height: 84vh;
+  border-radius: var(--radius-md, 12px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+#lightbox figcaption {
+  max-width: 92vw;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-dim);
+  text-align: center;
+}
+#lightbox .lb-hint {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
 </style>
 </head>
 <body>
@@ -4950,6 +5042,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=2b340a9436"></script>
+<script defer src="app.js?v=5c14b9ce2c"></script>
 </body>
 </html>

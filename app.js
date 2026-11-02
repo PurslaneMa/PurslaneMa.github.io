@@ -1048,7 +1048,7 @@ function renderRoadmap() {
     const done = list.filter(isComplete).length;
     const pct = Math.round(done / list.length * 100);
     const first = list.find(c => c.exists);
-    return `<button type="button" class="phase-tile" data-path="${escapeHtml(first ? first.path : '')}"${first ? '' : ' disabled'} style="--i:${cardSeq++ % 12}" title="${escapeHtml(ph.title)}">
+    return `<button type="button" class="phase-tile"${pct === 100 ? ' data-done="1"' : ''} data-path="${escapeHtml(first ? first.path : '')}"${first ? '' : ' disabled'} style="--i:${cardSeq++ % 12}" title="${escapeHtml(ph.title)}">
       <span class="pt-top"><span class="phase-badge">${ph.no}</span><span class="pt-count">${done}/${list.length}</span></span>
       <span class="pt-title">${escapeHtml(phaseDisplayTitle(ph))}</span>
       <span class="pt-bar"><span class="pt-fill" style="width:${pct}%"></span></span>
@@ -1077,7 +1077,7 @@ function renderRoadmap() {
     } else {
       body = `<div class="book-tiles">${bookPhases.map(phaseTile).join('')}</div>`;
     }
-    return `<section class="book-section" style="--i:${cardSeq++ % 12}">
+    return `<section class="book-section${pct === 100 ? ' book-done' : ''}" style="--i:${cardSeq++ % 12}">
       <header class="book-head">
         <span class="badge ${b.trackClass}">${b.trackLabel}</span>
         <h2 class="book-title">${escapeHtml(b.label)}</h2>
@@ -1132,6 +1132,7 @@ function showRoadmap() {
   pendingSection = null;
   $('loading').hidden = true;
   $('error').hidden = true;
+  $('progress-bar').style.transform = 'scaleX(0)';
   $('content').hidden = true;
   $('doc-head').hidden = true;
   $('account-page').hidden = true;
@@ -1426,6 +1427,8 @@ function renderContent(md, path) {
 
   // 复制按钮
   addCopyButtons(content);
+  // 图片灯箱 + 公式点击复制 LaTeX（事件委托，只绑一次）
+  setupContentExtras(content);
 
   // Mermaid 图：显式渲染（异步，不阻塞正文展示）
   renderMermaid(content);
@@ -1751,10 +1754,14 @@ function addCopyButtons(container) {
   });
 }
 
-function copyText(text, btn) {
+function copyText(text, btn, toastMsg) {
   const done = () => {
-    btn.textContent = '已复制';
-    setTimeout(() => { btn.textContent = '复制'; }, 1500);
+    if (btn) {
+      btn.textContent = '已复制';
+      setTimeout(() => { btn.textContent = '复制'; }, 1500);
+    } else {
+      toast(toastMsg || '已复制');
+    }
   };
   const fallback = () => {
     const ta = document.createElement('textarea');
@@ -1771,6 +1778,63 @@ function copyText(text, btn) {
   } else {
     fallback();
   }
+}
+
+/* ══════════════ 内容增强：图片灯箱 + 公式复制 LaTeX ══════════════ */
+// 两个都走 #content 上的事件委托：renderContent 每次 innerHTML 重建，逐元素绑会泄漏，
+// 委托一次注册长期有效。灯箱节点也是懒创建、全局只有一个。
+let lightboxEl = null;
+function ensureLightbox() {
+  if (lightboxEl) return lightboxEl;
+  lightboxEl = document.createElement('div');
+  lightboxEl.id = 'lightbox';
+  lightboxEl.hidden = true;
+  lightboxEl.setAttribute('role', 'dialog');
+  lightboxEl.setAttribute('aria-label', '图片放大查看');
+  lightboxEl.innerHTML = '<figure><img alt=""><figcaption></figcaption><span class="lb-hint">点击任意处关闭 · Esc</span></figure>';
+  lightboxEl.addEventListener('click', closeLightbox);
+  document.body.appendChild(lightboxEl);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && lightboxEl && !lightboxEl.hidden) closeLightbox();
+  });
+  return lightboxEl;
+}
+function closeLightbox() {
+  if (!lightboxEl) return;
+  lightboxEl.hidden = true;
+  document.body.style.overflow = '';
+}
+function openLightbox(img) {
+  const lb = ensureLightbox();
+  const target = lb.querySelector('img');
+  target.src = img.currentSrc || img.src;
+  target.alt = img.alt || '';
+  const cap = lb.querySelector('figcaption');
+  const capText = (img.alt || '').trim();
+  // 渲染管线把图注里的行内公式先渲染成 KaTeX HTML 再转义塞进 alt——
+  // 这里原样还原，公式在灯箱里和正文一样是排版好的（内容源是仓库内的教材 md，可信）
+  if (capText) { cap.innerHTML = capText; cap.hidden = false; } else { cap.hidden = true; }
+  lb.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+// 正文里的公式点击复制 LaTeX 源码：KaTeX 渲染时把原文留在
+// annotation[encoding="application/x-tex"] 里，直接取即可，不用反解析。
+function setupContentExtras(content) {
+  if (content.dataset.extrasBound) return;
+  content.dataset.extrasBound = '1';
+  content.addEventListener('click', e => {
+    // 灯箱：只放大「有信息量」的图（自然宽度 ≥ 320px），装饰性小图/图标不拦
+    const img = e.target.closest('img');
+    if (img && img.naturalWidth >= 320) { openLightbox(img); return; }
+    // 公式复制：优先行间块，行内也允许；点选文本时（selection 非空）不抢
+    const kat = e.target.closest('.katex-display .katex, .katex');
+    if (kat && !String(window.getSelection())) {
+      const src = kat.querySelector('annotation[encoding="application/x-tex"]');
+      if (src && src.textContent) {
+        copyText(src.textContent, null, '已复制 LaTeX 源码');
+      }
+    }
+  });
 }
 
 /* ══════════════ 全文搜索 ══════════════ */
