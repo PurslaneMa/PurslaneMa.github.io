@@ -37,6 +37,9 @@ const BOOKS = [
   { key: 'dlf',  label: '深度学习框架',           trackLabel: '框架', trackClass: 'badge-dlf',  desc: 'PyTorch 能做什么：张量、自动求导、层与模块、优化器、训练循环、数据管道、设备与精度、保存与多卡，每层再打开盖子看内部机制' },
   { key: 'lfs',  label: 'LLM 从零构建',           trackLabel: 'LLM',  trackClass: 'badge-lfs',  desc: '从零拆一遍前沿大模型产线：语料、分词、Llama 式结构、训练循环、GPU 与算子、多卡并行、扩展律、SFT、偏好对齐、评测、推理服务' },
   { key: 'eb',   label: '具身智能',               trackLabel: 'Embodied', trackClass: 'badge-eb', desc: '给「能动的智能」配齐数学底座：SE(3) 与刚体运动学、贝叶斯滤波与状态估计、LQR/MPC 最优控制、采样式运动规划' },
+  { key: 'pde',  label: '偏微分方程',             trackLabel: 'PDE', trackClass: 'badge-pde', desc: '三原型方程逐个解剖：热、波动、Laplace，分离变量与有限差分数值解，物理仿真与图形学的数学源代码' },
+  { key: 'dg',   label: '微分几何与李群',         trackLabel: 'DiffGeo', trackClass: 'badge-dg', desc: '弯曲世界的语言：流形、切空间、李群李代数、黎曼度量与测地线、曲率与流形上的优化' },
+  { key: 'dopt', label: '离散优化',               trackLabel: 'Opt', trackClass: 'badge-dopt', desc: '线性规划与单纯形、对偶与互补松弛、网络流与最小割、匹配与 Hall、整数规划与全单模' },
   { key: 'nlp',  label: '自然语言处理',           trackLabel: 'NLP',  trackClass: 'badge-nlp',  desc: '从0开始的自然语言处理：经典方法（CFG、HMM、N-gram 与词向量）、神经语言模型与分词、BERT/GPT 双路线、LLM 训练与对齐、多模态与安全' },
   { key: 'comb', label: '组合学',                 trackLabel: '组合', trackClass: 'badge-comb', desc: '计数与双射、生成函数、经典数列、树与图的计数，进阶到分析组合学（奇点分析）与图上的谱方法（扩张图、随机游走）' },
   { key: 'nt',   label: '数论',                   trackLabel: '数论', trackClass: 'badge-nt',   desc: '整除与同余、原根与互反、素数分布（筛法到素数定理）、代数数论（高斯整数与理想）、算术函数与 L 函数' },
@@ -66,7 +69,7 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp'], future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt'], future: [] },
   { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb'], future: ['强化学习'] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct'],      future: ['算法与数据结构', '近似算法', '随机算法'] },
@@ -215,6 +218,15 @@ const PHASES = [
   { key: 'lfr2', no: '复', title: 'LLM 从零构建 · 产线续篇复习', desc: '闭卷自测与易混点对照', range: [22, 22] },
   { key: 'eb1',  no: '体', title: '具身智能 · 运动学与估计', desc: 'SE(3) 与刚体运动学、贝叶斯滤波与状态估计',   range: [1, 2] },
   { key: 'eb2',  no: '控', title: '具身智能 · 控制与规划',   desc: 'LQR 与 MPC 最优控制、采样式运动规划',           range: [3, 4] },
+  { key: 'pd1',  no: '型', title: '偏微分方程 · 原型方程',   desc: '什么是 PDE 与三原型、热方程、波动方程',           range: [1, 3] },
+  { key: 'pd2',  no: '势', title: '偏微分方程 · 势论与数值', desc: 'Laplace 与调和函数、分离变量、有限差分与 CFL',   range: [4, 6] },
+  { key: 'pdr1', no: '复', title: '偏微分方程 · 复习总结',   desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'dg1',  no: '形', title: '微分几何 · 流形与李群',   desc: '流形与图册、切空间与微分、李群与李代数',         range: [1, 3] },
+  { key: 'dg2',  no: '曲', title: '微分几何 · 度量与优化',   desc: '黎曼度量与测地线、曲率一瞥、流形上的优化',       range: [4, 6] },
+  { key: 'dgr1', no: '复', title: '微分几何 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'dio1', no: '规', title: '离散优化 · 线性规划',     desc: 'LP 几何与标准形、单纯形法、对偶理论',             range: [1, 3] },
+  { key: 'dio2', no: '流', title: '离散优化 · 流与整数',     desc: '网络流与最小割、二分图匹配、整数规划与全单模',   range: [4, 6] },
+  { key: 'dior1', no: '复', title: '离散优化 · 复习总结',    desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'cb1',  no: '射', title: '组合学 · 双射与形式幂级数', desc: '双射的艺术（对合与符号反转）、形式幂级数语法、Lagrange 反演全证', range: [1, 3] },
   { key: 'cb2',  no: '恒', title: '组合学 · 恒等式与容斥', desc: '双计数与二项式反演、容斥的偏序观点与 Möbius、高维前缀和',           range: [4, 5] },
   { key: 'cb3',  no: '构', title: '组合学 · 结构计数', desc: 'Burnside 与 Polya、Prüfer 与矩阵树与 BEST、格路反射原理与核方法',   range: [6, 8] },
@@ -283,6 +295,9 @@ const PHASE_BOOK = {
   lf1: 'lfs', lf2: 'lfs', lf3: 'lfs', lf4: 'lfs', lf5: 'lfs', lfr1: 'lfs',
   lf6: 'lfs', lf7: 'lfs', lf8: 'lfs', lfr2: 'lfs',
   eb1: 'eb', eb2: 'eb',
+  pd1: 'pde', pd2: 'pde', pdr1: 'pde',
+  dg1: 'dg', dg2: 'dg', dgr1: 'dg',
+  dio1: 'dopt', dio2: 'dopt', dior1: 'dopt',
   cb1: 'comb', cb2: 'comb', cb3: 'comb', cb4: 'comb', cb5: 'comb', cb6: 'comb', cb7: 'comb', cbr1: 'comb',
   nt1: 'nt', nt2: 'nt', nt3: 'nt', nt4: 'nt', ntr1: 'nt',
   gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gm5: 'gm', gm6: 'gm', gmr1: 'gm', qe1: 'qe', qe2: 'qe', qer1: 'qe', hp1: 'hp', hp2: 'hp', hp3: 'hp', hpr1: 'hp', bc1: 'bc', bc2: 'bc', bcr1: 'bc', qf1: 'qf', qf2: 'qf', qfr1: 'qf',
@@ -290,7 +305,7 @@ const PHASE_BOOK = {
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -1428,7 +1443,7 @@ function renderContent(md, path) {
   // 复制按钮
   addCopyButtons(content);
   // 图片灯箱 + 公式点击复制 LaTeX（事件委托，只绑一次）
-  setupContentExtras(content);
+  setupContentExtras(content, md);
 
   // Mermaid 图：显式渲染（异步，不阻塞正文展示）
   renderMermaid(content);
@@ -1784,6 +1799,8 @@ function copyText(text, btn, toastMsg) {
 // 两个都走 #content 上的事件委托：renderContent 每次 innerHTML 重建，逐元素绑会泄漏，
 // 委托一次注册长期有效。灯箱节点也是懒创建、全局只有一个。
 let lightboxEl = null;
+// 当前章「图片文件名 → 原始图注」映射，renderContent 时重建
+let ALT_MAP = {};
 function ensureLightbox() {
   if (lightboxEl) return lightboxEl;
   lightboxEl = document.createElement('div');
@@ -1810,17 +1827,25 @@ function openLightbox(img) {
   target.src = img.currentSrc || img.src;
   target.alt = img.alt || '';
   const cap = lb.querySelector('figcaption');
-  const capText = (img.alt || '').trim();
-  // 渲染管线把图注里的行内公式先渲染成 KaTeX HTML 再转义塞进 alt——
-  // 这里原样还原，公式在灯箱里和正文一样是排版好的（内容源是仓库内的教材 md，可信）
-  if (capText) { cap.innerHTML = capText; cap.hidden = false; } else { cap.hidden = true; }
+  // 图注从章节源 md 的原始 alt 取（渲染管线会把 alt 里的公式转成 KaTeX HTML
+  // 再转义塞进 alt 属性，且可能截断）；按图片文件名对号，公式保持 $...$ 纯文本
+  const src = (img.getAttribute('src') || '').split('/').pop();
+  const capText = (ALT_MAP[src] || img.alt || '').trim();
+  if (capText) { cap.textContent = capText; cap.hidden = false; } else { cap.hidden = true; }
   lb.hidden = false;
   document.body.style.overflow = 'hidden';
 }
 // 正文里的公式点击复制 LaTeX 源码：KaTeX 渲染时把原文留在
 // annotation[encoding="application/x-tex"] 里，直接取即可，不用反解析。
-function setupContentExtras(content) {
-  if (content.dataset.extrasBound) return;
+function setupContentExtras(content, md) {
+  ALT_MAP = {};
+  const imgRe = /!\[([^\]]*)\]\(([^)\s]+)/g;
+  let m;
+  while ((m = imgRe.exec(md || ''))) {
+    const name = m[2].split('/').pop();
+    if (m[1].trim()) ALT_MAP[name] = m[1];
+  }
+  if (content.dataset.extrasBound) return;   // 委托监听只绑一次（#content 是常驻节点）
   content.dataset.extrasBound = '1';
   content.addEventListener('click', e => {
     // 灯箱：只放大「有信息量」的图（自然宽度 ≥ 320px），装饰性小图/图标不拦
@@ -2761,7 +2786,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
