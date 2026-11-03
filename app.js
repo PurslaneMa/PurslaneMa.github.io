@@ -40,6 +40,9 @@ const BOOKS = [
   { key: 'pde',  label: '偏微分方程',             trackLabel: 'PDE', trackClass: 'badge-pde', desc: '三原型方程逐个解剖：热、波动、Laplace，分离变量与有限差分数值解，物理仿真与图形学的数学源代码' },
   { key: 'dg',   label: '微分几何与李群',         trackLabel: 'DiffGeo', trackClass: 'badge-dg', desc: '弯曲世界的语言：流形、切空间、李群李代数、黎曼度量与测地线、曲率与流形上的优化' },
   { key: 'dopt', label: '离散优化',               trackLabel: 'Opt', trackClass: 'badge-dopt', desc: '线性规划与单纯形、对偶与互补松弛、网络流与最小割、匹配与 Hall、整数规划与全单模' },
+  { key: 'inf',  label: '信息论',                 trackLabel: 'Info', trackClass: 'badge-inf', desc: '熵与编码下界、互信息与数据处理不等式、信道容量两大定理、最大熵原理、Kolmogorov 复杂度' },
+  { key: 'geo',  label: '计算几何',               trackLabel: 'CG', trackClass: 'badge-geo', desc: '叉积基元与精度战争、凸包与旋转卡壳、扫描线求交、Voronoi/Delaunay、kd 树——OI 几何完全体' },
+  { key: 'enc',  label: '编码理论',               trackLabel: 'Code', trackClass: 'badge-enc', desc: 'Hamming 码与 syndrome 译码、三大界、Reed–Solomon 与 Berlekamp–Welch、循环码与 CRC、LDPC/极化/量子纠错接口' },
   { key: 'nlp',  label: '自然语言处理',           trackLabel: 'NLP',  trackClass: 'badge-nlp',  desc: '从0开始的自然语言处理：经典方法（CFG、HMM、N-gram 与词向量）、神经语言模型与分词、BERT/GPT 双路线、LLM 训练与对齐、多模态与安全' },
   { key: 'comb', label: '组合学',                 trackLabel: '组合', trackClass: 'badge-comb', desc: '计数与双射、生成函数、经典数列、树与图的计数，进阶到分析组合学（奇点分析）与图上的谱方法（扩张图、随机游走）' },
   { key: 'nt',   label: '数论',                   trackLabel: '数论', trackClass: 'badge-nt',   desc: '整除与同余、原根与互反、素数分布（筛法到素数定理）、代数数论（高斯整数与理想）、算术函数与 L 函数' },
@@ -69,13 +72,13 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt'], future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf'], future: [] },
   { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb'], future: ['强化学习'] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
-  { key: 'theory', label: '算法与理论',      books: ['fla', 'ct'],      future: ['算法与数据结构', '近似算法', '随机算法'] },
+  { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo'], future: ['算法与数据结构', '近似算法', '随机算法'] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
   { key: 'econ',   label: '经济学',          books: ['econ', 'gt', 'qf'], future: [] },
-  { key: 'crypt',  label: '密码学',          books: ['crypt', 'bc'],    future: [] },
+  { key: 'crypt',  label: '密码学',          books: ['crypt', 'bc', 'enc'], future: [] },
   { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net'], future: [] },
 ];
 const DIVISION_OF = {};
@@ -226,6 +229,15 @@ const PHASES = [
   { key: 'dgr1', no: '复', title: '微分几何 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'dio1', no: '规', title: '离散优化 · 线性规划',     desc: 'LP 几何与标准形、单纯形法、对偶理论',             range: [1, 3] },
   { key: 'dio2', no: '流', title: '离散优化 · 流与整数',     desc: '网络流与最小割、二分图匹配、整数规划与全单模',   range: [4, 6] },
+  { key: 'it1',  no: '熵', title: '信息论 · 熵与互信息',     desc: '熵与编码下界、互信息与数据处理不等式',           range: [1, 2] },
+  { key: 'it2',  no: '道', title: '信息论 · 定理与容量',     desc: '渐近均分、信道容量、最大熵原理、Kolmogorov',    range: [3, 6] },
+  { key: 'itr1', no: '复', title: '信息论 · 复习总结',       desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'geo1', no: '包', title: '计算几何 · 基元与凸包',   desc: '叉积与精度、凸包、旋转卡壳与基础度量',           range: [1, 3] },
+  { key: 'geo2', no: '剖', title: '计算几何 · 求交与剖分',   desc: '扫描线、Voronoi/Delaunay、kd 树与出口',         range: [4, 6] },
+  { key: 'geor1', no: '复', title: '计算几何 · 复习总结',    desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'en1',  no: '纠', title: '编码理论 · 线性码',       desc: '纠错的账、Hamming 与 syndrome、三大界',         range: [1, 3] },
+  { key: 'en2',  no: '码', title: '编码理论 · RS 与现代码',  desc: 'Reed–Solomon 与 BW、循环码 CRC、LDPC/极化/量子', range: [4, 6] },
+  { key: 'enr1', no: '复', title: '编码理论 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'dior1', no: '复', title: '离散优化 · 复习总结',    desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'cb1',  no: '射', title: '组合学 · 双射与形式幂级数', desc: '双射的艺术（对合与符号反转）、形式幂级数语法、Lagrange 反演全证', range: [1, 3] },
   { key: 'cb2',  no: '恒', title: '组合学 · 恒等式与容斥', desc: '双计数与二项式反演、容斥的偏序观点与 Möbius、高维前缀和',           range: [4, 5] },
@@ -298,6 +310,9 @@ const PHASE_BOOK = {
   pd1: 'pde', pd2: 'pde', pdr1: 'pde',
   dg1: 'dg', dg2: 'dg', dgr1: 'dg',
   dio1: 'dopt', dio2: 'dopt', dior1: 'dopt',
+  it1: 'inf', it2: 'inf', itr1: 'inf',
+  geo1: 'geo', geo2: 'geo', geor1: 'geo',
+  en1: 'enc', en2: 'enc', enr1: 'enc',
   cb1: 'comb', cb2: 'comb', cb3: 'comb', cb4: 'comb', cb5: 'comb', cb6: 'comb', cb7: 'comb', cbr1: 'comb',
   nt1: 'nt', nt2: 'nt', nt3: 'nt', nt4: 'nt', ntr1: 'nt',
   gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gm5: 'gm', gm6: 'gm', gmr1: 'gm', qe1: 'qe', qe2: 'qe', qer1: 'qe', hp1: 'hp', hp2: 'hp', hp3: 'hp', hpr1: 'hp', bc1: 'bc', bc2: 'bc', bcr1: 'bc', qf1: 'qf', qf2: 'qf', qfr1: 'qf',
@@ -305,7 +320,7 @@ const PHASE_BOOK = {
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -2786,7 +2801,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
