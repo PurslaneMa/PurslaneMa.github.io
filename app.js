@@ -49,6 +49,18 @@ const BOOKS = [
   { key: 'causal', label: '因果推断',             trackLabel: 'Causal', trackClass: 'badge-cau', desc: '因果之梯与辛普森悖论、潜在结果与随机化、结构因果模型与 do-演算、后门准则、工具变量、因果发现' },
   { key: 'lat',  label: '格与密码',               trackLabel: 'Lattice', trackClass: 'badge-lat', desc: '格与 SVP/CVP、Minkowski 与 Hermite、LLL 全证、Babai 与 Coppersmith、LWE 与后量子密码' },
   { key: 'on',   label: '在线算法',               trackLabel: 'Online', trackClass: 'badge-on', desc: '竞争比、滑雪租赁与秘书问题、在线匹配与广告、分页与 k-服务器、在线凸优化、负载均衡' },
+  { key: 'ot',   label: '最优传输',               trackLabel: 'OT', trackClass: 'badge-ot', desc: 'Kantorovich 与对偶、Wasserstein 距离、Brenier 定理、Sinkhorn、WGAN 与扩散模型的 OT 视角' },
+  { key: 'dp',   label: '差分隐私',               trackLabel: 'DP', trackClass: 'badge-dp', desc: '邻接数据库与 (ε,δ)-DP、Laplace/Gaussian/指数机制、合成定理、DP-SGD、局部 DP 与随机化响应' },
+  { key: 'dlt',  label: '深度学习理论',           trackLabel: 'DLT', trackClass: 'badge-dlt', desc: '泛化与优化之谜、损失景观与学习率分水岭、NTK 与无限宽、缩放律、grokking 与双下降' },
+  { key: 'graph', label: '图论与网络',             trackLabel: 'Graph', trackClass: 'badge-graph', desc: '度序列与握手、Ramsey 数、Turán、代数图论、小世界与无标度网络、图上的算法' },
+  { key: 'sparse', label: '压缩感知',             trackLabel: 'CS', trackClass: 'badge-sparse', desc: '稀疏性与 ℓ0/ℓ1、RIP 与恢复保证、OMP 与基追踪、相位跃迁、MRI 与低秩恢复' },
+  { key: 'tensor', label: '张量方法',             trackLabel: 'Tensor', trackClass: 'badge-tensor', desc: '张量代数与 CP 分解、Tucker/HOSVD、张量网络与 MPS、量子态与 Transformer 的张量语言' },
+  { key: 'rp',   label: '表示论',                 trackLabel: 'Rep', trackClass: 'badge-rp', desc: '群表示与不可约分解、特征标与正交关系、Schur 引理、对称群与 Young 图、等变网络与物理' },
+  { key: 'ag',   label: '代数几何',               trackLabel: 'AlgGeom', trackClass: 'badge-ag', desc: '仿射簇与理想、Hilbert 零点定理、Groebner 基、消去理论、射影空间、代数统计' },
+  { key: 'td',   label: '拓扑数据分析',           trackLabel: 'TDA', trackClass: 'badge-td', desc: 'Vietoris-Rips 复形、同调群与 Betti 数、持久同调与条形码、Mapper、拓扑 ML 与生物' },
+  { key: 'st',   label: '数理统计',               trackLabel: 'Stat', trackClass: 'badge-st', desc: '指数族与自然参数、充分统计量、Fisher 信息与 CRLB、极大似然理论、决策论与 minimax、贝叶斯' },
+  { key: 'ke',   label: '核方法',                 trackLabel: 'Kernel', trackClass: 'badge-ke', desc: '核函数与 RKHS、表示定理、核岭回归、核均值嵌入、高斯过程回归、核方法在 AI 中的位置' },
+  { key: 'mo',   label: '蒙特卡洛',               trackLabel: 'MC', trackClass: 'badge-mo', desc: '重要性采样、拒绝采样、MCMC：Gibbs 与 MH、粒子方法与 SMC、变分推断出口' },
   { key: 'nlp',  label: '自然语言处理',           trackLabel: 'NLP',  trackClass: 'badge-nlp',  desc: '从0开始的自然语言处理：经典方法（CFG、HMM、N-gram 与词向量）、神经语言模型与分词、BERT/GPT 双路线、LLM 训练与对齐、多模态与安全' },
   { key: 'comb', label: '组合学',                 trackLabel: '组合', trackClass: 'badge-comb', desc: '计数与双射、生成函数、经典数列、树与图的计数，进阶到分析组合学（奇点分析）与图上的谱方法（扩张图、随机游走）' },
   { key: 'nt',   label: '数论',                   trackLabel: '数论', trackClass: 'badge-nt',   desc: '整除与同余、原根与互反、素数分布（筛法到素数定理）、代数数论（高斯整数与理想）、算术函数与 L 函数' },
@@ -78,8 +90,8 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf'], future: [] },
-  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal'], future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo'], future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke'], future: [] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo', 'rnd', 'apx', 'on'], future: ['算法与数据结构'] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
@@ -263,6 +275,42 @@ const PHASES = [
   { key: 'on1', no: '租', title: '在线算法 · 竞争比',        desc: '在线与竞争比、滑雪租赁与秘书问题',               range: [1, 2] },
   { key: 'on2', no: '配', title: '在线算法 · 匹配与优化',    desc: '在线匹配、分页缓存、在线凸优化与负载均衡',       range: [3, 6] },
   { key: 'onr1', no: '复', title: '在线算法 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'ot1', no: '运', title: '最优传输 · Kantorovich',  desc: '运输问题、对偶与 Wasserstein 距离',              range: [1, 2] },
+  { key: 'ot2', no: '映', title: '最优传输 · 映射与正则化', desc: 'Brenier 定理、Sinkhorn、统计计算与 AI 出口',     range: [3, 6] },
+  { key: 'otr1', no: '复', title: '最优传输 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'dp1', no: '私', title: '差分隐私 · 定义与机制',   desc: '邻接数据库、Laplace/Gaussian/指数机制',         range: [1, 2] },
+  { key: 'dp2', no: '合', title: '差分隐私 · 合成与训练',   desc: '合成定理、DP-SGD、局部 DP、审计与出口',         range: [3, 6] },
+  { key: 'dpr1', no: '复', title: '差分隐私 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'dt1', no: '谜', title: '深度学习理论 · 两谜',      desc: '泛化与优化之谜、损失景观与学习率',               range: [1, 2] },
+  { key: 'dt2', no: '律', title: '深度学习理论 · 理论工具',  desc: 'NTK、平均场、缩放律、grokking 与双下降',         range: [3, 6] },
+  { key: 'dtr1', no: '复', title: '深度学习理论 · 复习总结', desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'gph1', no: '度', title: '图论与网络 · 基本量',     desc: '度序列、着色与 Ramsey、极图与 Turán',           range: [1, 3] },
+  { key: 'gph2', no: '网', title: '图论与网络 · 代数与网络', desc: '代数图论、小世界与无标度、图上的算法',           range: [4, 6] },
+  { key: 'gphr1', no: '复', title: '图论与网络 · 复习总结',  desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'sp1', no: '稀', title: '压缩感知 · 稀疏性',       desc: 'ℓ0 与 ℓ1、RIP 与恢复保证、OMP 与基追踪',       range: [1, 3] },
+  { key: 'sp2', no: '应', title: '压缩感知 · 跃迁与应用',   desc: '相位跃迁、MRI 与低秩恢复、出口',                 range: [4, 6] },
+  { key: 'spr1', no: '复', title: '压缩感知 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'tn1', no: '张', title: '张量方法 · 代数与分解',   desc: '张量代数、CP 分解与 ALS、Tucker 与 HOSVD',      range: [1, 3] },
+  { key: 'tn2', no: '网', title: '张量方法 · 网络与应用',   desc: '张量网络与 MPS、量子态、Transformer 的张量语言', range: [4, 6] },
+  { key: 'tnr1', no: '复', title: '张量方法 · 复习总结',     desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'rp1', no: '示', title: '表示论 · 群表示',           desc: '群表示与不可约分解、特征标与正交关系',           range: [1, 2] },
+  { key: 'rp2', no: 'Y',  title: '表示论 · Schur 与 Young',   desc: 'Schur 引理与正则表示、Young 图、李群一瞥、等变网络', range: [3, 6] },
+  { key: 'rpr1', no: '复', title: '表示论 · 复习总结',        desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'ag1', no: '簇', title: '代数几何 · 仿射簇',         desc: '仿射簇与理想、零点定理与 Zariski 拓扑',         range: [1, 2] },
+  { key: 'ag2', no: 'G',  title: '代数几何 · Groebner 与应用', desc: 'Groebner 基全证、消去理论、射影空间、代数统计', range: [3, 6] },
+  { key: 'agr1', no: '复', title: '代数几何 · 复习总结',      desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'td1', no: '复', title: '拓扑数据分析 · 复形与同调', desc: 'VR 复形、同调群与 Betti 数、持久同调',          range: [1, 3] },
+  { key: 'td2', no: 'map', title: '拓扑数据分析 · Mapper 与出口', desc: '持久景观与稳定性、Mapper、拓扑 ML 与生物',  range: [4, 6] },
+  { key: 'tdr1', no: '复', title: '拓扑数据分析 · 复习总结',   desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'st1', no: '指', title: '数理统计 · 指数族',         desc: '指数族与自然参数、充分统计量与因子分解',         range: [1, 2] },
+  { key: 'st2', no: '信', title: '数理统计 · 信息与决策',     desc: 'Fisher 信息与 CRLB、极大似然理论、决策论',       range: [3, 6] },
+  { key: 'str1', no: '复', title: '数理统计 · 复习总结',       desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'ke1', no: '核', title: '核方法 · RKHS',              desc: '核函数与 RKHS、核技巧与核化算法',               range: [1, 2] },
+  { key: 'ke2', no: '表', title: '核方法 · 表示与过程',       desc: '表示定理、核均值嵌入、高斯过程回归、出口',       range: [3, 6] },
+  { key: 'ker1', no: '复', title: '核方法 · 复习总结',         desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'mo1', no: '采', title: '蒙特卡洛 · 采样',            desc: '蒙特卡洛基础、重要性采样、拒绝采样',             range: [1, 2] },
+  { key: 'mo2', no: '链', title: '蒙特卡洛 · MCMC 与出口',    desc: 'Gibbs 与 MH、粒子方法、变分推断出口',           range: [3, 6] },
+  { key: 'mor1', no: '复', title: '蒙特卡洛 · 复习总结',       desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'dior1', no: '复', title: '离散优化 · 复习总结',    desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'cb1',  no: '射', title: '组合学 · 双射与形式幂级数', desc: '双射的艺术（对合与符号反转）、形式幂级数语法、Lagrange 反演全证', range: [1, 3] },
   { key: 'cb2',  no: '恒', title: '组合学 · 恒等式与容斥', desc: '双计数与二项式反演、容斥的偏序观点与 Möbius、高维前缀和',           range: [4, 5] },
@@ -344,6 +392,18 @@ const PHASE_BOOK = {
   cau1: 'causal', cau2: 'causal', caur1: 'causal',
   lat1: 'lat', lat2: 'lat', latr1: 'lat',
   on1: 'on', on2: 'on', onr1: 'on',
+  ot1: 'ot', ot2: 'ot', otr1: 'ot',
+  dp1: 'dp', dp2: 'dp', dpr1: 'dp',
+  dt1: 'dlt', dt2: 'dlt', dtr1: 'dlt',
+  gph1: 'graph', gph2: 'graph', gphr1: 'graph',
+  sp1: 'sparse', sp2: 'sparse', spr1: 'sparse',
+  tn1: 'tensor', tn2: 'tensor', tnr1: 'tensor',
+  rp1: 'rp', rp2: 'rp', rpr1: 'rp',
+  ag1: 'ag', ag2: 'ag', agr1: 'ag',
+  td1: 'td', td2: 'td', tdr1: 'td',
+  st1: 'st', st2: 'st', str1: 'st',
+  ke1: 'ke', ke2: 'ke', ker1: 'ke',
+  mo1: 'mo', mo2: 'mo', mor1: 'mo',
   cb1: 'comb', cb2: 'comb', cb3: 'comb', cb4: 'comb', cb5: 'comb', cb6: 'comb', cb7: 'comb', cbr1: 'comb',
   nt1: 'nt', nt2: 'nt', nt3: 'nt', nt4: 'nt', ntr1: 'nt',
   gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gm5: 'gm', gm6: 'gm', gmr1: 'gm', qe1: 'qe', qe2: 'qe', qer1: 'qe', hp1: 'hp', hp2: 'hp', hp3: 'hp', hpr1: 'hp', bc1: 'bc', bc2: 'bc', bcr1: 'bc', qf1: 'qf', qf2: 'qf', qfr1: 'qf',
@@ -351,7 +411,7 @@ const PHASE_BOOK = {
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -2832,7 +2892,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
