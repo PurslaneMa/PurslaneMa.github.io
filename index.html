@@ -948,6 +948,8 @@ kbd {
 #content strong { color: var(--heading); font-weight: 600; }
 #content hr { border: none; border-top: 1px solid var(--border); margin: 1.6rem 0; }
 #content img { max-width: 100%; border-radius: 8px; }
+/* 深色主题下截图/插图轻微降亮：白底大图在墨色纸面上会刺眼 */
+html[data-theme="dark"] #content img { filter: brightness(.88) contrast(1.03); }
 
 #content blockquote {
   border-left: 4px solid var(--blockquote-border);
@@ -4295,6 +4297,7 @@ html { overflow-anchor: none; }
   white-space: normal;
   overflow-wrap: anywhere;
   cursor: pointer;
+  transition: color .15s var(--ease);
 }
 .toc-rail .toc-item.lv3 { padding-left: .8rem; }
 .toc-rail .toc-item:hover { color: var(--accent); }
@@ -4686,13 +4689,14 @@ body.no-server #comments { display: none !important; }
 /* 整本读完的书卡：进度条与左竖条同用安静的成功色，与满格瓦片一句话 */
 .book-done .book-track .progress-fill { background: rgba(var(--ok-rgb, 127, 179, 127), 0.6); }
 .book-done { border-left-color: rgba(var(--ok-rgb, 127, 179, 127), 0.45); }
-/* 右侧目录轨：行距放宽半档、条目更退后，活动项只留左侧短线不带底色 */
+/* 右侧目录轨：行距放宽半档、条目更退后，活动项短线着色并跟字 */
 .toc-rail .toc-item { padding: .22rem .2rem .22rem 0; line-height: 1.45; }
 .toc-rail .toc-item.active {
   background: transparent;
   border-left: 2px solid var(--accent);
   padding-left: .45rem;
   margin-left: -2px;
+  color: var(--accent);
 }
 /* 阅读正文：标题上方多留一口气，段间节奏统一 */
 #content h2 { margin-top: 2.4em; }
@@ -5231,6 +5235,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=4240184c0a"></script>
+<script defer src="app.js?v=5278612cc3"></script>
 </body>
 </html>

@@ -1083,6 +1083,7 @@ function buildToc() {
     (meta ? `<div class="toc-chapter">${escapeHtml(meta.name)}</div>` : '') + itemsHTML;
   if (railList) railList.innerHTML = itemsHTML;
   if (rail) rail.hidden = false;
+  tocSpyLast = null;   // 换章重置，首次 spy 才会把 rail 滚到当前小节
 }
 
 function handleTocClick(event) {
@@ -1097,6 +1098,7 @@ function handleTocClick(event) {
 $('toc-list').addEventListener('click', handleTocClick);
 $('toc-rail-list').addEventListener('click', handleTocClick);
 
+let tocSpyLast = null;   // updateTocSpy 上次命中的小节 id，变了才滚目录轨
 function updateTocSpy() {
   if (!tocHeadings.length || $('content').hidden) return;
   const off = 130;
@@ -1109,6 +1111,20 @@ function updateTocSpy() {
   document.querySelectorAll('.toc-item').forEach(el => {
     el.classList.toggle('active', el.dataset.id === id);
   });
+  // 活动项变了才滚目录轨：长章里当前小节别滚出视野。
+  // 只动 rail 自己的 scrollTop，不碰页面滚动（scrollIntoView 会连页面一起滚）。
+  if (id !== tocSpyLast) {
+    tocSpyLast = id;
+    const railList = $('toc-rail-list');
+    if (railList && !$('toc-rail').hidden) {
+      const btn = railList.querySelector('.toc-item.active');
+      if (btn) {
+        const top = btn.offsetTop, bot = top + btn.offsetHeight;
+        if (top < railList.scrollTop) railList.scrollTop = top;
+        else if (bot > railList.scrollTop + railList.clientHeight) railList.scrollTop = bot - railList.clientHeight;
+      }
+    }
+  }
 }
 
 /* ══════════════ 章节加载 ══════════════ */
