@@ -61,6 +61,9 @@ const BOOKS = [
   { key: 'st',   label: '数理统计',               trackLabel: 'Stat', trackClass: 'badge-st', desc: '指数族与自然参数、充分统计量、Fisher 信息与 CRLB、极大似然理论、决策论与 minimax、贝叶斯' },
   { key: 'ke',   label: '核方法',                 trackLabel: 'Kernel', trackClass: 'badge-ke', desc: '核函数与 RKHS、表示定理、核岭回归、核均值嵌入、高斯过程回归、核方法在 AI 中的位置' },
   { key: 'mo',   label: '蒙特卡洛',               trackLabel: 'MC', trackClass: 'badge-mo', desc: '重要性采样、拒绝采样、MCMC：Gibbs 与 MH、粒子方法与 SMC、变分推断出口' },
+  { key: 'sde',  label: '随机微分方程',           trackLabel: 'SDE', trackClass: 'badge-sde', desc: '布朗运动、Itô 积分与 Itô 公式、SDE 与存在唯一性、Fokker-Planck、SGLD 与扩散模型、随机梯度流' },
+  { key: 'cat',  label: '范畴论速通',             trackLabel: 'Cat', trackClass: 'badge-cat', desc: '范畴与函子、Yoneda 引理、极限与泛性质、伴随函子、单子与计算、函数式编程出口' },
+  { key: 'qml',  label: '量子机器学习',           trackLabel: 'QML', trackClass: 'badge-qml', desc: '量子态与量子门、变分量子线路、量子核、HHL、量子优势与去量子化、QML 定位' },
   { key: 'nlp',  label: '自然语言处理',           trackLabel: 'NLP',  trackClass: 'badge-nlp',  desc: '从0开始的自然语言处理：经典方法（CFG、HMM、N-gram 与词向量）、神经语言模型与分词、BERT/GPT 双路线、LLM 训练与对齐、多模态与安全' },
   { key: 'comb', label: '组合学',                 trackLabel: '组合', trackClass: 'badge-comb', desc: '计数与双射、生成函数、经典数列、树与图的计数，进阶到分析组合学（奇点分析）与图上的谱方法（扩张图、随机游走）' },
   { key: 'nt',   label: '数论',                   trackLabel: '数论', trackClass: 'badge-nt',   desc: '整除与同余、原根与互反、素数分布（筛法到素数定理）、代数数论（高斯整数与理想）、算术函数与 L 函数' },
@@ -90,8 +93,8 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo'], future: [] },
-  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke'], future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo', 'sde', 'cat'], future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml'], future: [] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo', 'rnd', 'apx', 'on'], future: ['算法与数据结构'] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
@@ -311,6 +314,15 @@ const PHASES = [
   { key: 'mo1', no: '采', title: '蒙特卡洛 · 采样',            desc: '蒙特卡洛基础、重要性采样、拒绝采样',             range: [1, 2] },
   { key: 'mo2', no: '链', title: '蒙特卡洛 · MCMC 与出口',    desc: 'Gibbs 与 MH、粒子方法、变分推断出口',           range: [3, 6] },
   { key: 'mor1', no: '复', title: '蒙特卡洛 · 复习总结',       desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'sde1', no: '布', title: '随机微分方程 · 布朗与 Itô', desc: '布朗运动、Itô 积分与 Itô 公式、SDE 解的存在唯一', range: [1, 3] },
+  { key: 'sde2', no: '扩', title: '随机微分方程 · 扩散与采样', desc: 'Fokker-Planck、SGLD 与扩散模型、随机梯度流出口', range: [4, 6] },
+  { key: 'sder1', no: '复', title: '随机微分方程 · 复习总结',   desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'cat1', no: '函', title: '范畴论 · 范畴与 Yoneda',   desc: '范畴函子与自然变换、Yoneda 引理、极限与泛性质',  range: [1, 3] },
+  { key: 'cat2', no: '伴', title: '范畴论 · 伴随与单子',     desc: '伴随函子、单子与计算、函数式编程出口',           range: [4, 6] },
+  { key: 'ctr1', no: '复', title: '范畴论 · 复习总结',        desc: '闭卷自测与易混点对照',                           range: [7, 7] },
+  { key: 'qml1', no: '量', title: '量子机器学习 · 态与线路',  desc: '量子态与量子门、变分量子线路、量子核',           range: [1, 3] },
+  { key: 'qml2', no: '势', title: '量子机器学习 · 优势与定位', desc: 'HHL、量子优势与去量子化、QML 真实定位',         range: [4, 6] },
+  { key: 'qmlr1', no: '复', title: '量子机器学习 · 复习总结',   desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'dior1', no: '复', title: '离散优化 · 复习总结',    desc: '闭卷自测与易混点对照',                           range: [7, 7] },
   { key: 'cb1',  no: '射', title: '组合学 · 双射与形式幂级数', desc: '双射的艺术（对合与符号反转）、形式幂级数语法、Lagrange 反演全证', range: [1, 3] },
   { key: 'cb2',  no: '恒', title: '组合学 · 恒等式与容斥', desc: '双计数与二项式反演、容斥的偏序观点与 Möbius、高维前缀和',           range: [4, 5] },
@@ -404,6 +416,9 @@ const PHASE_BOOK = {
   st1: 'st', st2: 'st', str1: 'st',
   ke1: 'ke', ke2: 'ke', ker1: 'ke',
   mo1: 'mo', mo2: 'mo', mor1: 'mo',
+  sde1: 'sde', sde2: 'sde', sder1: 'sde',
+  cat1: 'cat', cat2: 'cat', ctr1: 'cat',
+  qml1: 'qml', qml2: 'qml', qmlr1: 'qml',
   cb1: 'comb', cb2: 'comb', cb3: 'comb', cb4: 'comb', cb5: 'comb', cb6: 'comb', cb7: 'comb', cbr1: 'comb',
   nt1: 'nt', nt2: 'nt', nt3: 'nt', nt4: 'nt', ntr1: 'nt',
   gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gm5: 'gm', gm6: 'gm', gmr1: 'gm', qe1: 'qe', qe2: 'qe', qer1: 'qe', hp1: 'hp', hp2: 'hp', hp3: 'hp', hpr1: 'hp', bc1: 'bc', bc2: 'bc', bcr1: 'bc', qf1: 'qf', qf2: 'qf', qfr1: 'qf',
@@ -411,7 +426,7 @@ const PHASE_BOOK = {
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -2892,7 +2907,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
