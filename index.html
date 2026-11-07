@@ -2238,6 +2238,19 @@ body.no-server #terminal-open { display: none !important; }
 .bk-fold .bk-row { opacity: .62; }
 @media (max-width: 720px) { .bk-row { grid-template-columns: 6.5rem 1fr auto; } }
 
+/* 书目一览的学部锚点条：一排跳转 chip，随构建的学部块动态填充 */
+.div-anchor {
+  display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .8rem;
+}
+.div-chip {
+  padding: .3rem .8rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--border); background: none;
+  color: var(--text-dim); font: inherit; font-size: .76rem;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.div-chip:hover { color: var(--accent); border-color: rgba(var(--accent-rgb), .4); background: rgba(var(--accent-rgb), .08); }
+#phase-cards .division-head { scroll-margin-top: calc(var(--topbar-height, 56px) + 24px); }
+
 /* ══════════════ 动效系统（2026-10-25 交互精修） ══════════════
    时长按频率分级：微交互 ~160ms、浮层/面板 ~240ms、大面积 ~420ms；
    入场 ease-out、出场 ease-in；只动 transform / opacity，不碰布局属性。 */
@@ -5006,6 +5019,7 @@ body.no-server #comments { display: none !important; }
       <section class="about-sec" id="about-toc">
         <h2>书目一览</h2>
         <p class="about-muted">每本书一张书头卡（简介＋进度＋入口），下面列该书的阶段时间线；点击章节直接开始阅读。</p>
+        <nav id="div-anchor" class="div-anchor" aria-label="学部快速跳转" hidden></nav>
       </section>
       <div id="phase-cards"></div>
 
@@ -5269,6 +5283,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=f9212d7085"></script>
+<script defer src="app.js?v=3a51a28412"></script>
 </body>
 </html>

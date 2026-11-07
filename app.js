@@ -1262,12 +1262,34 @@ function renderRoadmap() {
     const cards = d.books.map(k => bookBlock(BOOKS.find(b => b.key === k))).join('');
     if (!cards) return '';
     const future = d.future.length ? `<p class="division-future">规划中：${escapeHtml(d.future.join('、'))}</p>` : '';
-    return `<div class="division-block">
+    return `<div class="division-block" id="div-${d.key}">
       <h2 class="division-head">${escapeHtml(d.label)}</h2>
       ${cards}${future}
     </div>`;
   }).join('');
+
+  // 学部锚点条：书目一览现在有十来个学部、五十八张书卡，页首给一排跳转 chip
+  // （用 scrollIntoView 而不是改 hash——hash 路由把任何值都当章节路径）
+  const anchorBar = $('div-anchor');
+  if (anchorBar) {
+    const chips = DIVISIONS
+      .filter(d => document.getElementById('div-' + d.key))
+      .map(d => `<button type="button" class="div-chip" data-div="${d.key}">${escapeHtml(d.label)}</button>`)
+      .join('');
+    if (chips) {
+      anchorBar.innerHTML = chips;
+      anchorBar.hidden = false;
+    }
+  }
 }
+
+// 锚点条事件委托：平滑滚到对应学部，顶部留出页头高度
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.div-chip');
+  if (!chip) return;
+  const target = document.getElementById('div-' + chip.dataset.div);
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 // 路线图点击加载章节（事件委托）；书头卡的「进入」与顶栏书签同一条路径
 $('phase-cards').addEventListener('click', e => {
