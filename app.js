@@ -88,6 +88,11 @@ const BOOKS = [
   { key: 'os',    label: '操作系统',             trackLabel: 'OS',  trackClass: 'badge-os',   desc: '进程线程与调度、虚拟内存与页面置换、并发原语与死锁、文件系统与 I/O 模型' },
   { key: 'ca',    label: '计算机系统结构',       trackLabel: '结构', trackClass: 'badge-ca',  desc: '性能度量与 Amdahl、RISC-V 与流水线、乱序执行、缓存一致性与伪共享、SIMD、多核与 GPU、Roofline' },
   { key: 'net',   label: '计算机网络',           trackLabel: '网络', trackClass: 'badge-net', desc: '分层模型、IP 与路由、TCP 可靠性与拥塞控制、DNS/HTTP 演进与 TLS' },
+  { key: 'ds',   label: '分布式系统',             trackLabel: 'DistSys', trackClass: 'badge-ds',  desc: '网络会撒谎的世界：失败模型与可用性账、MapReduce、Raft 选举与日志、线性一致性、复制谱系、2PC、向量时钟、Spanner 与真系统' },
+  { key: 'cv',   label: '计算机视觉',             trackLabel: 'Vision',  trackClass: 'badge-cv',  desc: '图像是函数：滤波与边缘、Harris 与 RANSAC、相机几何、手工特征时代、CNN 谱系与训练、检测分割、ViT 与 CLIP' },
+  { key: 'sec',  label: '计算机安全',             trackLabel: 'Sec',     trackClass: 'badge-sec', desc: '失效方式的目录：威胁模型、栈与堆内存安全、Web 安全、密码学误用、隔离与沙箱、TLS 与 PKI、供应链生态' },
+  { key: 'cp',   label: '编译原理',               trackLabel: 'Comp',    trackClass: 'badge-cp',  desc: '逐级降级翻译：正则到 DFA、LL 与 LR、语义与 IR、运行时与 GC、数据流不动点、SSA 与寄存器分配、LLVM 与 JIT' },
+  { key: 'pe',   label: '性能工程',               trackLabel: 'Perf',    trackClass: 'badge-pe',  desc: '假设-验证循环：测量学、缓存层级账、SIMD 与微优化、分块与布局、多线程与锁、消息传递、剖析器、k-d 树实战' },
 ];
 const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
 
@@ -97,13 +102,13 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
   { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo', 'sde', 'cat', 'ha', 'dy', 'rm'], future: [] },
-  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml'], future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml', 'cv'], future: [] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo', 'rnd', 'apx', 'on'], future: ['算法与数据结构'] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
   { key: 'econ',   label: '经济学',          books: ['econ', 'gt', 'qf'], future: [] },
-  { key: 'crypt',  label: '密码学',          books: ['crypt', 'bc', 'enc', 'lat'], future: [] },
-  { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net'], future: [] },
+  { key: 'crypt',  label: '密码学',          books: ['crypt', 'bc', 'enc', 'lat', 'sec'], future: [] },
+  { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net', 'ds', 'cp', 'pe'], future: [] },
 ];
 const DIVISION_OF = {};
 for (const d of DIVISIONS) for (const b of d.books) DIVISION_OF[b] = d;
@@ -441,7 +446,7 @@ const PHASE_BOOK = {
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1', '73-': 'ha1', '74-': 'dy1', '75-': 'rm1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1', '73-': 'ha1', '74-': 'dy1', '75-': 'rm1', '54-': 'ds1', '55-': 'cv1', '76-': 'se1', '77-': 'cp1', '78-': 'pe1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -2982,7 +2987,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'ha', 'dy', 'rm', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'ha', 'dy', 'rm', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf', 'ds', 'cv', 'sec', 'cp', 'pe']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
