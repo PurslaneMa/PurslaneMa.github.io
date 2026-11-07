@@ -4102,6 +4102,16 @@ body {
   cursor: pointer;
 }
 .nav-book:hover { background: rgba(var(--hover-rgb), 0.55); color: var(--accent); }
+/* 大学部的下拉改多列：数学 23 本单列拖到七百多像素高，观感与操作都不行 */
+.nav-menu.wide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(176px, 210px));
+  gap: 2px 8px;
+  align-items: start;
+}
+.nav-menu.wide.xwide { grid-template-columns: repeat(3, minmax(172px, 200px)); }
+.nav-menu.wide .nav-book { padding: 0.36rem 0.5rem; }
+.nav-menu.wide::before { height: 12px; top: -12px; }   /* 列化后菜单变矮，桥面同步加厚 */
 .nav-book .badge { flex: none; font-size: 0.62rem; padding: 0 0.35rem; line-height: 1.5; }
 .nav-book .nb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topnav-item {
@@ -5318,6 +5328,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=755c4607ed"></script>
+<script defer src="app.js?v=51d6fa2eec"></script>
 </body>
 </html>

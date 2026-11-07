@@ -553,7 +553,7 @@ function renderTopnav() {
       }).join('');
       return '<div class="nav-group" data-division="' + d.key + '">' +
         '<button type="button" class="topnav-item" data-division="' + d.key + '" title="' + d.label + '" aria-haspopup="true" aria-expanded="false">' + (DIVISION_SHORT[d.key] || d.label) + '</button>' +
-        '<div class="nav-menu" hidden>' + items + '</div></div>';
+        '<div class="nav-menu' + (books.length >= 10 ? (books.length >= 20 ? ' wide xwide' : ' wide') : '') + '" hidden>' + items + '</div></div>';
     }).join('');
   updateTopnavActive();
 }
