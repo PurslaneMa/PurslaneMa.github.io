@@ -32,7 +32,7 @@ const $ = id => document.getElementById(id);
 const BOOKS = [
   { key: 'cs',   label: '计算机速通',             trackLabel: '核心', trackClass: 'badge-core', desc: '离开 OJ 的核心主线：终端与系统、网络与 Git、前后端、Docker 与部署，终点是可部署的贯穿项目' },
   { key: 'math', label: '数学基础',               trackLabel: '数学', trackClass: 'badge-math', desc: '四个部分按序：连续数学、概率论、随机微分方程、范畴论4CS，各部分独立编号、自带复习章' },
-  { key: 'dl',   label: '深度学习',               trackLabel: '分册', trackClass: 'badge-dl',   desc: '数学与记号、MLP 与反向传播、CNN 与训练技巧，生成模型四讲，RNN 与 Transformer' },
+  { key: 'dl',   label: '深度学习',               trackLabel: 'DL', trackClass: 'badge-dl',   desc: '数学与记号、MLP 与反向传播、CNN 与训练技巧，生成模型四讲，RNN 与 Transformer' },
   { key: 'ml',   label: '机器学习与凸优化',       trackLabel: 'ML',   trackClass: 'badge-ml',   desc: '损失函数与凸性、梯度下降、线性模型与对偶，走到泛化与神经网络' },
   { key: 'dlf',  label: '深度学习框架',           trackLabel: '框架', trackClass: 'badge-dlf',  desc: 'PyTorch 能做什么：张量、自动求导、层与模块、优化器、训练循环、数据管道、设备与精度、保存与多卡，每层再打开盖子看内部机制' },
   { key: 'lfs',  label: 'LLM 从零构建',           trackLabel: 'LLM',  trackClass: 'badge-lfs',  desc: '从零拆一遍前沿大模型产线：语料、分词、Llama 式结构、训练循环、GPU 与算子、多卡并行、扩展律、SFT、偏好对齐、评测、推理服务' },
@@ -5403,7 +5403,8 @@ function renderProfile(d) {
       </button>`).join('')
     : '<div class="empty-note">还没有提问记录。读正文时点标题旁的「问 AI」就能提问。</div>';
 
-  // 分册进度：按当前章节表把已读路径归到各大类（read_paths 覆盖全部已读章）
+  // 分册进度：按当前章节表把已读路径归到各大类（read_paths 覆盖全部已读章）。
+  // 开动过的大类按进度降序平铺，没动过的折叠成一行——几十行 0/N 全平铺会把后面的区块压到三屏之外。
   const readSet = new Set(d.read_paths || []);
   const bookStats = (typeof BOOKS !== 'undefined' && typeof bookOf === 'function' && chapters.length)
     ? BOOKS.map(b => {
@@ -5412,14 +5413,20 @@ function renderProfile(d) {
         return { label: b.label, read, total: chs.length };
       }).filter(s => s.total > 0)
     : [];
-  const bookHTML = bookStats.map(s => {
+  const bkRow = s => {
     const pct = s.total ? Math.round(s.read / s.total * 100) : 0;
     return '<div class="bk-row">' +
       '<span class="bk-name">' + escapeHtml(s.label) + '</span>' +
       '<span class="bk-bar"><span class="bk-fill" style="width:' + pct + '%"></span></span>' +
       '<span class="bk-num">' + s.read + ' / ' + s.total + '</span>' +
     '</div>';
-  }).join('');
+  };
+  const startedBooks = bookStats.filter(s => s.read > 0).sort((a, b) => b.read / b.total - a.read / a.total);
+  const untouchedBooks = bookStats.filter(s => s.read === 0);
+  const bookHTML = startedBooks.map(bkRow).join('') + (untouchedBooks.length
+    ? '<details class="bk-fold"><summary>' + untouchedBooks.length + ' 个大类还没开始</summary>' +
+      '<div class="bk-list">' + untouchedBooks.map(bkRow).join('') + '</div></details>'
+    : '');
 
   // 免费额度：limit=-1 不限（管理员/绑定 Key）；custom=管理员单独定制过
   const q = d.quota || {};
@@ -5451,13 +5458,6 @@ function renderProfile(d) {
       <p class="card-sub" style="margin-top:.7rem">${quotaText}</p>
     </div>
 
-    ${bookStats.length ? `
-    <div class="page-card">
-      <h2>分册进度</h2>
-      <p class="card-sub">每个大类里已读完的章节占比（章末检查表全勾即计为已读）。</p>
-      <div class="bk-list">${bookHTML}</div>
-    </div>` : ''}
-
     <div class="page-card">
       <h2>继续阅读</h2>
       <p class="card-sub">按最近阅读排序。打开章节时会自动回到你上次读到的小节。</p>
@@ -5474,6 +5474,13 @@ function renderProfile(d) {
       <h2>最近提问</h2>
       <div class="browse-list">${askHTML}</div>
     </div>
+
+    ${bookStats.length ? `
+    <div class="page-card">
+      <h2>分册进度</h2>
+      <p class="card-sub">每个大类里已读完的章节占比（章末检查表全勾即计为已读）；开动过的大类排在前，其余折叠。</p>
+      <div class="bk-list">${bookHTML}</div>
+    </div>` : ''}
   `;
 }
 

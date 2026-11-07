@@ -2223,6 +2223,19 @@ body.no-server #terminal-open { display: none !important; }
 .bk-bar { height: 7px; border-radius: 999px; background: rgba(var(--accent-rgb), .12); overflow: hidden; }
 .bk-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent-strong), var(--accent)); }
 .bk-num { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: .72rem; }
+/* 没动过的大类默认折叠：56 行全平铺会把「继续阅读」压到三屏之外 */
+.bk-fold { margin-top: .55rem; }
+.bk-fold > summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: .45rem;
+  padding: .35rem .7rem; border-radius: 999px; border: 1px solid var(--border);
+  color: var(--text-dim); font-size: .76rem; transition: color .15s, border-color .15s, background .15s;
+}
+.bk-fold > summary::-webkit-details-marker { display: none; }
+.bk-fold > summary::before { content: '▸'; font-size: .7rem; transition: transform .18s var(--ease); }
+.bk-fold[open] > summary::before { transform: rotate(90deg); }
+.bk-fold > summary:hover { color: var(--accent); border-color: rgba(var(--accent-rgb), .4); background: rgba(var(--accent-rgb), .06); }
+.bk-fold .bk-list { margin-top: .6rem; }
+.bk-fold .bk-row { opacity: .62; }
 @media (max-width: 720px) { .bk-row { grid-template-columns: 6.5rem 1fr auto; } }
 
 /* ══════════════ 动效系统（2026-10-25 交互精修） ══════════════
@@ -5256,6 +5269,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=b3dbdb3a19"></script>
+<script defer src="app.js?v=f9212d7085"></script>
 </body>
 </html>
