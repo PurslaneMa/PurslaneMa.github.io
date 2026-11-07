@@ -2422,7 +2422,26 @@ function cleanSearchText(input) {
     .replace(/\$\\rm\s*\\S\s*\\,\s*([\dA-Za-z.]+)\$/g, '§ $1')
     .replace(/\$\\rm\s*Chapter\s*\\,\s*([\dA-Za-z]+)\$/g, '第 $1 章')
     .replace(/\$\\rm\s*Appendix\s*\\,\s*([A-Za-z]+)\$/g, '附录 $1')
+    // 行间公式：先摘掉 $$ 壳——内联规则吞完中间内容后会把孤立 $$ 留在片段里
+    .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
+    .replace(/\$\$+/g, '')
     .replace(/\$([^$\n]+)\$/g, '$1')
+    // 片段里的 LaTeX 命令：常见符号翻译，其余丢命令词保内容
+    .replace(/\\(?:left|right|big|Big|bigg|Bigg)\b/g, '')
+    .replace(/\\(?:mathrm|mathbf|mathit|text|operatorname|mathbb|mathcal)\{([^{}]*)\}/g, '$1')
+    .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '($1)/($2)')
+    .replace(/\\sqrt\s*\{([^{}]*)\}/g, '√($1)')
+    .replace(/\\(?:ne|neq)/g, '≠').replace(/\\(?:le|leq)/g, '≤').replace(/\\(?:ge|geq)/g, '≥')
+    .replace(/\\approx/g, '≈').replace(/\\to/g, '→').replace(/\\times/g, '×')
+    .replace(/\\pm/g, '±').replace(/\\infty/g, '∞').replace(/\\sum/g, 'Σ')
+    .replace(/\\Delta/g, 'Δ').replace(/\\delta/g, 'δ').replace(/\\lambda/g, 'λ')
+    .replace(/\\alpha/g, 'α').replace(/\\beta/g, 'β').replace(/\\sigma/g, 'σ')
+    .replace(/\\mu/g, 'μ').replace(/\\theta/g, 'θ').replace(/\\omega/g, 'ω')
+    .replace(/\\(?:varepsilon|epsilon)/g, 'ε').replace(/\\pi\b/g, 'π')
+    .replace(/\\(?:,|;|!)/g, ' ')
+    .replace(/\\\\/g, ' ')
+    .replace(/\\[a-zA-Z]+/g, '')
+    .replace(/[{}]/g, '')
     // 图片与链接：索引存的是原始 Markdown，片段里会露出 [文字](路径) 与 ![]()
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -2436,6 +2455,9 @@ function cleanSearchText(input) {
     .replace(/\*\*/g, '')  // 片段边界截断造成的孤立加粗标记
     .replace(/^\s{0,3}#{1,6}\s*/gm, '')
     .replace(/^\s{0,3}[>\-*+]\s+/gm, '')
+    // 片段边界截断残留的孤立 $ 与被转义的 \$
+    .replace(/\\\$/g, '$')
+    .replace(/\$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
