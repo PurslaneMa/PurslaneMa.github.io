@@ -93,6 +93,11 @@ const BOOKS = [
   { key: 'sec',  label: '计算机安全',             trackLabel: 'Sec',     trackClass: 'badge-sec', desc: '失效方式的目录：威胁模型、栈与堆内存安全、Web 安全、密码学误用、隔离与沙箱、TLS 与 PKI、供应链生态' },
   { key: 'cp',   label: '编译原理',               trackLabel: 'Comp',    trackClass: 'badge-cp',  desc: '逐级降级翻译：正则到 DFA、LL 与 LR、语义与 IR、运行时与 GC、数据流不动点、SSA 与寄存器分配、LLVM 与 JIT' },
   { key: 'pe',   label: '性能工程',               trackLabel: 'Perf',    trackClass: 'badge-pe',  desc: '假设-验证循环：测量学、缓存层级账、SIMD 与微优化、分块与布局、多线程与锁、消息传递、剖析器、k-d 树实战' },
+  { key: 'lin',  label: '线性代数',               trackLabel: 'LinAlg',  trackClass: 'badge-lin', desc: '矩阵是动词：消元与解的结构、四个子空间、最小二乘、特征值与对角化、SVD、基变换、数值线代' },
+  { key: 'dsa',  label: '算法与数据结构',         trackLabel: 'DS&A',    trackClass: 'badge-dsa', desc: '复杂度是合同：排序谱系、堆、哈希与平衡树、图遍历、最短路与 MST、KMP、动态规划，理论与实测双账' },
+  { key: 'sw',   label: '软件构造',               trackLabel: 'Soft',    trackClass: 'badge-sw',  desc: '正确性是论证出来的：类型与测试、规格、ADT 与不变量、接口设计、并发与不可变、调试与过程' },
+  { key: 'gml',  label: '图机器学习',             trackLabel: 'GraphML', trackClass: 'badge-gml', desc: '把结构变成特征：经典图特征、WL 测试、节点嵌入、GCN 与消息传递、过平滑、知识图谱、注意力视角' },
+  { key: 'agt',  label: 'LLM 智能体',             trackLabel: 'Agent',   trackClass: 'badge-agt', desc: '下一词预测变成动作循环：ReAct、上下文与记忆、工具调用、规划与分解、多智能体、评测、prompt injection 防御' },
 ];
 const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
 
@@ -101,14 +106,14 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo', 'sde', 'cat', 'ha', 'dy', 'rm'], future: [] },
-  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml', 'cv'], future: [] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo', 'sde', 'cat', 'ha', 'dy', 'rm', 'lin'], future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml', 'cv', 'gml', 'agt'], future: [] },
   { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
-  { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo', 'rnd', 'apx', 'on'], future: ['算法与数据结构'] },
+  { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo', 'rnd', 'apx', 'on', 'dsa'], future: [] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
   { key: 'econ',   label: '经济学',          books: ['econ', 'gt', 'qf'], future: [] },
   { key: 'crypt',  label: '密码学',          books: ['crypt', 'bc', 'enc', 'lat', 'sec'], future: [] },
-  { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net', 'ds', 'cp', 'pe'], future: [] },
+  { key: 'sys',    label: '系统',            books: ['cir', 'db', 'os', 'ca', 'net', 'ds', 'cp', 'pe', 'sw'], future: [] },
 ];
 const DIVISION_OF = {};
 for (const d of DIVISIONS) for (const b of d.books) DIVISION_OF[b] = d;
@@ -375,6 +380,31 @@ const PHASES = [
   { key: 'qf1',  no: '游', title: '量化金融 · 时间序列与组合', desc: '金融时间序列与随机游走、组合优化与执行',             range: [1, 2] },
   { key: 'qf2',  no: '因', title: '量化金融 · 因子、期权与风险', desc: '因子与回测过拟合、期权定价、波动率与风险',               range: [3, 5] },
   { key: 'qfr1', no: '复', title: '量化金融 · 复习总结', desc: '闭卷自测与易混点对照',                                     range: [4, 4] },
+  { key: 'lin1',  no: '消', title: '线性代数 · 消元与子空间', desc: '高斯消元与解的结构、四个子空间', range: [1, 2] },
+  { key: 'lin2',  no: '交', title: '线性代数 · 正交与最小二乘', desc: 'Gram–Schmidt、QR、投影与正规方程', range: [3, 3] },
+  { key: 'lin3',  no: '谱', title: '线性代数 · 特征值与对角化', desc: '行列式与谱、对角化与正定', range: [4, 5] },
+  { key: 'lin4',  no: '降', title: '线性代数 · SVD 与数值', desc: '最优低秩逼近、基变换、迭代法与收束', range: [6, 8] },
+  { key: 'linr1', no: '复', title: '线性代数 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'ad1',   no: '算', title: '算法与数据结构 · 分析与排序', desc: '复杂度框架、排序谱系、优先队列', range: [1, 3] },
+  { key: 'ad2',   no: '查', title: '算法与数据结构 · 符号表', desc: 'BST 与哈希、负载因子账', range: [4, 4] },
+  { key: 'ad3',   no: '图', title: '算法与数据结构 · 图', desc: '遍历与拓扑、最短路与 MST', range: [5, 6] },
+  { key: 'ad4',   no: '串', title: '算法与数据结构 · 字符串与 DP', desc: 'KMP 与后缀、动态规划四例', range: [7, 8] },
+  { key: 'adr1',  no: '复', title: '算法与数据结构 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'sw1',   no: '型', title: '软件构造 · 类型与测试', desc: '静态检查三界、测试策略抓取率', range: [1, 2] },
+  { key: 'sw2',   no: '约', title: '软件构造 · 规格与不变量', desc: '前置后置与替换原则、ADT 与 rep 防护', range: [3, 4] },
+  { key: 'sw3',   no: '构', title: '软件构造 · 接口设计', desc: '组合优于继承、三式与 SOLID 精选', range: [5, 5] },
+  { key: 'sw4',   no: '卫', title: '软件构造 · 并发调试与收束', desc: '不可变与消息传递、二分调试、六件套地图', range: [6, 8] },
+  { key: 'swr1',  no: '复', title: '软件构造 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'gl1',   no: '征', title: '图机器学习 · 手工特征', desc: '图统计与中心性、WL 测试与图核', range: [1, 2] },
+  { key: 'gl2',   no: '嵌', title: '图机器学习 · 嵌入与 GNN', desc: '随机游走嵌入、消息传递与 GCN', range: [3, 4] },
+  { key: 'gl3',   no: '练', title: '图机器学习 · 训练与链接预测', desc: '过平滑与梯度账、TransE 与评测协议', range: [5, 6] },
+  { key: 'gl4',   no: '用', title: '图机器学习 · 应用与收束', desc: '推荐与分子图、注意力即学习的邻接', range: [7, 8] },
+  { key: 'glr1',  no: '复', title: '图机器学习 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'ea1',   no: '环', title: 'LLM 智能体 · 循环与记忆', desc: 'ReAct 动作循环、上下文经济学', range: [1, 2] },
+  { key: 'ea2',   no: '具', title: 'LLM 智能体 · 工具与规划', desc: 'schema 容错、CoT/ToT 与漂移', range: [3, 4] },
+  { key: 'ea3',   no: '群', title: 'LLM 智能体 · 协作与评测', desc: '辩论收敛、置信区间与污染', range: [5, 6] },
+  { key: 'ea4',   no: '防', title: 'LLM 智能体 · 安全与工程', desc: '注入放大与沙箱、成本-延迟账', range: [7, 8] },
+  { key: 'ear1',  no: '复', title: 'LLM 智能体 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
   { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
   { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
   { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [47, 99] },
@@ -444,9 +474,10 @@ const PHASE_BOOK = {
   gm1: 'gm', gm2: 'gm', gm3: 'gm', gm4: 'gm', gm5: 'gm', gm6: 'gm', gmr1: 'gm', qe1: 'qe', qe2: 'qe', qer1: 'qe', hp1: 'hp', hp2: 'hp', hp3: 'hp', hpr1: 'hp', bc1: 'bc', bc2: 'bc', bcr1: 'bc', qf1: 'qf', qf2: 'qf', qfr1: 'qf',
   gt1: 'gt', gt2: 'gt', gt3: 'gt', gt4: 'gt', gtr1: 'gt',
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
+  lin1: 'lin', lin2: 'lin', lin3: 'lin', lin4: 'lin', linr1: 'lin', ad1: 'dsa', ad2: 'dsa', ad3: 'dsa', ad4: 'dsa', adr1: 'dsa', sw1: 'sw', sw2: 'sw', sw3: 'sw', sw4: 'sw', swr1: 'sw', gl1: 'gml', gl2: 'gml', gl3: 'gml', gl4: 'gml', glr1: 'gml', ea1: 'agt', ea2: 'agt', ea3: 'agt', ea4: 'agt', ear1: 'agt',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1', '73-': 'ha1', '74-': 'dy1', '75-': 'rm1', '54-': 'ds1', '55-': 'cv1', '76-': 'se1', '77-': 'cp1', '78-': 'pe1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1', '73-': 'ha1', '74-': 'dy1', '75-': 'rm1', '54-': 'ds1', '55-': 'cv1', '76-': 'se1', '77-': 'cp1', '78-': 'pe1', '79-': 'lin1', '80-': 'ad1', '81-': 'sw1', '82-': 'gl1', '83-': 'ea1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -3026,7 +3057,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'ha', 'dy', 'rm', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf', 'ds', 'cv', 'sec', 'cp', 'pe']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'ha', 'dy', 'rm', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf', 'ds', 'cv', 'sec', 'cp', 'pe', 'lin', 'dsa', 'sw', 'gml', 'agt']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
