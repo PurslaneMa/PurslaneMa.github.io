@@ -1296,32 +1296,9 @@ document.addEventListener('click', e => {
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-/* ══════════════ 图片灯箱 + 返回顶部 ══════════════
-   两件小工具共用一条滚动监听：页面滚动容器随视图切换
-   （roadmap 在 window、章节在 #main），两处都听，rAF 合并。 */
+/* ══════════════ 返回顶部 ══════════════
+   图片灯箱已由 #lightbox（setupContentExtras 的事件委托）承担，这里只补回顶。 */
 (function () {
-  // —— 灯箱：点正文里的图全屏看；讲义截图在窄屏上根本读不清 ——
-  let lb = null;
-  function openLightbox(src, alt) {
-    closeLightbox();
-    lb = document.createElement('div');
-    lb.className = 'lightbox';
-    lb.innerHTML = '<img src="' + src.replace(/"/g, '&quot;') + '" alt="' + escapeHtml(alt || '') + '">' +
-      '<span class="lb-hint">点击任意处或按 Esc 关闭</span>';
-    lb.addEventListener('click', closeLightbox);
-    document.body.appendChild(lb);
-  }
-  function closeLightbox() {
-    if (lb) { lb.remove(); lb = null; }
-  }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
-  document.addEventListener('click', e => {
-    if (e.target.closest('.lightbox')) return;              // 关闭动作由 lb 自己的监听处理
-    const img = e.target.closest('#content img, .answer-md img');
-    if (!img || img.closest('a')) return;                    // 链接图走链接本身
-    openLightbox(img.currentSrc || img.src, img.alt);
-  }, true);                                                  // 捕获段抢先，避免被 KaTeX 复制逻辑吞掉
-
   // —— 返回顶部：滚过两屏出现在左下角；两个滚动容器都听 ——
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -2062,7 +2039,17 @@ function openLightbox(img) {
   // 再转义塞进 alt 属性，且可能截断）；按图片文件名对号，公式保持 $...$ 纯文本
   const src = (img.getAttribute('src') || '').split('/').pop();
   const capText = (ALT_MAP[src] || img.alt || '').trim();
-  if (capText) { cap.textContent = capText; cap.hidden = false; } else { cap.hidden = true; }
+  if (capText) {
+    // ALT_MAP 存的是源 md 原文，公式还是 $...$ 源码——按段拆出来交给 KaTeX，
+    // 配平失败的段退回纯文本（alt 可能被渲染管线截断，不能假设公式完整）
+    cap.innerHTML = capText.split(/(\$\$[^$]*\$\$|\$[^$\n]+\$)/g).map(seg => {
+      if (!seg) return '';
+      if (seg.startsWith('$$') && seg.endsWith('$$')) return renderMath({ type: 'display', f: seg.slice(2, -2) });
+      if (seg.startsWith('$') && seg.endsWith('$') && seg.length > 2) return renderMath({ type: 'inline', f: seg.slice(1, -1) });
+      return escapeHtml(seg);
+    }).join('');
+    cap.hidden = false;
+  } else { cap.hidden = true; }
   lb.hidden = false;
   document.body.style.overflow = 'hidden';
 }
