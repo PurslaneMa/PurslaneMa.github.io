@@ -2261,6 +2261,37 @@ body.no-server #terminal-open { display: none !important; }
 .div-chip:hover { color: var(--accent); border-color: rgba(var(--accent-rgb), .4); background: rgba(var(--accent-rgb), .08); }
 #phase-cards .division-head { scroll-margin-top: calc(var(--topbar-height, 56px) + 24px); }
 
+/* 图片灯箱：教材册里大量讲义截图，点一下全屏看，Esc / 点击空白关闭 */
+.lightbox {
+  position: fixed; inset: 0; z-index: 900;
+  display: grid; place-items: center; padding: 2.2rem;
+  background: rgba(0, 0, 0, .88);
+  animation: lightbox-in .18s var(--ease) both;
+}
+.lightbox img {
+  max-width: 96vw; max-height: 94vh; width: auto; height: auto;
+  border-radius: 10px; box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+  background: #fff;   /* 白底截图带透明边时不再被夜色吞掉 */
+}
+.lightbox .lb-hint {
+  position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+  color: rgba(255, 255, 255, .72); font-size: .74rem; letter-spacing: .04em;
+}
+@keyframes lightbox-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* 返回顶部：滚过两屏出现在左下角（右下角留给「问 AI」浮钮） */
+.to-top {
+  position: fixed; left: 1.35rem; bottom: 1.35rem; z-index: 290;
+  width: 2.4rem; height: 2.4rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--card-bg);
+  color: var(--text-dim); font-size: 1rem; line-height: 1; cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
+  opacity: 0; pointer-events: none; transform: translateY(8px);
+  transition: opacity .2s var(--ease), transform .2s var(--ease), color .15s, border-color .15s;
+}
+.to-top.show { opacity: 1; pointer-events: auto; transform: none; }
+.to-top:hover { color: var(--accent); border-color: rgba(var(--accent-rgb), .45); }
+
 /* ══════════════ 动效系统（2026-10-25 交互精修） ══════════════
    时长按频率分级：微交互 ~160ms、浮层/面板 ~240ms、大面积 ~420ms；
    入场 ease-out、出场 ease-in；只动 transform / opacity，不碰布局属性。 */
@@ -5328,6 +5359,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=51d6fa2eec"></script>
+<script defer src="app.js?v=319512b305"></script>
 </body>
 </html>

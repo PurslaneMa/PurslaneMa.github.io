@@ -1296,6 +1296,58 @@ document.addEventListener('click', e => {
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
+/* ══════════════ 图片灯箱 + 返回顶部 ══════════════
+   两件小工具共用一条滚动监听：页面滚动容器随视图切换
+   （roadmap 在 window、章节在 #main），两处都听，rAF 合并。 */
+(function () {
+  // —— 灯箱：点正文里的图全屏看；讲义截图在窄屏上根本读不清 ——
+  let lb = null;
+  function openLightbox(src, alt) {
+    closeLightbox();
+    lb = document.createElement('div');
+    lb.className = 'lightbox';
+    lb.innerHTML = '<img src="' + src.replace(/"/g, '&quot;') + '" alt="' + escapeHtml(alt || '') + '">' +
+      '<span class="lb-hint">点击任意处或按 Esc 关闭</span>';
+    lb.addEventListener('click', closeLightbox);
+    document.body.appendChild(lb);
+  }
+  function closeLightbox() {
+    if (lb) { lb.remove(); lb = null; }
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+  document.addEventListener('click', e => {
+    if (e.target.closest('.lightbox')) return;              // 关闭动作由 lb 自己的监听处理
+    const img = e.target.closest('#content img, .answer-md img');
+    if (!img || img.closest('a')) return;                    // 链接图走链接本身
+    openLightbox(img.currentSrc || img.src, img.alt);
+  }, true);                                                  // 捕获段抢先，避免被 KaTeX 复制逻辑吞掉
+
+  // —— 返回顶部：滚过两屏出现在左下角；两个滚动容器都听 ——
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'to-top';
+  btn.setAttribute('aria-label', '返回顶部');
+  btn.textContent = '↑';
+  btn.addEventListener('click', () => {
+    const sc = document.getElementById('main');
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (sc && sc.scrollTop > 0) sc.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  });
+  document.body.appendChild(btn);
+  // 处理本身只读两个 scrollTop + 切一个类，直接同步跑；
+  // rAF 合并在后台标签会被节流，反而让按钮卡在隐藏态
+  function updateToTop() {
+    const sc = document.getElementById('main');
+    const y = Math.max(window.scrollY || 0, sc ? sc.scrollTop : 0);
+    btn.classList.toggle('show', y > 900);
+  }
+  window.addEventListener('scroll', updateToTop, { passive: true });
+  // 任何内层滚动容器（含恢复阅读位置的程序化滚动）也不漏：document 捕获段兜底
+  document.addEventListener('scroll', updateToTop, { capture: true, passive: true });
+  updateToTop();   // 初始状态对齐（恢复阅读位置可能晚于监听挂载）
+})();
+
 // 路线图点击加载章节（事件委托）；书头卡的「进入」与顶栏书签同一条路径
 $('phase-cards').addEventListener('click', e => {
   const enter = e.target.closest('.book-enter');
