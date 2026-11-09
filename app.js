@@ -98,6 +98,11 @@ const BOOKS = [
   { key: 'sw',   label: '软件构造',               trackLabel: 'Soft',    trackClass: 'badge-sw',  desc: '正确性是论证出来的：类型与测试、规格、ADT 与不变量、接口设计、并发与不可变、调试与过程' },
   { key: 'gml',  label: '图机器学习',             trackLabel: 'GraphML', trackClass: 'badge-gml', desc: '把结构变成特征：经典图特征、WL 测试、节点嵌入、GCN 与消息传递、过平滑、知识图谱、注意力视角' },
   { key: 'agt',  label: 'LLM 智能体',             trackLabel: 'Agent',   trackClass: 'badge-agt', desc: '下一词预测变成动作循环：ReAct、上下文与记忆、工具调用、规划与分解、多智能体、评测、prompt injection 防御' },
+  { key: 'aig',  label: '人工智能导论',           trackLabel: 'AI',      trackClass: 'badge-aig', desc: '把思考变成搜索，把不确定变成概率：无信息与启发式搜索、对抗与剪枝、CSP、贝叶斯网、精确与采样推断、规划决策' },
+  { key: 'qcom', label: '量子通信',               trackLabel: 'QComm',   trackClass: 'badge-qcom', desc: '不可偷不可仿：不可克隆定理、BB84 与 E91、隐形传态、超密编码与 Holevo 界、诱骗态 QKD、量子中继与后量子分工' },
+  { key: 'pgm',  label: '概率图模型',             trackLabel: 'PGM',     trackClass: 'badge-pgm', desc: '把不确定写成图：d-分离与 MRF、变量消元与团树、信念传播、Gibbs 与变分、EM 与结构学习、五法全家福' },
+  { key: 'ir',   label: '信息检索',               trackLabel: 'IR',      trackClass: 'badge-ir',  desc: '把相关性变成可排序的分数：倒排索引与压缩、TF-IDF 与 BM25、NDCG、PageRank、学习排序、稠密检索与 RAG' },
+  { key: 'nlu',  label: '自然语言理解',           trackLabel: 'NLU',     trackClass: 'badge-nlu', desc: '把句子变成机器可计算的语义：lambda 组合、词向量的局限、关系抽取、NLI、探针方法论、语义解析与对话' },
 ];
 const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
 
@@ -106,9 +111,9 @@ const BOOK_LABEL = Object.fromEntries(BOOKS.map(b => [b.key, b.label]));
    future 只在首页展示，是站点的选课地图——不是空头支票，新增大类时从这里挑。 */
 const DIVISIONS = [
   { key: 'core',   label: '基础主线',        books: ['cs'],             future: [] },
-  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo', 'sde', 'cat', 'ha', 'dy', 'rm', 'lin'], future: [] },
-  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml', 'cv', 'gml', 'agt'], future: [] },
-  { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai'],      future: ['量子通信', '量子密码'] },
+  { key: 'math',   label: '数学基础',        books: ['math', 'comb', 'nt', 'gm', 'qe', 'hp', 'pde', 'dg', 'dopt', 'inf', 'ot', 'graph', 'sparse', 'rp', 'ag', 'st', 'mo', 'sde', 'cat', 'ha', 'dy', 'rm', 'lin', 'pgm'], future: [] },
+  { key: 'ai',     label: '人工智能',        books: ['dl', 'ml', 'dlf', 'nlp', 'lfs', 'eb', 'rl', 'causal', 'dp', 'dlt', 'tensor', 'td', 'ke', 'qml', 'cv', 'gml', 'agt', 'aig'], future: [] },
+  { key: 'qcs',    label: '量子计算机科学',  books: ['qc', 'qai', 'qcom'], future: ['量子密码'] },
   { key: 'theory', label: '算法与理论',      books: ['fla', 'ct', 'geo', 'rnd', 'apx', 'on', 'dsa'], future: [] },
   { key: 'gfx',    label: '计算机图形学',    books: ['gfx'],            future: [] },
   { key: 'econ',   label: '经济学',          books: ['econ', 'gt', 'qf'], future: [] },
@@ -405,6 +410,31 @@ const PHASES = [
   { key: 'ea3',   no: '群', title: 'LLM 智能体 · 协作与评测', desc: '辩论收敛、置信区间与污染', range: [5, 6] },
   { key: 'ea4',   no: '防', title: 'LLM 智能体 · 安全与工程', desc: '注入放大与沙箱、成本-延迟账', range: [7, 8] },
   { key: 'ear1',  no: '复', title: 'LLM 智能体 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'ia1',   no: '搜', title: '人工智能导论 · 搜索', desc: '无信息与启发式搜索、A* 与可采纳性', range: [1, 2] },
+  { key: 'ia2',   no: '弈', title: '人工智能导论 · 博弈与 CSP', desc: 'minimax 与剪枝、约束传播', range: [3, 4] },
+  { key: 'ia3',   no: '概', title: '人工智能导论 · 概率侧', desc: '贝叶斯网与 d-分离、变量消元', range: [5, 6] },
+  { key: 'ia4',   no: '时', title: '人工智能导论 · 时间与收束', desc: 'HMM 与粒子滤波、MDP 精要与收束', range: [7, 8] },
+  { key: 'iar1',  no: '复', title: '人工智能导论 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'qi1',   no: '钥', title: '量子通信 · 保密与 BB84', desc: '不可克隆定理、BB84 逐轮与蒸馏', range: [1, 2] },
+  { key: 'qi2',   no: '缠', title: '量子通信 · 纠缠资源', desc: 'E91 与 CHSH、隐形传态', range: [3, 4] },
+  { key: 'qi3',   no: '容', title: '量子通信 · 容量与现实', desc: '超密编码与 Holevo、诱骗态 QKD', range: [5, 6] },
+  { key: 'qi4',   no: '网', title: '量子通信 · 网络与收束', desc: '中继与纯化、后量子分工', range: [7, 8] },
+  { key: 'qir1',  no: '复', title: '量子通信 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'pm1',   no: '表', title: '概率图模型 · 表示', desc: 'd-分离全证、马尔可夫随机场', range: [1, 2] },
+  { key: 'pm2',   no: '推', title: '概率图模型 · 精确推断', desc: '变量消元与团树、信念传播与 Bethe', range: [3, 4] },
+  { key: 'pm3',   no: '近', title: '概率图模型 · 近似推断', desc: 'Gibbs/MH 与混合、变分与 ELBO', range: [5, 6] },
+  { key: 'pm4',   no: '学', title: '概率图模型 · 学习与收束', desc: 'MLE/EM/结构学习、现代接口五法', range: [7, 8] },
+  { key: 'pmr1',  no: '复', title: '概率图模型 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'ir1',   no: '索', title: '信息检索 · 索引与权重', desc: '倒排与压缩、TF-IDF 变体', range: [1, 2] },
+  { key: 'ir2',   no: '排', title: '信息检索 · 排序与评价', desc: 'BM25 推导、P@k/MAP/NDCG', range: [3, 4] },
+  { key: 'ir3',   no: '链', title: '信息检索 · 网页与学习', desc: 'PageRank 收敛率、三类学习排序', range: [5, 6] },
+  { key: 'ir4',   no: '语', title: '信息检索 · 稠密与 RAG', desc: '双塔与 ANN、检索-答案传导账', range: [7, 8] },
+  { key: 'irr1',  no: '复', title: '信息检索 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
+  { key: 'nu1',   no: '义', title: '自然语言理解 · 表示两端', desc: 'lambda 组合语义、词向量批判', range: [1, 2] },
+  { key: 'nu2',   no: '抽', title: '自然语言理解 · 抽取与情感', desc: '三种抽取法与远监督、词典 vs 贝叶斯', range: [3, 4] },
+  { key: 'nu3',   no: '推', title: '自然语言理解 · NLI 与探针', desc: '三关系与基线陷阱、选择性探针', range: [5, 6] },
+  { key: 'nu4',   no: '解', title: '自然语言理解 · 解析与对话', desc: '句到 SQL、状态跟踪与收束', range: [7, 8] },
+  { key: 'nur1',  no: '复', title: '自然语言理解 · 复习总结', desc: '闭卷自测与易混点对照', range: [9, 9] },
   { key: 'opt', no: '☆', title: '选读 AI 分支',             desc: 'PyTorch 与模型训练、多 GPU 分布式训练、训练服务器',  range: [43, 45] },
   { key: 'cap', no: '终', title: '最终实践',                 desc: '贯穿项目：从命令行工具到可部署应用',                  range: [46, 46] },
   { key: 'app', no: '附', title: '附录',                     desc: '命令速查、术语表与工程实践专题',                      range: [47, 99] },
@@ -475,9 +505,10 @@ const PHASE_BOOK = {
   gt1: 'gt', gt2: 'gt', gt3: 'gt', gt4: 'gt', gtr1: 'gt',
   ca1: 'ca', ca2: 'ca', ca3: 'ca', ca4: 'ca', car1: 'ca',
   lin1: 'lin', lin2: 'lin', lin3: 'lin', lin4: 'lin', linr1: 'lin', ad1: 'dsa', ad2: 'dsa', ad3: 'dsa', ad4: 'dsa', adr1: 'dsa', sw1: 'sw', sw2: 'sw', sw3: 'sw', sw4: 'sw', swr1: 'sw', gl1: 'gml', gl2: 'gml', gl3: 'gml', gl4: 'gml', glr1: 'gml', ea1: 'agt', ea2: 'agt', ea3: 'agt', ea4: 'agt', ear1: 'agt',
+  ia1: 'aig', ia2: 'aig', ia3: 'aig', ia4: 'aig', iar1: 'aig', qi1: 'qcom', qi2: 'qcom', qi3: 'qcom', qi4: 'qcom', qir1: 'qcom', pm1: 'pgm', pm2: 'pgm', pm3: 'pgm', pm4: 'pgm', pmr1: 'pgm', ir1: 'ir', ir2: 'ir', ir3: 'ir', ir4: 'ir', irr1: 'ir', nu1: 'nlu', nu2: 'nlu', nu3: 'nlu', nu4: 'nlu', nur1: 'nlu',
 };
 const PHASE_DIR = { '13-': 'dl1', '14-': 'qc1', '15-': 'ml1', '16-': 'sd1',
-                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1', '73-': 'ha1', '74-': 'dy1', '75-': 'rm1', '54-': 'ds1', '55-': 'cv1', '76-': 'se1', '77-': 'cp1', '78-': 'pe1', '79-': 'lin1', '80-': 'ad1', '81-': 'sw1', '82-': 'gl1', '83-': 'ea1' };
+                    '17-': 'ct1', '18-': 'qa1', '19-': 'pb1', '20-': 'cn1', '21-': 'gp1', '22-': 'fa1', '23-': 'ec1', '24-': 'cy1', '25-': 'db1', '26-': 'os1', '27-': 'ne1', '28-': 'th1', '29-': 'gt1', '30-': 'ca1', '31-': 'cir1', '32-': 'num1', '33-': 'df1', '34-': 'nl1', '35-': 'cb1', '36-': 'nt1', '37-': 'gm1', '38-': 'qe1', '39-': 'hp1', '40-': 'bc1', '41-': 'qf1', '42-': 'lf1', '43-': 'eb1', '44-': 'pd1', '45-': 'dg1', '46-': 'dio1', '47-': 'it1', '48-': 'geo1', '49-': 'en1', '50-': 'ra1', '51-': 'ap1', '52-': 'rl1', '53-': 'cau1', '56-': 'lat1', '57-': 'on1', '58-': 'ot1', '59-': 'dp1', '60-': 'dt1', '61-': 'gph1', '62-': 'sp1', '63-': 'tn1', '64-': 'rp1', '65-': 'ag1', '66-': 'td1', '67-': 'st1', '68-': 'ke1', '69-': 'mo1', '70-': 'sde1', '71-': 'cat1', '72-': 'qml1', '73-': 'ha1', '74-': 'dy1', '75-': 'rm1', '54-': 'ds1', '55-': 'cv1', '76-': 'se1', '77-': 'cp1', '78-': 'pe1', '79-': 'lin1', '80-': 'ad1', '81-': 'sw1', '82-': 'gl1', '83-': 'ea1', '84-': 'ia1', '85-': 'qi1', '86-': 'pm1', '87-': 'ir1', '88-': 'nu1' };
 const PHASE_KEYS = new Set(PHASES.map(ph => ph.key));
 
 function phaseOf(c) {
@@ -3057,7 +3088,7 @@ if (readerSettingsBtn && readingPopover) {
    pwn.college 式的内置沙盒：nginx 层用 auth_request 挡住未登录读者，
    ttyd 为每个连接单独起进程、运行在受限系统账号下；静态镜像没有
    /terminal/，入口永远隐藏（body.no-server）。 */
-const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'ha', 'dy', 'rm', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf', 'ds', 'cv', 'sec', 'cp', 'pe', 'lin', 'dsa', 'sw', 'gml', 'agt']);
+const TERMINAL_BOOKS = new Set(['cs', 'dl', 'dlf', 'nlp', 'lfs', 'eb', 'pde', 'dg', 'dopt', 'inf', 'geo', 'enc', 'rnd', 'apx', 'rl', 'causal', 'lat', 'on', 'ot', 'dp', 'dlt', 'graph', 'sparse', 'tensor', 'rp', 'ag', 'td', 'st', 'ke', 'mo', 'sde', 'cat', 'qml', 'ha', 'dy', 'rm', 'math', 'ml', 'gfx', 'fla', 'ct', 'econ', 'gt', 'crypt', 'cir', 'db', 'os', 'ca', 'net', 'comb', 'nt', 'gm', 'qe', 'hp', 'bc', 'qf', 'ds', 'cv', 'sec', 'cp', 'pe', 'lin', 'dsa', 'sw', 'gml', 'agt', 'aig', 'qcom', 'pgm', 'ir', 'nlu']);
 // 数学四册并一前存进 localStorage 的旧大类 key 迁到 math（ml/qai 已恢复为独立大类，不迁移）
 const LEGACY_BOOK = { sde: 'math', cat: 'math', prob: 'math', cont: 'math' };
 const terminalOpenBtn = $('terminal-open');
