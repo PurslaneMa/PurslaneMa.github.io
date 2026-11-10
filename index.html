@@ -4921,6 +4921,35 @@ body.no-server #comments { display: none !important; }
   color: var(--text-dim);
   opacity: 0.7;
 }
+/* 章内翻图：两侧贴边圆钮 + 图下计数器；单图章节由 JS hidden 掉 */
+#lightbox .lb-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#lightbox .lb-nav:hover { background: rgba(0, 0, 0, 0.7); color: #fff; }
+#lightbox .lb-prev { left: 1rem; }
+#lightbox .lb-next { right: 1rem; }
+#lightbox .lb-counter {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  #lightbox .lb-nav { top: auto; bottom: 3.2rem; transform: none; }
+  #lightbox .lb-prev { left: 1rem; }
+  #lightbox .lb-next { right: 1rem; }
+}
 </style>
 </head>
 <body>
@@ -5411,6 +5440,6 @@ body.no-server #comments { display: none !important; }
 </aside>
 <button id="ask-fab" class="ask-fab" hidden aria-label="问 AI">问 AI</button>
 
-<script defer src="app.js?v=e4afc9ed11"></script>
+<script defer src="app.js?v=f1e0bda88a"></script>
 </body>
 </html>

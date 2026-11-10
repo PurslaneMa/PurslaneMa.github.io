@@ -2071,6 +2071,9 @@ function copyText(text, btn, toastMsg) {
 let lightboxEl = null;
 // 当前章「图片文件名 → 原始图注」映射，renderContent 时重建
 let ALT_MAP = {};
+// 打开时的章内图片清单与当前下标（←→ 翻图用）
+let lbImages = [];
+let lbIndex = 0;
 function ensureLightbox() {
   if (lightboxEl) return lightboxEl;
   lightboxEl = document.createElement('div');
@@ -2078,11 +2081,21 @@ function ensureLightbox() {
   lightboxEl.hidden = true;
   lightboxEl.setAttribute('role', 'dialog');
   lightboxEl.setAttribute('aria-label', '图片放大查看');
-  lightboxEl.innerHTML = '<figure><img alt=""><figcaption></figcaption><span class="lb-hint">点击任意处关闭 · Esc</span></figure>';
+  lightboxEl.innerHTML =
+    '<button type="button" class="lb-nav lb-prev" aria-label="上一张">‹</button>' +
+    '<figure><img alt=""><figcaption></figcaption>' +
+    '<span class="lb-counter"></span>' +
+    '<span class="lb-hint">点击任意处关闭 · Esc · ←→ 翻图</span></figure>' +
+    '<button type="button" class="lb-nav lb-next" aria-label="下一张">›</button>';
   lightboxEl.addEventListener('click', closeLightbox);
+  lightboxEl.querySelector('.lb-prev').addEventListener('click', e => { e.stopPropagation(); stepLightbox(-1); });
+  lightboxEl.querySelector('.lb-next').addEventListener('click', e => { e.stopPropagation(); stepLightbox(1); });
   document.body.appendChild(lightboxEl);
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && lightboxEl && !lightboxEl.hidden) closeLightbox();
+    if (!lightboxEl || lightboxEl.hidden) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') stepLightbox(-1);
+    else if (e.key === 'ArrowRight') stepLightbox(1);
   });
   return lightboxEl;
 }
@@ -2091,8 +2104,23 @@ function closeLightbox() {
   lightboxEl.hidden = true;
   document.body.style.overflow = '';
 }
-function openLightbox(img) {
+// 把第 i 张章内图片画进灯箱（下标循环；图注与计数器都在 openLightbox 收口）
+function showLightboxImage(i) {
+  if (!lightboxEl || !lbImages.length) return;
+  lbIndex = (i + lbImages.length) % lbImages.length;
+  openLightbox(lbImages[lbIndex], true);
+}
+function stepLightbox(dir) {
+  if (lbImages.length > 1) showLightboxImage(lbIndex + dir);
+}
+function openLightbox(img, keepGallery) {
   const lb = ensureLightbox();
+  if (!keepGallery) {
+    // 首次打开：收集本章可放大的图片（与点击门控同口径）作为翻图清单
+    lbImages = [...document.querySelectorAll('#content img')].filter(i => i.naturalWidth >= 320);
+    lbIndex = lbImages.indexOf(img);
+    if (lbIndex < 0) { lbImages = [img]; lbIndex = 0; }
+  }
   const target = lb.querySelector('img');
   target.src = img.currentSrc || img.src;
   target.alt = img.alt || '';
@@ -2112,6 +2140,11 @@ function openLightbox(img) {
     }).join('');
     cap.hidden = false;
   } else { cap.hidden = true; }
+  // 计数器与翻图按钮：单图章节隐藏
+  const multi = lbImages.length > 1;
+  lb.querySelector('.lb-counter').textContent = multi ? (lbIndex + 1) + ' / ' + lbImages.length : '';
+  lb.querySelector('.lb-prev').hidden = !multi;
+  lb.querySelector('.lb-next').hidden = !multi;
   lb.hidden = false;
   document.body.style.overflow = 'hidden';
 }
@@ -2119,7 +2152,10 @@ function openLightbox(img) {
 // annotation[encoding="application/x-tex"] 里，直接取即可，不用反解析。
 function setupContentExtras(content, md) {
   ALT_MAP = {};
-  const imgRe = /!\[([^\]]*)\]\(([^)\s]+)/g;
+  // alt 里可能有数学区间写作 (0,1/2] 这类含 ] 的内容——\]\( 的简单配对会整段
+  // 匹配失败，导致该图查无图注、退回管线渲染过的残缺 alt。这里允许 ] 出现在
+  // alt 内部，只要它后面跟的不是 (（即不是真图片语法的收口）。
+  const imgRe = /!\[((?:[^\]]|\](?!\())*)\]\(([^)\s]+)/g;
   let m;
   while ((m = imgRe.exec(md || ''))) {
     const name = m[2].split('/').pop();
