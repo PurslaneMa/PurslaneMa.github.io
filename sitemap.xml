@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://purslanema.github.io/</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://purslanema.github.io/00-%E5%AD%A6%E4%B9%A0%E5%9C%B0%E5%9B%BE%E4%B8%8E%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95.md</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-19</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
@@ -4073,6 +4073,36 @@
   <url>
     <loc>https://purslanema.github.io/90-%E4%B8%89%E7%BB%B4%E8%A7%86%E8%A7%89%E4%B8%8E%E9%87%8D%E5%BB%BA/08-%E6%94%B6%E6%9D%9F%E4%B8%8E%E5%89%8D%E6%B2%BF.md</loc>
     <lastmod>2026-11-18</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/91-%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/01-%E4%BA%A4%E4%BA%92%E8%AF%81%E6%98%8E%E4%B8%8E%E6%89%BF%E8%AF%BA.md</loc>
+    <lastmod>2026-11-19</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/91-%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/02-Sigma%E5%8D%8F%E8%AE%AE%E4%B8%8E%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E.md</loc>
+    <lastmod>2026-11-19</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/91-%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/03-%E5%B8%B8%E6%95%B0%E8%BD%AE%E4%B8%8ENIZK.md</loc>
+    <lastmod>2026-11-19</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/91-%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/04-%E7%AE%97%E6%9C%AF%E5%8C%96%E4%B8%8ER1CS.md</loc>
+    <lastmod>2026-11-19</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/91-%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/05-SNARK%E7%B3%BB%E8%B0%B1.md</loc>
+    <lastmod>2026-11-19</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://purslanema.github.io/91-%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/06-%E5%BA%94%E7%94%A8%E4%B8%8E%E6%94%B6%E6%9D%9F.md</loc>
+    <lastmod>2026-11-19</lastmod>
     <priority>0.8</priority>
   </url>
 </urlset>
